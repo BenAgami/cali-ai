@@ -10,29 +10,29 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
+import { Stack, useRouter } from "expo-router";
 import { AntDesign, Feather } from "@expo/vector-icons";
 
-const UserIcon = () => <Feather name="user" style={styles.icon} />;
 const MailIcon = () => <Feather name="mail" style={styles.icon} />;
 const LockIcon = () => <Feather name="lock" style={styles.icon} />;
 const GoogleIcon = () => <AntDesign name="google" style={styles.icon} />;
+const CheckIcon = () => <Text style={styles.checkIcon}>✓</Text>;
 
-const RegistrationScreen: React.FC = () => {
+const SignInScreen = () => {
   const [formData, setFormData] = useState({
-    name: "",
     email: "",
     password: "",
   });
+  const [rememberMe, setRememberMe] = useState(false);
 
   const router = useRouter();
 
-  const handleSubmit = () => {
-    console.log("Registration data:", formData);
-    // Handle registration logic here
-    // Example: call API endpoint
+  const handleSignIn = () => {
+    console.log("Sign in data:", formData, "Remember me:", rememberMe);
+    // Handle sign-in logic here
+    // Example: call your API endpoint
   };
 
   const handleGoogleSignIn = () => {
@@ -40,8 +40,13 @@ const RegistrationScreen: React.FC = () => {
     // Handle Google sign-in logic here
   };
 
-  const handleSignIn = () => {
-    router.push("login");
+  const handleForgotPassword = () => {
+    console.log("Forgot password clicked");
+    // Navigate to forgot password screen
+  };
+
+  const handleSignUp = () => {
+    router.push("/register");
   };
 
   return (
@@ -53,58 +58,42 @@ const RegistrationScreen: React.FC = () => {
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+        style={styles.container}
       >
         <StatusBar style="light" />
         <LinearGradient
-          colors={["#1e1b4b", "#581c87", "#0f172a"]}
-          style={{ flex: 1 }}
+          colors={["#0f0c29", "#302b63", "#24243e"]}
+          style={styles.gradient}
         >
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1 }}
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* Mars Image Section */}
             <View style={styles.imageContainer}>
               <Image
-                source={require("@assets/images/saturn.png")}
-                style={styles.saturnImage}
+                source={require("@assets/images/mars.png")}
+                style={styles.mars}
                 resizeMode="cover"
               />
               <LinearGradient
-                colors={["transparent", "rgba(30, 27, 75, 0.8)"]}
+                colors={["transparent", "rgba(10, 10, 10, 0.8)"]}
                 style={styles.imageOverlay}
               />
             </View>
 
-            {/* Registration Form Section */}
+            {/* Sign In Form Section */}
             <View style={styles.formWrapper}>
               {/* Header */}
               <View style={styles.header}>
-                <Text style={styles.title}>Create Account</Text>
+                <Text style={styles.title}>Welcome Back</Text>
                 <Text style={styles.subtitle}>
-                  Join us and explore the cosmos
+                  Sign in to continue your journey
                 </Text>
               </View>
 
               {/* Form Container */}
               <View style={styles.formContainer}>
-                {/* Name Input */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Full Name</Text>
-                  <View style={styles.inputWrapper}>
-                    <UserIcon />
-                    <TextInput
-                      style={styles.input}
-                      placeholder="John Doe"
-                      placeholderTextColor="rgba(216, 180, 254, 0.4)"
-                      value={formData.name}
-                      onChangeText={(text) =>
-                        setFormData({ ...formData, name: text })
-                      }
-                    />
-                  </View>
-                </View>
-
                 {/* Email Input */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.label}>Email</Text>
@@ -113,7 +102,7 @@ const RegistrationScreen: React.FC = () => {
                     <TextInput
                       style={styles.input}
                       placeholder="you@example.com"
-                      placeholderTextColor="rgba(216, 180, 254, 0.4)"
+                      placeholderTextColor="rgba(167, 139, 250, 0.4)"
                       value={formData.email}
                       onChangeText={(text) =>
                         setFormData({ ...formData, email: text })
@@ -132,7 +121,7 @@ const RegistrationScreen: React.FC = () => {
                     <TextInput
                       style={styles.input}
                       placeholder="••••••••"
-                      placeholderTextColor="rgba(216, 180, 254, 0.4)"
+                      placeholderTextColor="rgba(167, 139, 250, 0.4)"
                       value={formData.password}
                       onChangeText={(text) =>
                         setFormData({ ...formData, password: text })
@@ -142,19 +131,47 @@ const RegistrationScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Submit Button */}
+                {/* Remember Me & Forgot Password */}
+                <View style={styles.optionsRow}>
+                  <TouchableOpacity
+                    style={styles.rememberMeContainer}
+                    onPress={() => setRememberMe(!rememberMe)}
+                    activeOpacity={0.7}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        rememberMe && styles.checkboxActive,
+                      ]}
+                    >
+                      {rememberMe && <CheckIcon />}
+                    </View>
+                    <Text style={styles.rememberMeText}>Remember me</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={handleForgotPassword}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.forgotPasswordText}>
+                      Forgot Password?
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Sign In Button */}
                 <TouchableOpacity
                   style={styles.submitButton}
-                  onPress={handleSubmit}
+                  onPress={handleSignIn}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={["#9333ea", "#4f46e5"]}
+                    colors={["#667eea", "#764ba2"]}
                     style={styles.buttonGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
-                    <Text style={styles.submitButtonText}>Create Account</Text>
+                    <Text style={styles.submitButtonText}>Sign In</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -177,13 +194,11 @@ const RegistrationScreen: React.FC = () => {
                   </Text>
                 </TouchableOpacity>
 
-                {/* Sign In Link */}
+                {/* Sign Up Link */}
                 <View style={styles.footer}>
-                  <Text style={styles.footerText}>
-                    Already have an account?{" "}
-                  </Text>
-                  <TouchableOpacity onPress={handleSignIn} activeOpacity={0.7}>
-                    <Text style={styles.signInLink}>Sign In</Text>
+                  <Text style={styles.footerText}>Don't have an account? </Text>
+                  <TouchableOpacity onPress={handleSignUp} activeOpacity={0.7}>
+                    <Text style={styles.signUpLink}>Sign Up</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -195,25 +210,34 @@ const RegistrationScreen: React.FC = () => {
   );
 };
 
-export default RegistrationScreen;
+export default SignInScreen;
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
   imageContainer: {
-    height: 250,
+    height: 280,
     width: "100%",
     position: "relative",
   },
-  saturnImage: {
+  mars: {
     width: "100%",
     height: "100%",
-    opacity: 0.8,
+    opacity: 0.75,
   },
   imageOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    height: 100,
+    height: 120,
   },
   formWrapper: {
     paddingHorizontal: 24,
@@ -232,17 +256,17 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: "rgba(233, 213, 255, 0.7)",
+    color: "rgba(196, 181, 253, 0.7)",
   },
   formContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.15)",
   },
   inputGroup: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   label: {
     fontSize: 16,
@@ -253,9 +277,9 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
+    borderColor: "rgba(255, 255, 255, 0.25)",
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 50,
@@ -270,10 +294,49 @@ const styles = StyleSheet.create({
     fontSize: 16,
     height: "100%",
   },
+  optionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+    marginTop: 4,
+  },
+  rememberMeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: "rgba(167, 139, 250, 0.5)",
+    marginRight: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  checkboxActive: {
+    backgroundColor: "#8b5cf6",
+    borderColor: "#8b5cf6",
+  },
+  checkIcon: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  rememberMeText: {
+    color: "rgba(196, 181, 253, 0.8)",
+    fontSize: 14,
+  },
+  forgotPasswordText: {
+    color: "#a78bfa",
+    fontSize: 14,
+    fontWeight: "500",
+  },
   submitButton: {
     borderRadius: 8,
     overflow: "hidden",
-    marginTop: 8,
   },
   buttonGradient: {
     paddingVertical: 14,
@@ -293,11 +356,11 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   dividerText: {
     marginHorizontal: 16,
-    color: "rgba(233, 213, 255, 0.6)",
+    color: "rgba(196, 181, 253, 0.6)",
     fontSize: 14,
   },
   googleButton: {
@@ -308,7 +371,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.5)",
+    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   googleButtonText: {
     color: "#1f2937",
@@ -323,11 +386,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "rgba(233, 213, 255, 0.7)",
+    color: "rgba(196, 181, 253, 0.7)",
     fontSize: 14,
   },
-  signInLink: {
-    color: "#d8b4fe",
+  signUpLink: {
+    color: "#c4b5fd",
     fontSize: 14,
     fontWeight: "500",
     textDecorationLine: "underline",

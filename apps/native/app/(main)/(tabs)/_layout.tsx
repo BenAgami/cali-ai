@@ -44,6 +44,15 @@ const TabsLayout: React.FC = () => {
             ),
           }}
         />
+        <Tabs.Screen
+          name="login"
+          options={{
+            title: "Sign In",
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="log-in" size={24} color={color} />
+            ),
+          }}
+        />
       </Tabs>
     </>
   );
