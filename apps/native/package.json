@@ -16,6 +16,7 @@
     "@repo/ui": "*",
     "expo": "^54.0.0",
     "expo-constants": "~18.0.8",
+    "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.3",
     "expo-status-bar": "~3.0.8",
