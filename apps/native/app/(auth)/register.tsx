@@ -50,7 +50,7 @@ const RegistrationScreen: React.FC = () => {
   };
 
   const handleSignIn = () => {
-    router.push("login");
+    router.push("/login");
   };
 
   const handleNavigateHome = () => {
