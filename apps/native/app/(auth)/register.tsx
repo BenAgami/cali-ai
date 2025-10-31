@@ -8,40 +8,40 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
-import { Stack, useRouter } from "expo-router";
 
 import {
   AuthImageHeader,
   AuthHeader,
   AuthInput,
-  AuthRememberRow,
   AuthOrDivider,
   GoogleSignInButton,
   AuthFooter,
 } from "@repo/ui";
+import { baseColors } from "@src/theme/colors";
 
-const SignInScreen = () => {
+const RegistrationScreen: React.FC = () => {
   const [formData, setFormData] = useState({
+    name: "",
     email: "",
     password: "",
   });
-  const [rememberMe, setRememberMe] = useState(false);
 
   const router = useRouter();
 
-  const linearGradient = (
+  const imageLinearGradient = (
     <LinearGradient
-      colors={["transparent", "rgba(10, 10, 10, 0.8)"]}
+      colors={["transparent", "rgba(30, 27, 75, 0.8)"]}
       style={styles.imageOverlay}
     />
   );
 
-  const handleSignIn = () => {
-    console.log("Sign in data:", formData, "Remember me:", rememberMe);
-    // Handle sign-in logic here
-    // Example: call your API endpoint
+  const handleSubmit = () => {
+    console.log("Registration data:", formData);
+    // Handle registration logic here
+    // Example: call API endpoint
   };
 
   const handleGoogleSignIn = () => {
@@ -49,13 +49,12 @@ const SignInScreen = () => {
     // Handle Google sign-in logic here
   };
 
-  const handleForgotPassword = () => {
-    console.log("Forgot password clicked");
-    // Navigate to forgot password screen
+  const handleSignIn = () => {
+    router.push("login");
   };
 
-  const handleSignUp = () => {
-    router.push("/register");
+  const handleNavigateHome = () => {
+    router.push("/");
   };
 
   return (
@@ -71,25 +70,44 @@ const SignInScreen = () => {
       >
         <StatusBar style="light" />
         <LinearGradient
-          colors={["#0f0c29", "#302b63", "#24243e"]}
+          colors={["#1e1b4b", "#581c87", "#0f172a"]}
           style={{ flex: 1 }}
         >
           <ScrollView
             contentContainerStyle={{ flexGrow: 1 }}
+            bounces={false}
             showsVerticalScrollIndicator={false}
           >
+            <TouchableOpacity
+              onPress={() => handleNavigateHome()}
+              style={styles.navigateHomeButton}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.navigateHomeButtonText}>{"←"}</Text>
+            </TouchableOpacity>
+
             <AuthImageHeader
-              image={require("@assets/images/mars.png")}
-              overlay={linearGradient}
+              image={require("@assets/images/saturn.png")}
+              overlay={imageLinearGradient}
             />
 
             <View style={styles.formWrapper}>
               <AuthHeader
-                title="Welcome Back"
-                subtitle="Sign in to continue your journey"
+                title="Create Account"
+                subtitle="Join us and explore the cosmos"
               />
 
               <View style={styles.formContainer}>
+                <AuthInput
+                  label="Full Name"
+                  icon="user"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChangeText={(text: string) =>
+                    setFormData({ ...formData, name: text })
+                  }
+                />
+
                 <AuthInput
                   label="Email"
                   icon="mail"
@@ -113,24 +131,18 @@ const SignInScreen = () => {
                   secureTextEntry
                 />
 
-                <AuthRememberRow
-                  rememberMe={rememberMe}
-                  onToggleRemember={() => setRememberMe(!rememberMe)}
-                  onForgotPassword={handleForgotPassword}
-                />
-
                 <TouchableOpacity
                   style={styles.submitButton}
-                  onPress={handleSignIn}
+                  onPress={handleSubmit}
                   activeOpacity={0.8}
                 >
                   <LinearGradient
-                    colors={["#667eea", "#764ba2"]}
+                    colors={["#9333ea", "#4f46e5"]}
                     style={styles.buttonGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                   >
-                    <Text style={styles.submitButtonText}>Sign In</Text>
+                    <Text style={styles.submitButtonText}>Create Account</Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
@@ -139,9 +151,9 @@ const SignInScreen = () => {
                 <GoogleSignInButton onPress={handleGoogleSignIn} />
 
                 <AuthFooter
-                  text="Don't have an account?"
-                  linkText="Sign Up"
-                  onPressLink={handleSignUp}
+                  text="Already have an account?"
+                  linkText="Sign In"
+                  onPressLink={handleSignIn}
                 />
               </View>
             </View>
@@ -152,9 +164,21 @@ const SignInScreen = () => {
   );
 };
 
-export default SignInScreen;
+export default RegistrationScreen;
 
 const styles = StyleSheet.create({
+  navigateHomeButton: {
+    position: "absolute",
+    top: 36,
+    left: 24,
+    padding: 10,
+    zIndex: 10,
+  },
+  navigateHomeButtonText: {
+    color: baseColors.grayDark,
+    fontSize: 26,
+    fontWeight: "bold",
+  },
   imageOverlay: {
     position: "absolute",
     bottom: 0,
@@ -168,11 +192,11 @@ const styles = StyleSheet.create({
     paddingBottom: 48,
   },
   formContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     borderRadius: 24,
     padding: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
   submitButton: {
     borderRadius: 8,

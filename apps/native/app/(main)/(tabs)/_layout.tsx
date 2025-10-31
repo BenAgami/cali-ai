@@ -35,24 +35,6 @@ const TabsLayout: React.FC = () => {
             ),
           }}
         />
-        <Tabs.Screen
-          name="register"
-          options={{
-            title: "Register",
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="person-add" size={24} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="login"
-          options={{
-            title: "Sign In",
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="log-in" size={24} color={color} />
-            ),
-          }}
-        />
       </Tabs>
     </>
   );

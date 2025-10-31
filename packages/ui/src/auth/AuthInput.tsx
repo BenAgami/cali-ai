@@ -1,6 +1,14 @@
 import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  KeyboardTypeOptions,
+} from "react-native";
 import { Feather } from "@expo/vector-icons";
+
+type AutoCapitalize = "none" | "sentences" | "words" | "characters";
 
 export type AuthInputProps = {
   label: string;
@@ -9,8 +17,8 @@ export type AuthInputProps = {
   value: string;
   onChangeText: (text: string) => void;
   secureTextEntry?: boolean;
-  keyboardType?: "default" | "email-address";
-  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  keyboardType?: KeyboardTypeOptions;
+  autoCapitalize?: AutoCapitalize;
 };
 
 export const AuthInput: React.FC<AuthInputProps> = ({
@@ -20,10 +28,10 @@ export const AuthInput: React.FC<AuthInputProps> = ({
   value,
   onChangeText,
   keyboardType = "default",
-  secureTextEntry,
-  autoCapitalize,
+  secureTextEntry = false,
+  autoCapitalize = "sentences",
 }) => (
-  <View style={styles.group}>
+  <View style={{ marginBottom: 20 }}>
     <Text style={styles.label}>{label}</Text>
     <View style={styles.inputWrapper}>
       <Feather name={icon} size={20} color="rgba(255,255,255,0.9)" />
@@ -42,7 +50,6 @@ export const AuthInput: React.FC<AuthInputProps> = ({
 );
 
 const styles = StyleSheet.create({
-  group: { marginBottom: 20 },
   label: {
     color: "rgba(255,255,255,0.9)",
     fontSize: 16,
