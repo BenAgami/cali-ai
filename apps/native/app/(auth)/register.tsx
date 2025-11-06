@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   View,
   StyleSheet,
@@ -8,10 +9,14 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { registerSchema, RegisterValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,
@@ -22,11 +27,20 @@ import {
 } from "@repo/ui";
 import { baseColors } from "@src/theme/colors";
 
+const defaultFormData: RegisterValues = {
+  name: "",
+  email: "",
+  password: "",
+};
+
 const RegistrationScreen: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: defaultFormData,
   });
 
   const router = useRouter();
@@ -38,8 +52,8 @@ const RegistrationScreen: React.FC = () => {
     />
   );
 
-  const handleSubmit = () => {
-    console.log("Registration data:", formData);
+  const handleSignUp = (data: RegisterValues) => {
+    console.log("Registration data:", data);
     // Handle registration logic here
     // Example: call API endpoint
   };
@@ -98,42 +112,60 @@ const RegistrationScreen: React.FC = () => {
               />
 
               <View style={styles.formContainer}>
-                <AuthInput
-                  label="Full Name"
-                  icon="user"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChangeText={(text: string) =>
-                    setFormData({ ...formData, name: text })
-                  }
+                <Controller
+                  control={control}
+                  name="name"
+                  render={({ field }) => (
+                    <AuthInput
+                      label="Full Name"
+                      icon="user"
+                      placeholder="John Doe"
+                      value={field.value}
+                      onChangeText={field.onChange}
+                      onBlur={field.onBlur}
+                      error={errors.name?.message}
+                    />
+                  )}
                 />
 
-                <AuthInput
-                  label="Email"
-                  icon="mail"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChangeText={(text: string) =>
-                    setFormData({ ...formData, email: text })
-                  }
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                <Controller
+                  control={control}
+                  name="email"
+                  render={({ field }) => (
+                    <AuthInput
+                      label="Email"
+                      icon="mail"
+                      placeholder="you@example.com"
+                      value={field.value}
+                      onChangeText={field.onChange}
+                      onBlur={field.onBlur}
+                      error={errors.email?.message}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  )}
                 />
 
-                <AuthInput
-                  label="Password"
-                  icon="lock"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChangeText={(text: string) =>
-                    setFormData({ ...formData, password: text })
-                  }
-                  secureTextEntry
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field }) => (
+                    <AuthInput
+                      label="Password"
+                      icon="lock"
+                      placeholder="••••••••"
+                      value={field.value}
+                      onChangeText={field.onChange}
+                      onBlur={field.onBlur}
+                      error={errors.password?.message}
+                      secureTextEntry
+                    />
+                  )}
                 />
 
                 <TouchableOpacity
                   style={styles.submitButton}
-                  onPress={handleSubmit}
+                  onPress={handleSubmit(handleSignUp)}
                   activeOpacity={0.8}
                 >
                   <LinearGradient

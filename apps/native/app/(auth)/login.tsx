@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
   View,
   StyleSheet,
@@ -7,10 +8,14 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { loginSchema, LoginValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,
@@ -22,12 +27,21 @@ import {
 } from "@repo/ui";
 import { baseColors } from "@src/theme/colors";
 
+const defaultFormData: LoginValues = {
+  email: "",
+  password: "",
+};
+
 const SignInScreen = () => {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
   const [rememberMe, setRememberMe] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: defaultFormData,
+  });
 
   const router = useRouter();
 
@@ -38,8 +52,8 @@ const SignInScreen = () => {
     />
   );
 
-  const handleSignIn = () => {
-    console.log("Sign in data:", formData, "Remember me:", rememberMe);
+  const handleSignIn = (data: LoginValues) => {
+    console.log("Sign in data:", data, "Remember me:", rememberMe);
     // Handle sign-in logic here
     // Example: call your API endpoint
   };
@@ -98,27 +112,39 @@ const SignInScreen = () => {
             />
 
             <View style={styles.formContainer}>
-              <AuthInput
-                label="Email"
-                icon="mail"
-                placeholder="you@example.com"
-                value={formData.email}
-                onChangeText={(text: string) =>
-                  setFormData({ ...formData, email: text })
-                }
-                keyboardType="email-address"
-                autoCapitalize="none"
+              <Controller
+                control={control}
+                name="email"
+                render={({ field }) => (
+                  <AuthInput
+                    label="Email"
+                    icon="mail"
+                    placeholder="you@example.com"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    onBlur={field.onBlur}
+                    error={errors.email?.message}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
               />
 
-              <AuthInput
-                label="Password"
-                icon="lock"
-                placeholder="••••••••"
-                value={formData.password}
-                onChangeText={(text: string) =>
-                  setFormData({ ...formData, password: text })
-                }
-                secureTextEntry
+              <Controller
+                control={control}
+                name="password"
+                render={({ field }) => (
+                  <AuthInput
+                    label="Password"
+                    icon="lock"
+                    placeholder="••••••••"
+                    value={field.value}
+                    onChangeText={field.onChange}
+                    onBlur={field.onBlur}
+                    error={errors.password?.message}
+                    secureTextEntry
+                  />
+                )}
               />
 
               <AuthRememberRow
@@ -129,7 +155,7 @@ const SignInScreen = () => {
 
               <TouchableOpacity
                 style={styles.submitButton}
-                onPress={handleSignIn}
+                onPress={handleSubmit(handleSignIn)}
                 activeOpacity={0.8}
               >
                 <LinearGradient
