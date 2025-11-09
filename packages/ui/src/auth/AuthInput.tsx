@@ -5,29 +5,23 @@ import {
   TextInput,
   StyleSheet,
   TextInputProps,
-  NativeSyntheticEvent,
-  TextInputFocusEventData,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
 
 export type AuthInputProps = {
   label: string;
   icon: keyof typeof Feather.glyphMap;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  onBlur: (e: NativeSyntheticEvent<TextInputFocusEventData>) => void;
   error?: string | null;
 } & Partial<TextInputProps>;
 
 export const AuthInput: React.FC<AuthInputProps> = ({
   label,
   icon,
+  error,
   placeholder,
   value,
   onChangeText,
   onBlur,
-  error,
   keyboardType = "default",
   secureTextEntry = false,
   autoCapitalize = "none",
@@ -75,5 +69,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
   },
-  errorText: { marginTop: 6, color: "#e02424", fontSize: 12 },
+  errorText: { marginTop: 6, color: "rgb(224,36,36)", fontSize: 12 },
 });
