@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
 import {
   View,
   StyleSheet,
@@ -13,18 +12,19 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-
 import { loginSchema, LoginValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,
-  AuthInput,
   AuthRememberRow,
   AuthOrDivider,
   GoogleSignInButton,
   AuthFooter,
 } from "@repo/ui";
+
+import AuthFormFields, {
+  type FieldConfig,
+} from "@src/components/AuthFormFields";
 import { baseColors } from "@src/theme/colors";
 
 const defaultFormData: LoginValues = {
@@ -32,25 +32,28 @@ const defaultFormData: LoginValues = {
   password: "",
 };
 
-const SignInScreen = () => {
+const signInFields: FieldConfig<LoginValues>[] = [
+  {
+    name: "email",
+    label: "Email",
+    icon: "mail",
+    placeholder: "you@example.com",
+    keyboardType: "email-address",
+    autoCapitalize: "none",
+  },
+  {
+    name: "password",
+    label: "Password",
+    icon: "lock",
+    placeholder: "••••••••",
+    secureTextEntry: true,
+  },
+];
+
+const SignInScreen: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: defaultFormData,
-  });
 
   const router = useRouter();
-
-  const imageLinearGradient = (
-    <LinearGradient
-      colors={["transparent", "rgba(10, 10, 10, 0.8)"]}
-      style={styles.imageOverlay}
-    />
-  );
 
   const handleSignIn = (data: LoginValues) => {
     console.log("Sign in data:", data, "Remember me:", rememberMe);
@@ -102,7 +105,12 @@ const SignInScreen = () => {
 
           <AuthImageHeader
             image={require("@assets/images/mars.png")}
-            overlay={imageLinearGradient}
+            overlay={
+              <LinearGradient
+                colors={["transparent", "rgba(10, 10, 10, 0.8)"]}
+                style={styles.imageOverlay}
+              />
+            }
           />
 
           <View style={styles.formWrapper}>
@@ -112,60 +120,35 @@ const SignInScreen = () => {
             />
 
             <View style={styles.formContainer}>
-              <Controller
-                control={control}
-                name="email"
-                render={({ field }) => (
-                  <AuthInput
-                    label="Email"
-                    icon="mail"
-                    placeholder="you@example.com"
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    onBlur={field.onBlur}
-                    error={errors.email?.message}
-                    keyboardType="email-address"
+              <AuthFormFields
+                schema={loginSchema}
+                defaultValues={defaultFormData}
+                fields={signInFields}
+                onSubmit={handleSignIn}
+                extraRow={
+                  <AuthRememberRow
+                    rememberMe={rememberMe}
+                    onToggleRemember={() => setRememberMe(!rememberMe)}
+                    onForgotPassword={handleForgotPassword}
                   />
+                }
+                renderSubmit={(submit) => (
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={submit}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={["#667eea", "#764ba2"]}
+                      style={styles.buttonGradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                    >
+                      <Text style={styles.submitButtonText}>Sign In</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
                 )}
               />
-
-              <Controller
-                control={control}
-                name="password"
-                render={({ field }) => (
-                  <AuthInput
-                    label="Password"
-                    icon="lock"
-                    placeholder="••••••••"
-                    value={field.value}
-                    onChangeText={field.onChange}
-                    onBlur={field.onBlur}
-                    error={errors.password?.message}
-                    secureTextEntry
-                  />
-                )}
-              />
-
-              <AuthRememberRow
-                rememberMe={rememberMe}
-                onToggleRemember={() => setRememberMe(!rememberMe)}
-                onForgotPassword={handleForgotPassword}
-              />
-
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleSubmit(handleSignIn)}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={["#667eea", "#764ba2"]}
-                  style={styles.buttonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                >
-                  <Text style={styles.submitButtonText}>Sign In</Text>
-                </LinearGradient>
-              </TouchableOpacity>
 
               <AuthOrDivider />
 

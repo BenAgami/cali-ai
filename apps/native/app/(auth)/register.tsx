@@ -1,5 +1,4 @@
 import React from "react";
-import { Controller, useForm } from "react-hook-form";
 import {
   View,
   StyleSheet,
@@ -14,17 +13,18 @@ import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-
 import { registerSchema, RegisterValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,
-  AuthInput,
   AuthOrDivider,
   GoogleSignInButton,
   AuthFooter,
 } from "@repo/ui";
+
+import AuthFormFields, {
+  type FieldConfig,
+} from "@src/components/AuthFormFields";
 import { baseColors } from "@src/theme/colors";
 
 const defaultFormData: RegisterValues = {
@@ -33,24 +33,32 @@ const defaultFormData: RegisterValues = {
   password: "",
 };
 
+const registerFields: FieldConfig<RegisterValues>[] = [
+  {
+    name: "name",
+    label: "Full Name",
+    icon: "user",
+    placeholder: "John Doe",
+    autoCapitalize: "words",
+  },
+  {
+    name: "email",
+    label: "Email",
+    icon: "mail",
+    placeholder: "you@example.com",
+    keyboardType: "email-address",
+  },
+  {
+    name: "password",
+    label: "Password",
+    icon: "lock",
+    placeholder: "••••••••",
+    secureTextEntry: true,
+  },
+];
+
 const RegistrationScreen: React.FC = () => {
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: defaultFormData,
-  });
-
   const router = useRouter();
-
-  const imageLinearGradient = (
-    <LinearGradient
-      colors={["transparent", "rgba(30, 27, 75, 0.8)"]}
-      style={styles.imageOverlay}
-    />
-  );
 
   const handleSignUp = (data: RegisterValues) => {
     console.log("Registration data:", data);
@@ -102,7 +110,12 @@ const RegistrationScreen: React.FC = () => {
 
             <AuthImageHeader
               image={require("@assets/images/saturn.png")}
-              overlay={imageLinearGradient}
+              overlay={
+                <LinearGradient
+                  colors={["transparent", "rgba(30, 27, 75, 0.8)"]}
+                  style={styles.imageOverlay}
+                />
+              }
             />
 
             <View style={styles.formWrapper}>
@@ -112,71 +125,30 @@ const RegistrationScreen: React.FC = () => {
               />
 
               <View style={styles.formContainer}>
-                <Controller
-                  control={control}
-                  name="name"
-                  render={({ field }) => (
-                    <AuthInput
-                      label="Full Name"
-                      icon="user"
-                      placeholder="John Doe"
-                      value={field.value}
-                      onChangeText={field.onChange}
-                      onBlur={field.onBlur}
-                      error={errors.name?.message}
-                      autoCapitalize="words"
-                    />
+                <AuthFormFields
+                  schema={registerSchema}
+                  defaultValues={defaultFormData}
+                  fields={registerFields}
+                  onSubmit={handleSignUp}
+                  renderSubmit={(submit) => (
+                    <TouchableOpacity
+                      style={styles.submitButton}
+                      onPress={submit}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={["#9333ea", "#4f46e5"]}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Text style={styles.submitButtonText}>
+                          Create Account
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
                   )}
                 />
-
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field }) => (
-                    <AuthInput
-                      label="Email"
-                      icon="mail"
-                      placeholder="you@example.com"
-                      value={field.value}
-                      onChangeText={field.onChange}
-                      onBlur={field.onBlur}
-                      error={errors.email?.message}
-                      keyboardType="email-address"
-                    />
-                  )}
-                />
-
-                <Controller
-                  control={control}
-                  name="password"
-                  render={({ field }) => (
-                    <AuthInput
-                      label="Password"
-                      icon="lock"
-                      placeholder="••••••••"
-                      value={field.value}
-                      onChangeText={field.onChange}
-                      onBlur={field.onBlur}
-                      error={errors.password?.message}
-                      secureTextEntry
-                    />
-                  )}
-                />
-
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={handleSubmit(handleSignUp)}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={["#9333ea", "#4f46e5"]}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <Text style={styles.submitButtonText}>Create Account</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
 
                 <AuthOrDivider />
 
