@@ -4,32 +4,27 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  KeyboardTypeOptions,
+  TextInputProps,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
-
-type AutoCapitalize = "none" | "sentences" | "words" | "characters";
 
 export type AuthInputProps = {
   label: string;
   icon: keyof typeof Feather.glyphMap;
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  secureTextEntry?: boolean;
-  keyboardType?: KeyboardTypeOptions;
-  autoCapitalize?: AutoCapitalize;
-};
+  error?: string | null;
+} & Partial<TextInputProps>;
 
 export const AuthInput: React.FC<AuthInputProps> = ({
   label,
   icon,
+  error,
   placeholder,
   value,
   onChangeText,
+  onBlur,
   keyboardType = "default",
   secureTextEntry = false,
-  autoCapitalize = "sentences",
+  autoCapitalize = "none",
 }) => (
   <View style={{ marginBottom: 20 }}>
     <Text style={styles.label}>{label}</Text>
@@ -41,11 +36,14 @@ export const AuthInput: React.FC<AuthInputProps> = ({
         placeholderTextColor="rgba(216,180,254,0.4)"
         value={value}
         onChangeText={onChangeText}
+        onBlur={onBlur}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
       />
     </View>
+
+    {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
 );
 
@@ -71,4 +69,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
   },
+  errorText: { marginTop: 6, color: "rgb(224,36,36)", fontSize: 12 },
 });

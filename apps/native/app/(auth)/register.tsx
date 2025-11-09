@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -8,38 +8,60 @@ import {
   Text,
   TouchableOpacity,
 } from "react-native";
+
 import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
+import { registerSchema, RegisterValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,
-  AuthInput,
   AuthOrDivider,
   GoogleSignInButton,
   AuthFooter,
 } from "@repo/ui";
+
+import AuthFormFields, {
+  type FieldConfig,
+} from "@src/components/AuthFormFields";
 import { baseColors } from "@src/theme/colors";
 
-const RegistrationScreen: React.FC = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+const defaultFormData: RegisterValues = {
+  name: "",
+  email: "",
+  password: "",
+};
 
+const registerFields: FieldConfig<RegisterValues>[] = [
+  {
+    name: "name",
+    label: "Full Name",
+    icon: "user",
+    placeholder: "John Doe",
+    autoCapitalize: "words",
+  },
+  {
+    name: "email",
+    label: "Email",
+    icon: "mail",
+    placeholder: "you@example.com",
+    keyboardType: "email-address",
+  },
+  {
+    name: "password",
+    label: "Password",
+    icon: "lock",
+    placeholder: "••••••••",
+    secureTextEntry: true,
+  },
+];
+
+const RegistrationScreen: React.FC = () => {
   const router = useRouter();
 
-  const imageLinearGradient = (
-    <LinearGradient
-      colors={["transparent", "rgba(30, 27, 75, 0.8)"]}
-      style={styles.imageOverlay}
-    />
-  );
-
-  const handleSubmit = () => {
-    console.log("Registration data:", formData);
+  const handleSignUp = (data: RegisterValues) => {
+    console.log("Registration data:", data);
     // Handle registration logic here
     // Example: call API endpoint
   };
@@ -88,7 +110,12 @@ const RegistrationScreen: React.FC = () => {
 
             <AuthImageHeader
               image={require("@assets/images/saturn.png")}
-              overlay={imageLinearGradient}
+              overlay={
+                <LinearGradient
+                  colors={["transparent", "rgba(30, 27, 75, 0.8)"]}
+                  style={styles.imageOverlay}
+                />
+              }
             />
 
             <View style={styles.formWrapper}>
@@ -98,53 +125,30 @@ const RegistrationScreen: React.FC = () => {
               />
 
               <View style={styles.formContainer}>
-                <AuthInput
-                  label="Full Name"
-                  icon="user"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChangeText={(text: string) =>
-                    setFormData({ ...formData, name: text })
-                  }
+                <AuthFormFields
+                  schema={registerSchema}
+                  defaultValues={defaultFormData}
+                  fields={registerFields}
+                  onSubmit={handleSignUp}
+                  renderSubmit={(submit) => (
+                    <TouchableOpacity
+                      style={styles.submitButton}
+                      onPress={submit}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={["#9333ea", "#4f46e5"]}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Text style={styles.submitButtonText}>
+                          Create Account
+                        </Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
                 />
-
-                <AuthInput
-                  label="Email"
-                  icon="mail"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChangeText={(text: string) =>
-                    setFormData({ ...formData, email: text })
-                  }
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-
-                <AuthInput
-                  label="Password"
-                  icon="lock"
-                  placeholder="••••••••"
-                  value={formData.password}
-                  onChangeText={(text: string) =>
-                    setFormData({ ...formData, password: text })
-                  }
-                  secureTextEntry
-                />
-
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={handleSubmit}
-                  activeOpacity={0.8}
-                >
-                  <LinearGradient
-                    colors={["#9333ea", "#4f46e5"]}
-                    style={styles.buttonGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                  >
-                    <Text style={styles.submitButtonText}>Create Account</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
 
                 <AuthOrDivider />
 
