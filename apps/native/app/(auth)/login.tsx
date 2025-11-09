@@ -125,7 +125,6 @@ const SignInScreen = () => {
                     onBlur={field.onBlur}
                     error={errors.email?.message}
                     keyboardType="email-address"
-                    autoCapitalize="none"
                   />
                 )}
               />

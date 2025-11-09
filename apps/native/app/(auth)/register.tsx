@@ -124,6 +124,7 @@ const RegistrationScreen: React.FC = () => {
                       onChangeText={field.onChange}
                       onBlur={field.onBlur}
                       error={errors.name?.message}
+                      autoCapitalize="words"
                     />
                   )}
                 />
@@ -141,7 +142,6 @@ const RegistrationScreen: React.FC = () => {
                       onBlur={field.onBlur}
                       error={errors.email?.message}
                       keyboardType="email-address"
-                      autoCapitalize="none"
                     />
                   )}
                 />
