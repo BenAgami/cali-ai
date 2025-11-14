@@ -5,7 +5,7 @@
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
-      "dependsOn": ["^build", "^db:generate"],
+      "dependsOn": ["lint", "^build", "^db:generate"],
       "env": ["DATABASE_URL"]
     },
     "dev": {

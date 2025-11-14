@@ -4,16 +4,21 @@
   "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "dev": "tsup --watch",
     "build": "tsup",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "lint": "eslint ."
   },
   "dependencies": {
     "react": "^19.2.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@repo/typescript-config": "*"
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
   }
 }
