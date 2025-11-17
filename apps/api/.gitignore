@@ -1,0 +1,16 @@
+# API build output
+dist
+build
+
+# Prisma generated files
+/prisma/generated
+prisma/dev.db
+
+# Node/npm specific
+*.log
+
+# IDE / Editor
+.vscode
+.idea
+*.swp
+*.swo
