@@ -22,9 +22,9 @@ export const createApp = (): Application => {
 
   app.use("/api", routes);
 
-  app.use("*", (_: Request, res: Response) => {
+  app.use((req: Request, res: Response) => {
     res.status(StatusCodes.NOT_FOUND).json({
-      message: "Route not found",
+      message: `Route not found: ${req.method} ${req.originalUrl}`,
     });
   });
 
