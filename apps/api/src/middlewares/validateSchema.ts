@@ -17,11 +17,8 @@ const validateSchema = (schema: ZodType) => {
           details: errorMessage,
         });
       }
+      next(error);
     }
-
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      message: "Internal Server Error",
-    });
   };
 };
 
