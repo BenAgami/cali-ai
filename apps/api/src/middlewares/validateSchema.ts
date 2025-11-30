@@ -2,8 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import z, { ZodError, ZodType } from "zod";
 import { StatusCodes } from "http-status-codes";
 
-const validateSchema = (schema: ZodType) => {
-  (req: Request, res: Response, next: NextFunction) => {
+const validateSchema =
+  (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse({ body: req.body, query: req.query, params: req.params });
       next();
@@ -20,6 +20,5 @@ const validateSchema = (schema: ZodType) => {
       next(error);
     }
   };
-};
 
 export default validateSchema;
