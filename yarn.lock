@@ -4250,7 +4250,7 @@ compressible@~2.0.18:
   dependencies:
     mime-db ">= 1.43.0 < 2"
 
-compression@^1.7.4, compression@^1.8.1:
+compression@^1.7.4:
   version "1.8.1"
   resolved "https://registry.npmjs.org/compression/-/compression-1.8.1.tgz"
   integrity sha512-9mAqGPHLakhCLeNyxPkK4xVo746zQ/czLH1Ky+vkitMnWfWZps8r0qXuwhwizagCRttsL4lfG4pIOvaWLpAP0w==

@@ -12,10 +12,11 @@ const validateSchema =
         const errorMessage = error.issues.map((issue: z.core.$ZodIssue) => ({
           message: `${issue.path.join(".")} - ${issue.message}`,
         }));
-        return res.status(StatusCodes.BAD_REQUEST).json({
+        res.status(StatusCodes.BAD_REQUEST).json({
           message: "Validation Error",
           details: errorMessage,
         });
+        return;
       }
       next(error);
     }
