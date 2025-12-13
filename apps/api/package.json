@@ -9,7 +9,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
+    "@prisma/client": "7.1.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -27,6 +27,7 @@
     "@types/express": "^5.0.5",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.10.1",
+    "prisma": "^7.1.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"
   }
