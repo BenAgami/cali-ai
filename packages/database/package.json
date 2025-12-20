@@ -5,9 +5,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsup",
     "postinstall": "prisma generate --schema=./prisma/schema.prisma",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts"
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
