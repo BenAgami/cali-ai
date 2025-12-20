@@ -1,6 +1,7 @@
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  engineType = "client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
@@ -11,7 +12,7 @@ model User {
   id        Int      @id @default(autoincrement())
   uuid      String   @unique @default(uuid(7))
   email     String   @unique
-  username  String   @unique
+  fullName  String   @unique @map("full_name")
   password  String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

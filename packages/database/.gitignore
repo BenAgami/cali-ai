@@ -1,0 +1,7 @@
+# dependencies
+node_modules
+
+# Prisma generated files
+/prisma/generated
+prisma/dev.db
+/src/generated/prisma
