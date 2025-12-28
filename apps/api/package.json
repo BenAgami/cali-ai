@@ -9,8 +9,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.0",
-    "compression": "^1.8.1",
+    "@repo/db": "*",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -18,7 +17,6 @@
     "helmet": "^8.1.0",
     "http-status-codes": "^2.3.0",
     "morgan": "^1.10.1",
-    "prisma": "^6.19.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
