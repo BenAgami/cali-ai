@@ -63,14 +63,6 @@ export const getUserProfile = asyncHandler(
   async (req: Request, res: Response) => {
     const { uuid } = req.params;
 
-    if (!uuid) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid user UUID",
-      });
-      return;
-    }
-
     const user = await userService.getUserByUuid(uuid);
 
     res.status(200).json({

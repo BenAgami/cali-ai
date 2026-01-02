@@ -9,11 +9,39 @@ import NotFoundError from "../errors/NotFoundError";
 
 export class UserService {
   private static readonly BCRYPT_ROUNDS = 10;
+  private static readonly MAX_USERNAME_ATTEMPTS = 10;
 
   private static generateRandomDigits(length: number = 4): string {
     return Math.floor(Math.random() * Math.pow(10, length))
       .toString()
       .padStart(length, "0");
+  }
+
+  private static normalizeEmail(email: string): string {
+    return email.toLowerCase().trim();
+  }
+
+  private async generateUniqueUsername(baseUsername: string): Promise<string> {
+    for (
+      let attempt = 0;
+      attempt < UserService.MAX_USERNAME_ATTEMPTS;
+      attempt++
+    ) {
+      const randomDigits = UserService.generateRandomDigits(4);
+      const username = `${baseUsername}${randomDigits}`;
+
+      const existingUsername = await prisma.user.findUnique({
+        where: { username },
+      });
+
+      if (!existingUsername) {
+        return username;
+      }
+    }
+
+    throw new ConflictError(
+      "Unable to generate a unique username. Please try again."
+    );
   }
 
   /**
@@ -23,50 +51,49 @@ export class UserService {
    */
   async register(data: RegisterValues) {
     const { email, password, name } = data;
+    const normalizedEmail = UserService.normalizeEmail(email);
 
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
       throw new ConflictError("User with this email already exists");
     }
 
-    const baseUsername = email.split("@")[0];
-    const randomDigits = UserService.generateRandomDigits(4);
-    const username = `${baseUsername}${randomDigits}`;
-
-    const existingUsername = await prisma.user.findUnique({
-      where: { username },
-    });
-
-    if (existingUsername) {
-      throw new ConflictError("Username already taken");
-    }
+    const baseUsername = normalizedEmail.split("@")[0];
+    const username = await this.generateUniqueUsername(baseUsername);
 
     const hashedPassword = await bcrypt.hash(
       password,
       UserService.BCRYPT_ROUNDS
     );
 
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        fullName: name,
-        username,
-      },
-      select: {
-        id: true,
-        uuid: true,
-        email: true,
-        fullName: true,
-        username: true,
-        createdAt: true,
-      },
-    });
+    try {
+      const user = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          password: hashedPassword,
+          fullName: name,
+          username,
+        },
+        select: {
+          id: true,
+          uuid: true,
+          email: true,
+          fullName: true,
+          username: true,
+          createdAt: true,
+        },
+      });
 
-    return user;
+      return user;
+    } catch (error: any) {
+      if (error.code === "P2002" && error.meta?.target?.includes("username")) {
+        throw new ConflictError("Username already taken");
+      }
+      throw error;
+    }
   }
 
   /**
@@ -76,9 +103,10 @@ export class UserService {
    */
   async login(data: LoginValues) {
     const { email, password } = data;
+    const normalizedEmail = UserService.normalizeEmail(email);
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (!user) {
@@ -127,8 +155,10 @@ export class UserService {
    * @returns User data without password
    */
   async getUserByEmail(email: string) {
+    const normalizedEmail = UserService.normalizeEmail(email);
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       select: {
         id: true,
         uuid: true,

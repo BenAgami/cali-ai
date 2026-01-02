@@ -32,6 +32,10 @@ router.post(
  * GET /:uuid
  * Get user profile by UUID
  */
-router.get("/:uuid", getUserProfile);
+router.get(
+  "/:uuid",
+  validateSchema(z.object({ params: z.object({ uuid: z.uuidv7() }) })),
+  getUserProfile
+);
 
 export default router;
