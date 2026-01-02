@@ -1,16 +1,11 @@
 import bcrypt from "bcrypt";
+
 import { prisma } from "@repo/db";
 import { RegisterValues, LoginValues } from "@repo/common";
 
-class UserAuthenticationError extends Error {
-  constructor(
-    public statusCode: number,
-    message: string
-  ) {
-    super(message);
-    this.name = "UserAuthenticationError";
-  }
-}
+import ConflictError from "../errors/ConflictError";
+import UnauthorizedError from "../errors/UnauthorizedError";
+import NotFoundError from "../errors/NotFoundError";
 
 export class UserService {
   private static readonly BCRYPT_ROUNDS = 10;
@@ -34,10 +29,7 @@ export class UserService {
     });
 
     if (existingUser) {
-      throw new UserAuthenticationError(
-        409,
-        "User with this email already exists"
-      );
+      throw new ConflictError("User with this email already exists");
     }
 
     const baseUsername = email.split("@")[0];
@@ -49,7 +41,7 @@ export class UserService {
     });
 
     if (existingUsername) {
-      throw new UserAuthenticationError(409, "Username already taken");
+      throw new ConflictError("Username already taken");
     }
 
     const hashedPassword = await bcrypt.hash(
@@ -90,13 +82,13 @@ export class UserService {
     });
 
     if (!user) {
-      throw new UserAuthenticationError(401, "Invalid email or password");
+      throw new UnauthorizedError("Invalid email or password");
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UserAuthenticationError(401, "Invalid email or password");
+      throw new UnauthorizedError("Invalid email or password");
     }
 
     const { password: _, ...userWithoutPassword } = user;
@@ -123,7 +115,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new UserAuthenticationError(404, "User not found");
+      throw new NotFoundError("User not found");
     }
 
     return user;
@@ -149,7 +141,7 @@ export class UserService {
     });
 
     if (!user) {
-      throw new UserAuthenticationError(404, "User not found");
+      throw new NotFoundError("User not found");
     }
 
     return user;
