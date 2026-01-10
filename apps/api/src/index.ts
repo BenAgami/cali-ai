@@ -1,5 +1,5 @@
 import "dotenv/config";
-
+import { connectPrisma } from "@repo/db";
 import { createApp } from "./app";
 
 const initializeExpress = (): void => {
@@ -12,6 +12,7 @@ const initializeExpress = (): void => {
 
 const startServer = async (): Promise<void> => {
   try {
+    await connectPrisma(process.env.DATABASE_URL!);
     initializeExpress();
   } catch (error) {
     console.error("Failed to start server:", error);
