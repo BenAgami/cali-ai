@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "clean": "rm -rf dist"
   },
   "dependencies": {
     "@repo/common": "*",
@@ -28,8 +29,6 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.5",
     "@types/morgan": "^1.9.10",
-    "@types/node": "^24.10.1",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "@types/node": "^24.10.1"
   }
 }
