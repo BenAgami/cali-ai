@@ -10,7 +10,7 @@ datasource db {
 
 model User {
   id        Int      @id @default(autoincrement())
-  uuid      String   @unique @default(uuid(7)) @db.Uuid
+  uuid      String   @unique @default(dbgenerated("uuidv7()")) @db.Uuid
   email     String   @unique
   fullName  String   @map("full_name")
   username  String   @unique
