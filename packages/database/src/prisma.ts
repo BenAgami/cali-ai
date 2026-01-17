@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { PrismaClient } from "./generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
@@ -8,7 +7,10 @@ const globalForPrisma = global as unknown as {
 
 export let prisma!: PrismaClient;
 
-export async function connectPrisma(connectionString: string) {
+export async function connectPrisma(
+  connectionString: string,
+  isProduction: boolean = false
+) {
   if (globalForPrisma.prisma) {
     prisma = globalForPrisma.prisma;
     return;
@@ -20,7 +22,7 @@ export async function connectPrisma(connectionString: string) {
   await client.$connect();
 
   prisma = client;
-  if (process.env.NODE_ENV !== "production") {
+  if (!isProduction) {
     globalForPrisma.prisma = client;
   }
 }
@@ -37,6 +39,3 @@ export async function disconnectPrisma() {
     console.log("Prisma disconnected");
   }
 }
-
-process.on("SIGINT", () => disconnectPrisma());
-process.on("SIGTERM", () => disconnectPrisma());
