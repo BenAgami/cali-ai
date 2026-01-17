@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import z, { ZodError, ZodType } from "zod";
+import { ZodError, ZodType } from "zod";
 import { StatusCodes } from "http-status-codes";
+
+import { getZodErrorMessage } from "../utils/zodErrorMessage";
 
 const validateSchema =
   (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
@@ -9,9 +11,7 @@ const validateSchema =
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const errorMessage = error.issues.map((issue: z.core.$ZodIssue) => ({
-          message: `${issue.path.join(".")} - ${issue.message}`,
-        }));
+        const errorMessage = getZodErrorMessage(error);
         res.status(StatusCodes.BAD_REQUEST).json({
           message: "Validation Error",
           details: errorMessage,
