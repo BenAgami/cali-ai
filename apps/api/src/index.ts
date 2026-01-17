@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 import { env } from "./config/env";
 import { createApp } from "./app";
 
