@@ -1,9 +1,8 @@
-import "dotenv/config";
-
+import { env } from "./config/env";
 import { createApp } from "./app";
 
 const initializeExpress = (): void => {
-  const PORT = process.env.PORT || 3000;
+  const PORT = env.port;
   const app = createApp();
   app.listen(PORT, () => {
     console.log(`Server running on port: ${PORT}`);
