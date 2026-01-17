@@ -1,3 +1,5 @@
+import { connectPrisma, disconnectPrisma } from "@repo/db";
+
 import { env } from "./config/env";
 import { createApp } from "./app";
 
@@ -9,8 +11,16 @@ const initializeExpress = (): void => {
   });
 };
 
+const shutdown = async () => {
+  await disconnectPrisma();
+};
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
 const startServer = async (): Promise<void> => {
   try {
+    await connectPrisma(env.databaseUrl, env.runtimeEnv === "production");
     initializeExpress();
   } catch (error) {
     console.error("Failed to start server:", error);

@@ -5,17 +5,18 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "tsup --watch",
     "build": "tsup",
-    "postinstall": "prisma generate --schema=./prisma/schema.prisma",
+    "clean": "rm -rf dist",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.2.0",
-    "@prisma/client": "^7.2.0"
+    "@prisma/client": "^7.2.0",
+    "dotenv": "^17.2.3"
   },
   "devDependencies": {
-    "prisma": "^7.2.0",
-    "typescript": "^5.9.3"
+    "prisma": "^7.2.0"
   }
 }
