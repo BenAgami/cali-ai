@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 
-import { prisma } from "@repo/db";
+import { getPrismaClient } from "@repo/db";
 import { RegisterValues, LoginValues } from "@repo/common";
 
 import ConflictError from "../errors/ConflictError";
@@ -10,6 +10,9 @@ import NotFoundError from "../errors/NotFoundError";
 export class UserService {
   private static readonly BCRYPT_ROUNDS = 10;
   private static readonly MAX_USERNAME_ATTEMPTS = 10;
+  private get prisma() {
+    return getPrismaClient();
+  }
 
   private static generateRandomDigits(length: number = 4): string {
     return Math.floor(Math.random() * Math.pow(10, length))
@@ -30,7 +33,7 @@ export class UserService {
       const randomDigits = UserService.generateRandomDigits(4);
       const username = `${baseUsername}${randomDigits}`;
 
-      const existingUsername = await prisma.user.findUnique({
+      const existingUsername = await this.prisma.user.findUnique({
         where: { username },
       });
 
@@ -53,7 +56,7 @@ export class UserService {
     const { email, password, name } = data;
     const normalizedEmail = UserService.normalizeEmail(email);
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
@@ -70,7 +73,7 @@ export class UserService {
     );
 
     try {
-      const user = await prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           email: normalizedEmail,
           password: hashedPassword,
@@ -105,7 +108,7 @@ export class UserService {
     const { email, password } = data;
     const normalizedEmail = UserService.normalizeEmail(email);
 
-    const user = await prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
     });
 
@@ -129,7 +132,7 @@ export class UserService {
    * @returns User data without password
    */
   async getUserByUuid(uuid: string) {
-    const user = await prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { uuid },
       select: {
         id: true,
@@ -157,7 +160,7 @@ export class UserService {
   async getUserByEmail(email: string) {
     const normalizedEmail = UserService.normalizeEmail(email);
 
-    const user = await prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { email: normalizedEmail },
       select: {
         id: true,

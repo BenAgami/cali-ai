@@ -14,9 +14,9 @@
       "persistent": true
     },
     "test": {
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "dependsOn": ["^test"],
-      "cache": false
+      "dependsOn": ["^build"],
+      "cache": true,
+      "env": ["DATABASE_URL"]
     },
     "lint": {
       "dependsOn": ["^lint"]
