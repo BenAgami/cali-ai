@@ -2,7 +2,7 @@ import request from "supertest";
 import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { createApp } from "../src/app";
+import { createApp } from "../../src/app";
 
 describe("Health Check API", () => {
   let app: Application;
