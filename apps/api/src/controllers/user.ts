@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
 
 import { RegisterValues, LoginValues } from "@repo/common";
 
@@ -22,12 +23,12 @@ export const registerUser = asyncHandler(
       password,
     });
 
-    res.status(201).json({
+    res.status(StatusCodes.CREATED).json({
       success: true,
       message: "User registered successfully",
       data: newUser,
     });
-  }
+  },
 );
 
 /**
@@ -45,7 +46,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
     password,
   });
 
-  res.status(200).json({
+  res.status(StatusCodes.OK).json({
     success: true,
     message: "User logged in successfully",
     data: user,
@@ -65,10 +66,10 @@ export const getUserProfile = asyncHandler(
 
     const user = await userService.getUserByUuid(uuid);
 
-    res.status(200).json({
+    res.status(StatusCodes.OK).json({
       success: true,
       message: "User profile retrieved successfully",
       data: user,
     });
-  }
+  },
 );
