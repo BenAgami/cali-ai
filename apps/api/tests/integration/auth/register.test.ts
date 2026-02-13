@@ -3,7 +3,10 @@ import { StatusCodes } from "http-status-codes";
 
 import { getPrismaClient, connectPrisma } from "@repo/db";
 
-import { RegisterUserDto, UserBuilder } from "../builders/userBuilder";
+import {
+  RegisterUserDto,
+  RegisterUserBuilder,
+} from "../builders/registerUserBuilder";
 import { registerUser } from "../helpers/requestSender/authRequests";
 
 import { createApp } from "../../../src/app";
@@ -24,7 +27,7 @@ describe("POST /api/users/register", () => {
   });
 
   it("should register a new user successfully", async () => {
-    const user: RegisterUserDto = new UserBuilder().build();
+    const user: RegisterUserDto = new RegisterUserBuilder().build();
 
     const response = await registerUser(app, user);
 
@@ -34,7 +37,9 @@ describe("POST /api/users/register", () => {
   });
 
   it("should return 400 for missing email", async () => {
-    const user: RegisterUserDto = new UserBuilder().setEmail(undefined).build();
+    const user: RegisterUserDto = new RegisterUserBuilder()
+      .setEmail(undefined)
+      .build();
 
     const response = await registerUser(app, user);
 
@@ -45,7 +50,7 @@ describe("POST /api/users/register", () => {
   });
 
   it("should return 400 for invalid email format", async () => {
-    const user: RegisterUserDto = new UserBuilder()
+    const user: RegisterUserDto = new RegisterUserBuilder()
       .setEmail("invalid-email")
       .build();
 
@@ -58,7 +63,9 @@ describe("POST /api/users/register", () => {
   });
 
   it("should return 400 for weak password", async () => {
-    const user: RegisterUserDto = new UserBuilder().setPassword("123").build();
+    const user: RegisterUserDto = new RegisterUserBuilder()
+      .setPassword("123")
+      .build();
 
     const response = await registerUser(app, user);
 
@@ -71,7 +78,9 @@ describe("POST /api/users/register", () => {
   it("should return 409 for duplicate email", async () => {
     const email = "duplicate@example.com";
 
-    const user: RegisterUserDto = new UserBuilder().setEmail(email).build();
+    const user: RegisterUserDto = new RegisterUserBuilder()
+      .setEmail(email)
+      .build();
 
     await registerUser(app, user);
 
@@ -82,7 +91,7 @@ describe("POST /api/users/register", () => {
   });
 
   it("should return 400 for missing password", async () => {
-    const user: RegisterUserDto = new UserBuilder()
+    const user: RegisterUserDto = new RegisterUserBuilder()
       .setPassword(undefined)
       .build();
 
@@ -95,7 +104,9 @@ describe("POST /api/users/register", () => {
   });
 
   it("should return 400 for missing name", async () => {
-    const user: RegisterUserDto = new UserBuilder().setName(undefined).build();
+    const user: RegisterUserDto = new RegisterUserBuilder()
+      .setName(undefined)
+      .build();
 
     const response = await registerUser(app, user);
 

@@ -6,7 +6,7 @@ export interface RegisterUserDto {
   name?: string;
 }
 
-export class UserBuilder {
+export class RegisterUserBuilder {
   private user: RegisterUserDto;
 
   constructor() {
@@ -17,17 +17,17 @@ export class UserBuilder {
     };
   }
 
-  setEmail(email?: string): UserBuilder {
+  setEmail(email?: string): RegisterUserBuilder {
     this.user.email = email;
     return this;
   }
 
-  setPassword(password?: string): UserBuilder {
+  setPassword(password?: string): RegisterUserBuilder {
     this.user.password = password;
     return this;
   }
 
-  setName(name?: string): UserBuilder {
+  setName(name?: string): RegisterUserBuilder {
     this.user.name = name;
     return this;
   }
