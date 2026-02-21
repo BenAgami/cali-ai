@@ -1,8 +1,5 @@
 import { defineConfig, env } from "prisma/config";
-import { config } from "dotenv";
-
-const nodeEnv = process.env.NODE_ENV || "test";
-config({ path: `.env.${nodeEnv}` });
+import "dotenv/config";
 
 type Env = {
   DATABASE_URL: string;
