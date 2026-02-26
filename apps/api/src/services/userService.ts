@@ -125,7 +125,7 @@ export class UserService {
       throw new UnauthorizedError("Invalid email or password");
     }
 
-    const token = generateJwtToken({ uuid: user.uuid, role: "user" });
+    const token = generateJwtToken({ uuid: user.uuid, role: user.role });
 
     const { password: _, ...userWithoutPassword } = user;
 

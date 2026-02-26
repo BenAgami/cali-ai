@@ -1,7 +1,8 @@
 import { JwtPayload } from "jsonwebtoken";
+import { Role } from "@repo/db";
 
 interface MyJwtPayload extends JwtPayload {
-  role: "admin" | "user";
+  role: Role;
 }
 
 export default MyJwtPayload;

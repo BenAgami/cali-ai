@@ -1,7 +1,7 @@
 import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { connectPrisma, getPrismaClient } from "@repo/db";
+import { connectPrisma, getPrismaClient, Role } from "@repo/db";
 
 import {
   RegisterUserDto,
@@ -39,7 +39,7 @@ describe("POST /api/users/login", () => {
     const response = await loginUser(app, loginUserDto);
 
     expect(response.status).toBe(StatusCodes.OK);
-    expect(response.body.data).toHaveProperty("user");
+    expect(response.body.data).toHaveProperty(Role.USER);
     expect(response.body.data).toHaveProperty("token");
   });
 
