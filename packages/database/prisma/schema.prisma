@@ -7,6 +7,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id        Int      @id @default(autoincrement())
   uuid      String   @unique @default(dbgenerated("uuidv7()")) @db.Uuid
@@ -16,6 +21,7 @@ model User {
   password  String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  role      Role     @default(USER)
 
   @@map("users")
 }
