@@ -39,8 +39,8 @@ describe("POST /api/users/login", () => {
     const response = await loginUser(app, loginUserDto);
 
     expect(response.status).toBe(StatusCodes.OK);
-    // I need to add access token on login
-    // expect(response.body).toHaveProperty("accessToken");
+    expect(response.body.data).toHaveProperty("user");
+    expect(response.body.data).toHaveProperty("token");
   });
 
   it("should return 401 for wrong password", async () => {
