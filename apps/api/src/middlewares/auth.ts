@@ -8,11 +8,14 @@ import MyJwtPayload from "../types/myJwtPayload";
 import { env } from "../config/env";
 
 const authenticateToken = (req: Request, _: Response, next: NextFunction) => {
-  const token = req.header("Authorization")?.split(" ")[1];
+  const authHeader = req.header("Authorization");
 
-  if (!token) {
-    return next(new UnauthorizedError("Authorization header missing"));
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return next(
+      new UnauthorizedError("Authorization header missing or malformed"),
+    );
   }
+  const token = authHeader.split(" ")[1];
 
   try {
     jwt.verify(token, env.jwt.secret, (err, user) => {

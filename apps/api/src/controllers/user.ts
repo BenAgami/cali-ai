@@ -73,3 +73,29 @@ export const getUserProfile = asyncHandler(
     });
   },
 );
+
+/**
+ * Get current authenticated user's profile
+ * @route GET /api/users/me
+ * @param {Request} req - Express request object with authenticated user info
+ * @param {Response} res - Express response object
+ * @returns {Object} User data
+ */
+export const getMyUser = asyncHandler(async (req: Request, res: Response) => {
+  const uuid = req.user?.uuid;
+
+  if (!uuid) {
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      success: false,
+      message: "Unauthorized access - user UUID is missing",
+    });
+  }
+
+  const user = await userService.getUserByUuid(uuid);
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "My user profile retrieved successfully",
+    data: user,
+  });
+});
