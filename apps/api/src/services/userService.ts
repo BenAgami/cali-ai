@@ -7,6 +7,8 @@ import ConflictError from "../errors/ConflictError";
 import UnauthorizedError from "../errors/UnauthorizedError";
 import NotFoundError from "../errors/NotFoundError";
 
+import generateJwtToken from "../utils/generateJwtToken";
+
 export class UserService {
   private static readonly BCRYPT_ROUNDS = 10;
   private static readonly MAX_USERNAME_ATTEMPTS = 10;
@@ -43,7 +45,7 @@ export class UserService {
     }
 
     throw new ConflictError(
-      "Unable to generate a unique username. Please try again."
+      "Unable to generate a unique username. Please try again.",
     );
   }
 
@@ -69,7 +71,7 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(
       password,
-      UserService.BCRYPT_ROUNDS
+      UserService.BCRYPT_ROUNDS,
     );
 
     try {
@@ -122,8 +124,14 @@ export class UserService {
       throw new UnauthorizedError("Invalid email or password");
     }
 
+    const token = generateJwtToken({ id: user.uuid, role: "user" });
+
     const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+
+    return {
+      user: userWithoutPassword,
+      token,
+    };
   }
 
   /**
