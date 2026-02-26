@@ -1,15 +1,15 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env";
 
-interface JwtPayload {
-  id: string;
-  role: string;
+interface SignedPayload {
+  uuid: string;
+  role: "admin" | "user";
 }
 
-const generateJwtToken = (user: JwtPayload) => {
+const generateJwtToken = (user: SignedPayload) => {
   return jwt.sign(
     {
-      sub: user.id,
+      sub: user.uuid,
       role: user.role,
     },
     env.jwt.secret,
