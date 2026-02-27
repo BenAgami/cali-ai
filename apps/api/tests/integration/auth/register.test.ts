@@ -32,8 +32,12 @@ describe("POST /api/users/register", () => {
     const response = await registerUser(app, user);
 
     expect(response.status).toBe(StatusCodes.CREATED);
-    expect(response.body.data).toHaveProperty("id");
-    expect(response.body.data.email).toBe(user.email);
+    expect(response.body.data).toHaveProperty("user");
+    expect(response.body.data).toHaveProperty("token");
+    expect(response.body.data.user).toHaveProperty("id");
+    expect(response.body.data.user.email).toBe(user.email);
+    expect(response.body.data.user).not.toHaveProperty("password");
+    expect(response.body.data.user).not.toHaveProperty("passwordHash");
   });
 
   it("should return 400 for missing email", async () => {

@@ -17,7 +17,7 @@ export const registerUser = asyncHandler(
   async (req: Request, res: Response) => {
     const { name, email, password }: RegisterValues = req.body;
 
-    const newUser = await userService.register({
+    const { user, token } = await userService.register({
       name,
       email,
       password,
@@ -26,7 +26,7 @@ export const registerUser = asyncHandler(
     res.status(StatusCodes.CREATED).json({
       success: true,
       message: "User registered successfully",
-      data: newUser,
+      data: { user, token },
     });
   },
 );
@@ -41,7 +41,7 @@ export const registerUser = asyncHandler(
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password }: LoginValues = req.body;
 
-  const user = await userService.login({
+  const { user, token } = await userService.login({
     email,
     password,
   });
@@ -49,7 +49,7 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   res.status(StatusCodes.OK).json({
     success: true,
     message: "User logged in successfully",
-    data: user,
+    data: { user, token },
   });
 });
 

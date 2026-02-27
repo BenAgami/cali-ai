@@ -52,7 +52,7 @@ export class UserService {
   /**
    * Register a new user
    * @param data - Registration data (name, email, password)
-   * @returns Created user without password
+   * @returns Created user without password and JWT token
    */
   async register(data: RegisterValues) {
     const { email, password, name } = data;
@@ -93,7 +93,12 @@ export class UserService {
         },
       });
 
-      return user;
+      const token = generateJwtToken({
+        uuid: user.uuid,
+        role: user.role,
+      });
+
+      return { user, token };
     } catch (error: any) {
       if (error.code === "P2002" && error.meta?.target?.includes("username")) {
         throw new ConflictError("Username already taken");
@@ -105,7 +110,7 @@ export class UserService {
   /**
    * Login user
    * @param data - Login credentials (email, password)
-   * @returns User data without password
+   * @returns User data without password and JWT token
    */
   async login(data: LoginValues) {
     const { email, password } = data;

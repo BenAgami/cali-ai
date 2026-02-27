@@ -34,7 +34,7 @@ describe("GET /api/users/:uuid", () => {
 
     expect(registerResponse.status).toBe(StatusCodes.CREATED);
 
-    const createdUser = registerResponse.body.data;
+    const createdUser = registerResponse.body.data.user;
 
     const response = await getUserByUuid(app, createdUser.uuid);
 

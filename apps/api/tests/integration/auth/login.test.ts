@@ -39,8 +39,10 @@ describe("POST /api/users/login", () => {
     const response = await loginUser(app, loginUserDto);
 
     expect(response.status).toBe(StatusCodes.OK);
-    expect(response.body.data).toHaveProperty(Role.USER);
+    expect(response.body.data).toHaveProperty("user");
     expect(response.body.data).toHaveProperty("token");
+    expect(response.body.data.user).not.toHaveProperty("password");
+    expect(response.body.data.user).not.toHaveProperty("passwordHash");
   });
 
   it("should return 401 for wrong password", async () => {
