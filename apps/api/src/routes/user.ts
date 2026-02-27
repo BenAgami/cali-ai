@@ -36,6 +36,12 @@ router.post(
 );
 
 /**
+ * GET /me
+ * Get current authenticated user's profile
+ */
+router.get("/me", authenticateToken, getMyUser);
+
+/**
  * GET /:uuid
  * Get user profile by UUID
  */
@@ -44,11 +50,5 @@ router.get(
   validateSchema(z.object({ params: z.object({ uuid: z.uuidv7() }) })),
   getUserProfile,
 );
-
-/**
- * GET /me
- * Get current authenticated user's profile
- */
-router.get("/me", authenticateToken, getMyUser);
 
 export default router;

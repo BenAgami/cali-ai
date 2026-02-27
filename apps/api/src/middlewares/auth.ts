@@ -20,7 +20,7 @@ const authenticateToken = (req: Request, _: Response, next: NextFunction) => {
   try {
     jwt.verify(token, env.jwt.secret, (err, user) => {
       if (err instanceof JsonWebTokenError) {
-        return next(new ForbiddenError("Invalid token:" + err.message));
+        return next(new ForbiddenError("Invalid token: " + err.message));
       }
       req.user = user as MyJwtPayload;
       next();

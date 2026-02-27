@@ -9,5 +9,7 @@ export const getUserByUuid = async (
 };
 
 export const getMyUser = async (app: Application, token: string) => {
-  return supertest(app).get(`/api/me`).set("Authorization", `Bearer ${token}`);
+  return supertest(app)
+    .get(`/api/users/me`)
+    .set("Authorization", `Bearer ${token}`);
 };

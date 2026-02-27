@@ -82,7 +82,7 @@ export const getUserProfile = asyncHandler(
  * @returns {Object} User data
  */
 export const getMyUser = asyncHandler(async (req: Request, res: Response) => {
-  const uuid = req.user?.uuid;
+  const uuid = req.user?.sub;
 
   if (!uuid) {
     return res.status(StatusCodes.UNAUTHORIZED).json({
