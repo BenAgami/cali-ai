@@ -4,7 +4,7 @@ import z from "zod";
 import { loginSchema, registerSchema } from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
-import authenticateToken from "../middlewares/auth";
+import authenticateToken from "../middlewares/authentication";
 
 import {
   registerUser,

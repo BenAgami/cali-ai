@@ -9,7 +9,7 @@
       "env": ["DATABASE_URL"]
     },
     "dev": {
-      "dependsOn": ["^db:generate"],
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
