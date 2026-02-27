@@ -1,4 +1,4 @@
-import { PrismaClient } from "./generated/prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = global as unknown as {
@@ -7,10 +7,10 @@ const globalForPrisma = global as unknown as {
 
 export let prisma!: PrismaClient;
 
-export async function connectPrisma(
+export const connectPrisma = async (
   connectionString: string,
-  isProduction: boolean = false
-) {
+  isProduction: boolean = false,
+) => {
   if (globalForPrisma.prisma) {
     prisma = globalForPrisma.prisma;
     return;
@@ -25,9 +25,9 @@ export async function connectPrisma(
   if (!isProduction) {
     globalForPrisma.prisma = client;
   }
-}
+};
 
-export async function disconnectPrisma() {
+export const disconnectPrisma = async () => {
   if (globalForPrisma.prisma) {
     await globalForPrisma.prisma.$disconnect();
     delete globalForPrisma.prisma;
@@ -38,4 +38,11 @@ export async function disconnectPrisma() {
     // eslint-disable-next-line no-console
     console.log("Prisma disconnected");
   }
-}
+};
+
+export const getPrismaClient = () => {
+  if (!prisma) {
+    throw new Error("Prisma client not initialized. Call connectPrisma first.");
+  }
+  return prisma;
+};

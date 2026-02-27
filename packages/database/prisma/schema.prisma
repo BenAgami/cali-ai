@@ -1,11 +1,15 @@
 generator client {
   provider = "prisma-client"
-  engineType = "client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model User {
@@ -17,6 +21,7 @@ model User {
   password  String
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  role      Role     @default(USER)
 
   @@map("users")
 }

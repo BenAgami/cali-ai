@@ -15,6 +15,27 @@
       "outFiles": ["${workspaceFolder}/**/*.js"],
       "cwd": "${workspaceFolder}/apps/api",
       "sourceMaps": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Vitest Tests",
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"],
+      "program": "${workspaceFolder}/node_modules/vitest/vitest.mjs",
+      "console": "integratedTerminal",
+      "args": [
+        "run",
+        // Change file by your needs
+        "tests/integration/health.test.ts",
+        "--no-file-parallelism",
+        "--config",
+        "vitest.config.ts"
+      ],
+      "cwd": "${workspaceFolder}/apps/api",
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "test"
+      }
     }
   ]
 }

@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
 
 import { RegisterValues, LoginValues } from "@repo/common";
 
@@ -16,18 +17,18 @@ export const registerUser = asyncHandler(
   async (req: Request, res: Response) => {
     const { name, email, password }: RegisterValues = req.body;
 
-    const newUser = await userService.register({
+    const { user, token } = await userService.register({
       name,
       email,
       password,
     });
 
-    res.status(201).json({
+    res.status(StatusCodes.CREATED).json({
       success: true,
       message: "User registered successfully",
-      data: newUser,
+      data: { user, token },
     });
-  }
+  },
 );
 
 /**
@@ -40,15 +41,15 @@ export const registerUser = asyncHandler(
 export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   const { email, password }: LoginValues = req.body;
 
-  const user = await userService.login({
+  const { user, token } = await userService.login({
     email,
     password,
   });
 
-  res.status(200).json({
+  res.status(StatusCodes.OK).json({
     success: true,
     message: "User logged in successfully",
-    data: user,
+    data: { user, token },
   });
 });
 
@@ -65,10 +66,36 @@ export const getUserProfile = asyncHandler(
 
     const user = await userService.getUserByUuid(uuid);
 
-    res.status(200).json({
+    res.status(StatusCodes.OK).json({
       success: true,
       message: "User profile retrieved successfully",
       data: user,
     });
-  }
+  },
 );
+
+/**
+ * Get current authenticated user's profile
+ * @route GET /api/users/me
+ * @param {Request} req - Express request object with authenticated user info
+ * @param {Response} res - Express response object
+ * @returns {Object} User data
+ */
+export const getMyUser = asyncHandler(async (req: Request, res: Response) => {
+  const uuid = req.user?.sub;
+
+  if (!uuid) {
+    return res.status(StatusCodes.UNAUTHORIZED).json({
+      success: false,
+      message: "Unauthorized access - user UUID is missing",
+    });
+  }
+
+  const user = await userService.getUserByUuid(uuid);
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "My user profile retrieved successfully",
+    data: user,
+  });
+});

@@ -4,7 +4,14 @@ import z from "zod";
 import { loginSchema, registerSchema } from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
-import { registerUser, loginUser, getUserProfile } from "../controllers/user";
+import authenticateToken from "../middlewares/authentication";
+
+import {
+  registerUser,
+  loginUser,
+  getUserProfile,
+  getMyUser,
+} from "../controllers/user";
 
 const router: Router = Router();
 
@@ -15,7 +22,7 @@ const router: Router = Router();
 router.post(
   "/register",
   validateSchema(z.object({ body: registerSchema })),
-  registerUser
+  registerUser,
 );
 
 /**
@@ -25,8 +32,14 @@ router.post(
 router.post(
   "/login",
   validateSchema(z.object({ body: loginSchema })),
-  loginUser
+  loginUser,
 );
+
+/**
+ * GET /me
+ * Get current authenticated user's profile
+ */
+router.get("/me", authenticateToken, getMyUser);
 
 /**
  * GET /:uuid
@@ -35,7 +48,7 @@ router.post(
 router.get(
   "/:uuid",
   validateSchema(z.object({ params: z.object({ uuid: z.uuidv7() }) })),
-  getUserProfile
+  getUserProfile,
 );
 
 export default router;
