@@ -4,13 +4,12 @@
 
 # 1. High-Level Overview
 
-CaliAI follows a microservice-oriented architecture with a clear separation between:
+CaliAI follows a Hybrid Monorepo + Microservice architecture with a clear separation between:
 
 - Mobile Client
 - Backend API
 - AI Processing Service
 - Database
-- Object Storage
 
 ---
 
@@ -83,6 +82,24 @@ Stores:
 - Only structured feedback data is persisted
 - This reduces storage cost and privacy concerns
 
+### Future enhancement – object storage
+
+For scalability and resilience, a later iteration may offload the temporary blobs to an
+object store such as Amazon S3 (or GCP/Azure equivalent). Benefits include:
+
+- avoids filling local disk on API nodes
+- enables stateless, horizontally scaled backend instances
+- durable storage in case of crashes or retries
+- works with serverless deployments
+
+Implementation could use either:
+
+1. backend uploads/transcodes directly to S3 and passes the key to the AI service, or
+2. client performs a pre‑signed upload and backend/AI service pulls from S3.
+
+Objects would still be deleted immediately after processing or via a short
+automated lifecycle rule.
+
 ---
 
 # 3. Request Flow – Video Analysis
@@ -90,15 +107,18 @@ Stores:
 1. User records exercise video
 2. Mobile uploads video to Backend API
 3. Backend:
-   - Stores video
-   - Creates workout session record
-   - Sends video reference to AI Service
+   - **Temporarily stores video** in local storage while it normalizes/transcodes it.
+     The file is not kept long‑term – it exists only for the duration of processing and is
+     deleted once the AI service has finished.
+   - Creates workout session record (metadata only)
+   - Sends video reference or the normalized copy to AI Service
 4. AI Service:
    - Analyzes video
    - Generates feedback
    - Returns structured result
 5. Backend:
-   - Stores analysis result
+   - Stores analysis result (JSON/metrics) in the database
+   - Deletes the temporary video file
    - Returns feedback to user
 
 ---

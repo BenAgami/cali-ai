@@ -63,7 +63,7 @@ After analysis, the user receives:
 User can:
 
 - Select exercise
-- Upload video
+- Upload video for analysis
 - Add notes
 
 ## 3.2 Session History
