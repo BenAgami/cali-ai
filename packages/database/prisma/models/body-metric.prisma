@@ -4,8 +4,8 @@ model BodyMetric {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId Int  @map("user_id")
 
-  heightCm Float? @map("height_cm")
-  weightKg Float?  @map("weight_kg")
+  heightCm Float @map("height_cm")
+  weightKg Float  @map("weight_kg")
 
   createdAt DateTime @default(now()) @map("created_at")
 
