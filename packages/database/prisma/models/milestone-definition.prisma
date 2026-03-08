@@ -1,0 +1,14 @@
+model MilestoneDefinition {
+  id Int @id @default(autoincrement())
+
+  code        String  @unique @db.VarChar(60)
+  name        String  @db.VarChar(120)
+  description String
+  isActive    Boolean @default(true) @map("is_active")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userMilestones UserMilestone[]
+
+  @@map("milestone_definitions")
+}

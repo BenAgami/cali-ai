@@ -154,7 +154,7 @@ Indexes:
 
 - unique on `email`, `username`, `uuid`.
 
-### 4.2 `user_goals` \*
+### 4.2 `user_goals`
 
 Purpose: user profile goals and objective tracking.
 
@@ -184,7 +184,7 @@ Fields:
 
 - `id` INT PK.
 - `user_id` INT FK -> `users(id)` ON DELETE CASCADE.
-- `height_cm` REAL NULL.
+- `height_cm` REAL NOT NULL.
 - `weight_kg` REAL NOT NULL.
 - `created_at` TIMESTAMPTZ DEFAULT `now()`.
 

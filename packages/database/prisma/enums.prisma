@@ -1,0 +1,49 @@
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum GoalType {
+  SKILL
+  STRENGTH
+  ENDURANCE
+  MOBILITY
+  CONSISTENCY
+}
+
+enum GoalStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  DROPPED
+}
+
+enum ExerciseType {
+  DYNAMIC
+  STATIC_HOLD
+}
+
+enum SessionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum FindingType {
+  MISTAKE
+  CORRECTION
+  POSITIVE
+}
+
+enum FindingSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}

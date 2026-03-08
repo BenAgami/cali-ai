@@ -6,31 +6,3 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
-// User data model
-enum Role {
-  USER
-  ADMIN
-}
-
-model User {
-  id        Int      @id @default(autoincrement())
-  uuid      String   @unique @default(dbgenerated("uuidv7()")) @db.Uuid
-
-  email     String   @unique
-  username  String   @unique
-  fullName  String
-  password  String
-
-  role      Role     @default(USER)
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  bodyMetrics BodyMetric[]
-  exercises   Exercise[]
-
-  @@map("users")
-}
-// User finished
-

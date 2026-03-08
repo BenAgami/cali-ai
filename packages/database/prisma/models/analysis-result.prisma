@@ -1,0 +1,23 @@
+model AnalysisResult {
+  id Int @id @default(autoincrement())
+
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId Int            @unique @map("session_id")
+
+  formScore Int @map("form_score") @db.SmallInt
+
+  scoreBreakdown  Json    @default("{}") @map("score_breakdown")
+  summaryFeedback String? @map("summary_feedback")
+  rawFeedback     Json    @default("{}") @map("raw_feedback")
+
+  aiModelName    String? @map("ai_model_name") @db.VarChar(80)
+  aiModelVersion String? @map("ai_model_version") @db.VarChar(40)
+
+  analyzedAt DateTime @default(now()) @map("analyzed_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  findings AnalysisFinding[]
+
+  @@index([analyzedAt(sort: Desc)], map: "idx_analysis_results_analyzed_at")
+  @@map("analysis_results")
+}
