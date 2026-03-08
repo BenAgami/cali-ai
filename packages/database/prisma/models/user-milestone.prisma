@@ -1,0 +1,18 @@
+model UserMilestone {
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @map("user_id")
+
+  milestoneDefinition   MilestoneDefinition @relation(fields: [milestoneDefinitionId], references: [id])
+  milestoneDefinitionId Int                 @map("milestone_definition_id")
+
+  session   WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  sessionId Int?            @map("session_id")
+
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  @@unique([userId, milestoneDefinitionId])
+  @@index([userId, unlockedAt(sort: Desc)], map: "idx_user_milestones_user_unlocked_at_desc")
+  @@map("user_milestones")
+}

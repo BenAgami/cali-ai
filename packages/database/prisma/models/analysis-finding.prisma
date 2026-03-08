@@ -1,0 +1,25 @@
+model AnalysisFinding {
+  id Int @id @default(autoincrement())
+
+  analysisResult   AnalysisResult @relation(fields: [analysisResultId], references: [id], onDelete: Cascade)
+  analysisResultId Int            @map("analysis_result_id")
+
+  findingType FindingType     @map("finding_type")
+  severity    FindingSeverity @default(MEDIUM)
+
+  code        String? @db.VarChar(80)
+  title       String  @db.VarChar(140)
+  description String
+  correction  String?
+  bodyPart    String? @map("body_part") @db.VarChar(60)
+
+  startSec  Decimal? @map("start_sec") @db.Decimal(6, 2)
+  endSec    Decimal? @map("end_sec") @db.Decimal(6, 2)
+  sortOrder Int      @default(0) @map("sort_order") @db.SmallInt
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([analysisResultId, findingType, sortOrder], map: "idx_findings_result_type_order")
+  @@index([code], map: "idx_findings_code")
+  @@map("analysis_findings")
+}

@@ -1,0 +1,16 @@
+model Exercise {
+  id Int @id @default(autoincrement())
+
+  code        String       @unique @db.VarChar(40)
+  displayName String       @map("display_name") @db.VarChar(80)
+  exerciseType ExerciseType @map("exercise_type")
+  isActive    Boolean      @default(true) @map("is_active")
+  description String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  workoutSessions WorkoutSession[]
+
+  @@map("exercises")
+}

@@ -1,0 +1,22 @@
+model UserGoal {
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @map("user_id")
+
+  goalType GoalType @map("goal_type")
+  title    String   @db.VarChar(120)
+
+  targetValue Decimal? @map("target_value") @db.Decimal(10, 2)
+  targetUnit  String?  @map("target_unit") @db.VarChar(30)
+  targetDate  DateTime? @map("target_date") @db.Date
+
+  status      GoalStatus @default(ACTIVE)
+  completedAt DateTime?  @map("completed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, status], map: "idx_user_goals_user_status")
+  @@map("user_goals")
+}
