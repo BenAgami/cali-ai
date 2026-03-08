@@ -75,7 +75,6 @@ Unlike generic fitness apps, CaliAI focuses specifically on:
 Future expansions may include:
 
 - Real-time feedback mode
-- Live coaching assistant
 - Personalized training programs
 - Skill progression engine
 - Community leaderboard
