@@ -3,6 +3,7 @@
   "include": ["**/*.ts"],
   "exclude": ["dist", "build", "node_modules"],
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "types": ["node"]
   }
 }

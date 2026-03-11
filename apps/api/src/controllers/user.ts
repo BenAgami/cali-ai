@@ -60,8 +60,12 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
  * @param {Response} res - Express response object
  * @returns {Object} User data
  */
+type GetUserProfileParams = {
+  uuid: string;
+};
+
 export const getUserProfile = asyncHandler(
-  async (req: Request, res: Response) => {
+  async (req: Request<GetUserProfileParams>, res: Response) => {
     const { uuid } = req.params;
 
     const user = await userService.getUserByUuid(uuid);
