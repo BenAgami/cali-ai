@@ -1,29 +1,29 @@
 import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient, connectPrisma } from "@repo/db";
+import { getPrismaClient } from "@repo/db";
 
 import {
   RegisterUserDto,
   RegisterUserBuilder,
 } from "../builders/registerUserBuilder";
-import { registerUser } from "../helpers/requestSender/authRequests";
 
-import { createApp } from "../../../src/app";
+import {
+  setupIntegrationTest,
+  teardownIntegrationTest,
+} from "../helpers/testSetup";
+import { registerUser } from "../helpers/requestSender/authRequests";
 
 describe("POST /api/users/register", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
   beforeAll(async () => {
-    app = createApp();
-    await connectPrisma(process.env.DATABASE_URL!, false);
-    prisma = getPrismaClient();
+    ({ app, prisma } = await setupIntegrationTest());
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany();
-    await prisma.$disconnect();
+    await teardownIntegrationTest(prisma);
   });
 
   it("should register a new user successfully", async () => {

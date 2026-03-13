@@ -1,32 +1,30 @@
 import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { connectPrisma, getPrismaClient } from "@repo/db";
+import { getPrismaClient } from "@repo/db";
 
 import {
-  getMyUser,
-} from "../helpers/requestSender/usersRequests";
+  setupIntegrationTest,
+  teardownIntegrationTest,
+} from "../helpers/testSetup";
+import { getMyUser } from "../helpers/requestSender/usersRequests";
 import { registerUser } from "../helpers/requestSender/authRequests";
+
 import {
   RegisterUserBuilder,
   RegisterUserDto,
 } from "../builders/registerUserBuilder";
-
-import { createApp } from "../../../src/app";
 
 describe("GET /api/me", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
   beforeAll(async () => {
-    app = createApp();
-    await connectPrisma(process.env.DATABASE_URL!, false);
-    prisma = getPrismaClient();
+    ({ app, prisma } = await setupIntegrationTest());
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany();
-    await prisma.$disconnect();
+    await teardownIntegrationTest(prisma);
   });
 
   it("should return the current user if token is valid", async () => {

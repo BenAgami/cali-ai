@@ -1,30 +1,30 @@
 import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { connectPrisma, getPrismaClient, Role } from "@repo/db";
+import { getPrismaClient } from "@repo/db";
 
 import {
   RegisterUserDto,
   RegisterUserBuilder,
 } from "../builders/registerUserBuilder";
+
+import {
+  setupIntegrationTest,
+  teardownIntegrationTest,
+} from "../helpers/testSetup";
 import { LoginUserBuilder, LoginUserDto } from "../builders/loginUserBuilder";
 import { registerUser, loginUser } from "../helpers/requestSender/authRequests";
-
-import { createApp } from "../../../src/app";
 
 describe("POST /api/users/login", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
   beforeAll(async () => {
-    app = createApp();
-    await connectPrisma(process.env.DATABASE_URL!, false);
-    prisma = getPrismaClient();
+    ({ app, prisma } = await setupIntegrationTest());
   });
 
   afterAll(async () => {
-    await prisma.user.deleteMany();
-    await prisma.$disconnect();
+    await teardownIntegrationTest(prisma);
   });
 
   it("should login successfully with valid credentials", async () => {

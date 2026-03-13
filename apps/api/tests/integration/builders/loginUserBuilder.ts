@@ -11,8 +11,9 @@ export class LoginUserBuilder {
   private user: LoginUserDto;
 
   constructor() {
+    const suffix = randomUUID().split("-")[0];
     this.user = {
-      email: `test-${randomUUID()}@example.com`,
+      email: `test-${suffix}@example.com`,
       password: "SecurePassword123!",
     };
   }

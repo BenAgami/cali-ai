@@ -1,35 +1,32 @@
 import { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { connectPrisma, getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, SessionStatus } from "@repo/db";
 
+import {
+  setupIntegrationTest,
+  teardownIntegrationTest,
+} from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createWorkoutSession } from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+
 import {
   WorkoutSessionBuilder,
   WorkoutSessionDto,
 } from "../builders/workoutSessionBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-import { createApp } from "../../../src/app";
-
 describe("POST /api/sessions", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
   beforeAll(async () => {
-    app = createApp();
-    await connectPrisma(process.env.DATABASE_URL!, false);
-    prisma = getPrismaClient();
+    ({ app, prisma } = await setupIntegrationTest());
   });
 
   afterAll(async () => {
-    await prisma.analysisResult.deleteMany();
-    await prisma.workoutSession.deleteMany();
-    await prisma.exercise.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.$disconnect();
+    await teardownIntegrationTest(prisma);
   });
 
   it("should create a workout session successfully", async () => {

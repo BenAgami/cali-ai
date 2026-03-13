@@ -2,32 +2,32 @@ import { Application } from "express";
 import { randomUUID } from "crypto";
 import { StatusCodes } from "http-status-codes";
 
-import { connectPrisma, getPrismaClient } from "@repo/db";
+import { getPrismaClient } from "@repo/db";
 
+import {
+  setupIntegrationTest,
+  teardownIntegrationTest,
+} from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { listWorkoutSessions, createWorkoutSession } from "../helpers/requestSender/sessionsRequests";
+import {
+  listWorkoutSessions,
+  createWorkoutSession,
+} from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+
 import { WorkoutSessionBuilder } from "../builders/workoutSessionBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
-
-import { createApp } from "../../../src/app";
 
 describe("GET /api/sessions", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
   beforeAll(async () => {
-    app = createApp();
-    await connectPrisma(process.env.DATABASE_URL!, false);
-    prisma = getPrismaClient();
+    ({ app, prisma } = await setupIntegrationTest());
   });
 
   afterAll(async () => {
-    await prisma.analysisResult.deleteMany();
-    await prisma.workoutSession.deleteMany();
-    await prisma.exercise.deleteMany();
-    await prisma.user.deleteMany();
-    await prisma.$disconnect();
+    await teardownIntegrationTest(prisma);
   });
 
   it("should list workout sessions with pagination", async () => {

@@ -8,8 +8,12 @@ export const getUserByUuid = async (
   return supertest(app).get(`/api/users/${userUuid}`);
 };
 
-export const getMyUser = async (app: Application, token: string) => {
-  return supertest(app)
-    .get(`/api/users/me`)
-    .set("Authorization", `Bearer ${token}`);
+export const getMyUser = async (app: Application, token?: string) => {
+  const request = supertest(app).get(`/api/users/me`);
+
+  if (token) {
+    request.set("Authorization", `Bearer ${token}`);
+  }
+
+  return request;
 };
