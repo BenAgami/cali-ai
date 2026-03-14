@@ -13,5 +13,8 @@ export default defineConfig({
     globalSetup: ["tests/globalSetup.ts"],
     clearMocks: true,
     restoreMocks: true,
+    fileParallelism: false,
+    sequence: { concurrent: false },
+    pool: "forks",
   },
 });

@@ -10,8 +10,9 @@ export class RegisterUserBuilder {
   private user: RegisterUserDto;
 
   constructor() {
+    const suffix = randomUUID().split("-")[0];
     this.user = {
-      email: `test-${randomUUID()}@example.com`,
+      email: `test-${suffix}@example.com`,
       password: "SecurePassword123!",
       name: "Test User",
     };
