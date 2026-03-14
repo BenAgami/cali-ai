@@ -92,7 +92,6 @@ export class WorkoutSessionService {
 
   async listSessions(input: ListWorkoutSessionsInput) {
     const { userUuid, limit, offset, exerciseCode } = input;
-    const safeLimit = Math.min(limit, 50);
     const userId = await this.getUserIdByUuid(userUuid);
     const normalizedExerciseCode = exerciseCode
       ? this.normalizeExerciseCode(exerciseCode)
@@ -107,7 +106,7 @@ export class WorkoutSessionService {
       },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
       skip: offset,
-      take: safeLimit + 1,
+      take: limit + 1,
       include: {
         exercise: {
           select: {
@@ -126,8 +125,8 @@ export class WorkoutSessionService {
       },
     });
 
-    const hasMore = sessions.length > safeLimit;
-    const items = hasMore ? sessions.slice(0, safeLimit) : sessions;
+    const hasMore = sessions.length > limit;
+    const items = hasMore ? sessions.slice(0, limit) : sessions;
 
     return {
       items,
@@ -135,7 +134,7 @@ export class WorkoutSessionService {
         limit,
         offset,
         hasMore,
-        nextOffset: hasMore ? offset + safeLimit : null,
+        nextOffset: hasMore ? offset + limit : null,
       },
     };
   }
