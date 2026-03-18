@@ -45,7 +45,7 @@ export class ExerciseService {
     const normalizedCode = this.normalizeExerciseCode(code);
 
     const exercise = await this.prisma.exercise.findFirst({
-      where: { code: normalizedCode },
+      where: { code: normalizedCode, isActive: true },
     });
 
     if (!exercise) {
