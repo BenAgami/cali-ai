@@ -10,7 +10,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Infrastructure
 
 - [ ] **INFRA-01**: Redis + BullMQ async job queue is set up for video analysis processing
-- [ ] **INFRA-02**: Video upload endpoint returns a job ID (202 Accepted) and processes asynchronously
+- [ ] **INFRA-02**: Set recording is automatically submitted for analysis when the set ends; returns a job ID and processes asynchronously
 - [ ] **INFRA-03**: Server-Sent Events (SSE) endpoint delivers job progress and results to the client
 - [ ] **INFRA-04**: Workout session processingStatus state machine handles PENDING → PROCESSING → COMPLETED / FAILED transitions
 - [ ] **INFRA-05**: Custom Expo dev build is configured with react-native-vision-camera (required for real-time analysis)
@@ -36,8 +36,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### AI Form Analysis — Post-Set
 
 - [ ] **FORM-01**: User selects an exercise before recording (push-up, pull-up, dip, squat)
-- [ ] **FORM-02**: User can record a set using the camera
-- [ ] **FORM-03**: Recorded video is uploaded and returns a job ID immediately
+- [ ] **FORM-02**: Camera opens automatically when a set begins; recording starts without a separate action
+- [ ] **FORM-03**: When the set ends, the recording is automatically submitted and returns a job ID — no manual upload step
 - [ ] **FORM-04**: User receives a form score (0–100) per set after analysis completes
 - [ ] **FORM-05**: Form score includes a breakdown by dimension (e.g. range of motion, core stability, symmetry)
 - [ ] **FORM-06**: User receives actionable text feedback referencing specific reps

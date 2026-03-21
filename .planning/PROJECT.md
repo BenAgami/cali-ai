@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A mobile-first calisthenics app where users build and follow workouts, then film themselves performing exercises to receive AI-powered form analysis. The AI gives real-time feedback during a set and post-set analysis after upload, helping both beginners learn correct technique and experienced athletes refine their performance.
+A mobile-first calisthenics app where users build and follow workouts, then film themselves during a set to receive AI-powered form analysis. The camera is open during the set — real-time cues fire as you move, and when the set ends the recording is automatically analyzed for a detailed form score and coaching breakdown. No separate upload step.
 
 ## Core Value
 
@@ -21,8 +21,7 @@ Users can record themselves doing calisthenics exercises and get actionable AI f
 - [ ] User profile — display name, avatar, bio
 - [ ] Workout builder (manual) — pick exercises, set reps/sets/rest, save as named workout
 - [ ] Workout builder (AI-generated) — describe your goal, AI builds the workout
-- [ ] AI form analysis (post-set) — record a set, upload video, receive form feedback
-- [ ] AI form analysis (real-time) — live cues while performing a set
+- [ ] AI form analysis — camera open during set; real-time live cues mid-rep + automatic deep analysis when set ends
 - [ ] Progress tracking — session history, form scores over time, trend visualization
 - [ ] Core exercise AI coverage — push-ups, pull-ups, dips, squats (expandable)
 
@@ -54,7 +53,7 @@ Users can record themselves doing calisthenics exercises and get actionable AI f
 |----------|-----------|---------|
 | Mobile-only for v1 | Camera access is native; filming UX is better on device | — Pending |
 | Launch with core moves (push-ups, pull-ups, dips, squats) | Validates AI pipeline before investing in full catalog | — Pending |
-| Support both real-time and post-set AI feedback | User said "either/both" — both flows have distinct value | — Pending |
+| Unified camera session: real-time cues + automatic post-set analysis | One recording serves both purposes — no separate upload step. Camera is open during the set. | — Pending |
 | AI workout generation alongside manual builder | Addresses both structured planners and goal-first users | — Pending |
 
 ## Evolution
@@ -75,4 +74,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after initialization*
+*Last updated: 2026-03-21 after unified camera flow decision*

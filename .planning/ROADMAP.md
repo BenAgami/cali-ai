@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications
 - [ ] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions
 - [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
-- [ ] **Phase 5: Post-Set AI Form Analysis** - Record a set, upload video, receive form score and coaching feedback
+- [ ] **Phase 5: AI Form Analysis** - Camera open during set; recording auto-submitted when set ends; form score + coaching feedback
 - [ ] **Phase 6: Real-Time Form Cues** - On-device MoveNet pose estimation with live audio/visual coaching cues
 - [ ] **Phase 7: Progress Tracking** - Session history, per-exercise form score trends, overall form arc over time
 
@@ -68,12 +68,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A disclaimer is shown on every AI-generated plan before the user starts it
 **Plans**: TBD
 
-### Phase 5: Post-Set AI Form Analysis
-**Goal**: Users can record a set, upload the video, and receive an actionable form score with a breakdown and coaching text — the complete Claude form feedback loop is validated end-to-end on all four core exercises
+### Phase 5: AI Form Analysis (Camera + Post-Set)
+**Goal**: Camera is open during a set; when the set ends the recording is automatically analyzed — user receives a form score, dimension breakdown, and rep-level coaching text with no manual upload step
 **Depends on**: Phase 1
 **Requirements**: FORM-01, FORM-02, FORM-03, FORM-04, FORM-05, FORM-06, FORM-07, FORM-08, NOTF-02
 **Success Criteria** (what must be TRUE):
-  1. User selects an exercise (push-up, pull-up, dip, or squat), records a set, and the video is uploaded and acknowledged with a job ID immediately
+  1. User selects an exercise (push-up, pull-up, dip, or squat), the camera opens when the set starts, and the recording is automatically submitted when the set ends — no upload screen
   2. User receives a numeric form score (0–100) and a breakdown by dimension (range of motion, core stability, symmetry) when analysis completes
   3. Feedback text references specific reps and leads with at least one positive observation before corrections; no more than 2 corrections are surfaced per set
   4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
@@ -81,8 +81,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: TBD
 
 ### Phase 6: Real-Time Form Cues
-**Goal**: Users can enable live form coaching during a set — on-device pose estimation fires instant deterministic cues for detected deviations without disrupting the flow of the set
-**Depends on**: Phase 5 (validates angle-detection approach and feedback format before real-time commit; Phase 1 for custom dev build)
+**Goal**: The camera session established in Phase 5 gains a live overlay — on-device pose estimation fires instant cues for form deviations during the set, complementing the deep analysis that runs after
+**Depends on**: Phase 5 (same camera session; validates angle-detection approach and feedback format before real-time rule engine is built on top)
 **Requirements**: RT-01, RT-02, RT-03, RT-04
 **Success Criteria** (what must be TRUE):
   1. User can toggle real-time form cues on before starting a set and the live skeleton overlay appears on the camera feed
