@@ -27,6 +27,21 @@ services:
     volumes:
       - postgres_test_data:/var/lib/postgresql
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+
 volumes:
   postgres_dev_data:
   postgres_test_data:
+  redis_data:
