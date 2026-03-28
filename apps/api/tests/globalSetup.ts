@@ -12,18 +12,18 @@ export default async function globalSetup() {
     );
   }
 
-  console.log("Resetting test database...");
+  console.log("Applying test database migrations...");
 
   try {
     const databaseDir = path.resolve(__dirname, "../../../packages/database");
-    execSync(`yarn --cwd ${databaseDir} db:migrate:reset`, {
+    execSync(`yarn --cwd ${databaseDir} db:migrate:deploy`, {
       stdio: "inherit",
       env: { ...process.env, NODE_ENV: "test" },
     });
   } catch (error) {
-    console.error("Failed to reset test database", error);
+    console.error("Failed to apply test database migrations", error);
     throw error;
   }
 
-  console.log("Test database reset complete");
+  console.log("Test database migrations applied");
 }

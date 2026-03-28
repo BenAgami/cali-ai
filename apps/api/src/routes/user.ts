@@ -43,10 +43,11 @@ router.get("/me", authenticateToken, getMyUser);
 
 /**
  * GET /:uuid
- * Get user profile by UUID
+ * Get user profile by UUID (requires authentication)
  */
 router.get(
   "/:uuid",
+  authenticateToken,
   validateSchema(z.object({ params: z.object({ uuid: z.uuidv7() }) })),
   getUserProfile,
 );

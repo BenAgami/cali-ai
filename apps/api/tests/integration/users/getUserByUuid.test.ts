@@ -35,8 +35,9 @@ describe("GET /api/users/:uuid", () => {
     expect(registerResponse.status).toBe(StatusCodes.CREATED);
 
     const createdUser = registerResponse.body.data.user;
+    const token = registerResponse.body.data.token;
 
-    const response = await getUserByUuid(app, createdUser.uuid);
+    const response = await getUserByUuid(app, createdUser.uuid, token);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data).toMatchObject({
@@ -47,17 +48,33 @@ describe("GET /api/users/:uuid", () => {
     expect(response.body.data).not.toHaveProperty("passwordHash");
   });
 
-  it("should return 404 when user does not exist", async () => {
+  it("should return 401 without auth token", async () => {
     const nonExistingUuidV7 = "019c5b91-9cc1-7c36-be7b-ab32d8145188";
 
     const response = await getUserByUuid(app, nonExistingUuidV7);
+
+    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+  });
+
+  it("should return 404 when user does not exist", async () => {
+    const nonExistingUuidV7 = "019c5b91-9cc1-7c36-be7b-ab32d8145188";
+
+    const registerDto: RegisterUserDto = new RegisterUserBuilder().build();
+    const registerResponse = await registerUser(app, registerDto);
+    const token = registerResponse.body.data.token;
+
+    const response = await getUserByUuid(app, nonExistingUuidV7, token);
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
     expect(response.body.message).toBe("User not found");
   });
 
   it("should return 400 when uuid is missing", async () => {
-    const response = await getUserByUuid(app, undefined);
+    const registerDto: RegisterUserDto = new RegisterUserBuilder().build();
+    const registerResponse = await registerUser(app, registerDto);
+    const token = registerResponse.body.data.token;
+
+    const response = await getUserByUuid(app, undefined, token);
 
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     expect(response.body.details[0].message).toBe("params.uuid - Invalid UUID");
