@@ -1,20 +1,37 @@
 import { Request, Response, NextFunction } from "express";
 
-// TODO: Enhanced Error Handling
+import { env } from "../config/env";
+
 const errorHandler = (
-  error: any,
+  error: unknown,
   _req: Request,
   res: Response,
   _next: NextFunction
 ) => {
-  console.error(error);
+  if (env.runtimeEnv !== "production") {
+    console.error(error);
+  }
 
-  const status = error.status || 500;
-  const message = error.message || "Internal Server Error";
+  const status =
+    typeof (error as { status?: unknown }).status === "number"
+      ? (error as { status: number }).status
+      : 500;
+
+  const message =
+    error instanceof Error ? error.message : "Internal Server Error";
+
+  const code =
+    typeof (error as { code?: unknown }).code === "string"
+      ? (error as { code: string }).code
+      : "INTERNAL_ERROR";
 
   res.status(status).json({
     success: false,
     message,
+    code,
+    ...(env.runtimeEnv !== "production" && error instanceof Error
+      ? { details: error.stack }
+      : {}),
   });
 };
 
