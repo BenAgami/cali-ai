@@ -27,7 +27,9 @@ export const listExercises = asyncHandler(
       req.query.includeInactive === "true" || req.query.includeInactive === "1";
 
     if (includeInactiveRequested && req.user?.role !== Role.ADMIN) {
-      throw new ForbiddenError("Admin access required to view inactive exercises");
+      throw new ForbiddenError(
+        "Admin access required to view inactive exercises",
+      );
     }
 
     const includeInactive = includeInactiveRequested;
@@ -58,7 +60,7 @@ export const getExerciseByCode = asyncHandler(
   async (req: Request<GetExerciseParams>, res: Response) => {
     const { code } = req.params;
 
-    const exercise = await exerciseService.getExerciseByCode(code);
+    const exercise = await exerciseService.getExerciseByCode(code, !!req.user);
 
     res.status(StatusCodes.OK).json({
       success: true,

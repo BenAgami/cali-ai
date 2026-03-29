@@ -34,6 +34,7 @@ router.get(
  */
 router.get(
   "/:code",
+  optionalAuth,
   validateSchema(z.object({ params: exerciseCodeParamSchema })),
   getExerciseByCode,
 );
