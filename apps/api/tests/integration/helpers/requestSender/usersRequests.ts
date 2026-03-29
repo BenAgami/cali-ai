@@ -4,8 +4,15 @@ import supertest from "supertest";
 export const getUserByUuid = async (
   app: Application,
   userUuid: string | undefined,
+  token?: string,
 ) => {
-  return supertest(app).get(`/api/users/${userUuid}`);
+  const request = supertest(app).get(`/api/users/${userUuid}`);
+
+  if (token) {
+    request.set("Authorization", `Bearer ${token}`);
+  }
+
+  return request;
 };
 
 export const getMyUser = async (app: Application, token?: string) => {

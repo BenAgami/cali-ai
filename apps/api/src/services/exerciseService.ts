@@ -41,11 +41,14 @@ export class ExerciseService {
     };
   }
 
-  async getExerciseByCode(code: string) {
+  async getExerciseByCode(code: string, includeInactive = false) {
     const normalizedCode = this.normalizeExerciseCode(code);
 
     const exercise = await this.prisma.exercise.findFirst({
-      where: { code: normalizedCode, isActive: true },
+      where: {
+        code: normalizedCode,
+        ...(includeInactive ? {} : { isActive: true }),
+      },
     });
 
     if (!exercise) {

@@ -20,6 +20,8 @@ model WorkoutSession {
   processingStartedAt  DateTime? @map("processing_started_at")
   processingFinishedAt DateTime? @map("processing_finished_at")
   failureReason        String?   @map("failure_reason")
+  videoR2Key           String?   @map("video_r2_key")
+  bullmqJobId          String?   @map("bullmq_job_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

@@ -2,6 +2,7 @@ import { Router } from "express";
 import z from "zod";
 
 import validateSchema from "../middlewares/validateSchema";
+import optionalAuth from "../middlewares/optionalAuth";
 import { getExerciseByCode, listExercises } from "../controllers/exercise";
 
 const router: Router = Router();
@@ -18,10 +19,11 @@ const exerciseCodeParamSchema = z.object({
 
 /**
  * GET /
- * List exercises
+ * List exercises (optionally filtered by active status; includeInactive requires admin)
  */
 router.get(
   "/",
+  optionalAuth,
   validateSchema(z.object({ query: listExercisesQuerySchema })),
   listExercises,
 );
@@ -32,6 +34,7 @@ router.get(
  */
 router.get(
   "/:code",
+  optionalAuth,
   validateSchema(z.object({ params: exerciseCodeParamSchema })),
   getExerciseByCode,
 );

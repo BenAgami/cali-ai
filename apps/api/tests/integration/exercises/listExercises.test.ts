@@ -10,6 +10,7 @@ import {
 } from "../helpers/testSetup";
 import { listExercises } from "../helpers/requestSender/exercisesRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { createAdminUserWithToken } from "../helpers/db/userHelper";
 
 describe("GET /api/exercises", () => {
   let app: Application;
@@ -77,7 +78,9 @@ describe("GET /api/exercises", () => {
     expect(codes).not.toContain(inactiveExercise.code);
   });
 
-  it("should include inactive exercises when includeInactive=true", async () => {
+  it("should include inactive exercises when includeInactive=true with admin auth", async () => {
+    const { token } = await createAdminUserWithToken(prisma);
+
     const activeExercise = await createExercise(prisma, {
       code: `push_up_${randomUUID().split("-")[0]}`,
       displayName: "Push Up Active",
@@ -90,12 +93,18 @@ describe("GET /api/exercises", () => {
     });
     createdExerciseIds.push(activeExercise.id, inactiveExercise.id);
 
-    const response = await listExercises(app, { includeInactive: true });
+    const response = await listExercises(app, { includeInactive: true }, token);
 
     expect(response.status).toBe(StatusCodes.OK);
     const codes = response.body.data.items.map((item: { code: string }) => item.code);
     expect(codes).toContain(activeExercise.code);
     expect(codes).toContain(inactiveExercise.code);
+  });
+
+  it("should return 403 when non-admin requests includeInactive=true", async () => {
+    const response = await listExercises(app, { includeInactive: true });
+
+    expect(response.status).toBe(StatusCodes.FORBIDDEN);
   });
 
   it("should return 400 for invalid limit query", async () => {

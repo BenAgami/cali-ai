@@ -19,6 +19,7 @@
     "@repo/ui": "*",
     "expo": "^54.0.0",
     "expo-constants": "~18.0.8",
+    "expo-dev-client": "^55.0.20-canary-20260328-2049187",
     "expo-linear-gradient": "~15.0.7",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.3",
@@ -28,8 +29,11 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.66.0",
     "react-native": "0.81.4",
+    "react-native-fast-tflite": "^2.0.0",
+    "react-native-nitro-modules": "^0.35.2",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
+    "react-native-vision-camera": "^4.7.3",
     "react-native-web": "^0.21.0"
   },
   "devDependencies": {
