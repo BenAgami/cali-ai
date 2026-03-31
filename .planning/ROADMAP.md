@@ -44,7 +44,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can set a primary goal in free text and it persists across sessions
   4. Profile edits are reflected immediately on the profile screen without requiring a logout/login cycle
   5. User can schedule a local workout reminder notification and it fires at the chosen time
-**Plans**: TBD
+**Plans:** 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Schema migration, Zod schemas, API endpoints (PATCH /me, POST /me/avatar-upload-url, POST /me/goals), integration tests
+- [ ] 02-02-PLAN.md — Native profile screens: AvatarDisplay, Home header, read-only profile, edit form with avatar upload
+- [ ] 02-03-PLAN.md — Workout reminder notifications: expo-notifications hook, ReminderCard widget on Home screen
 
 ### Phase 3: Manual Workout Builder
 **Goal**: Users can browse the exercise catalog, assemble named workouts with sets/reps/rest, and start a workout session from a saved workout
@@ -74,7 +79,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: FORM-01, FORM-02, FORM-03, FORM-04, FORM-05, FORM-06, FORM-07, FORM-08, NOTF-02
 **Success Criteria** (what must be TRUE):
   1. User selects an exercise (push-up, pull-up, dip, or squat), the camera opens when the set starts, and the recording is automatically submitted when the set ends — no upload screen
-  2. User receives a numeric form score (0–100) and a breakdown by dimension (range of motion, core stability, symmetry) when analysis completes
+  2. User receives a numeric form score (0-100) and a breakdown by dimension (range of motion, core stability, symmetry) when analysis completes
   3. Feedback text references specific reps and leads with at least one positive observation before corrections; no more than 2 corrections are surfaced per set
   4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
   5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
@@ -88,7 +93,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User can toggle real-time form cues on before starting a set and the live skeleton overlay appears on the camera feed
   2. A form deviation (e.g. elbow flare, hip drop, insufficient depth) triggers an audio or visual cue within 2 seconds of the deviation occurring
   3. Cues are non-intrusive — they appear as a banner or audio prompt without covering the camera feed or pausing the set
-  4. Pose inference runs at capped frame rate (8–10 FPS) and the device remains responsive for the full duration of a 15-minute session without thermal throttling
+  4. Pose inference runs at capped frame rate (8-10 FPS) and the device remains responsive for the full duration of a 15-minute session without thermal throttling
 **Plans**: TBD
 
 ### Phase 7: Progress Tracking
@@ -105,12 +110,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 0/TBD | Not started | - |
-| 2. User Profile | 0/TBD | Not started | - |
+| 2. User Profile | 0/3 | Planned | - |
 | 3. Manual Workout Builder | 0/TBD | Not started | - |
 | 4. AI Workout Generation | 0/TBD | Not started | - |
 | 5. Post-Set AI Form Analysis | 0/TBD | Not started | - |
