@@ -1,3 +1,4 @@
+import * as Notifications from "expo-notifications";
 import React from "react";
 import { Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -5,6 +6,16 @@ import { Entypo, Ionicons } from "@expo/vector-icons";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { baseColors } from "@src/theme/colors";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 const TabsLayout: React.FC = () => {
   const { currentTheme } = useTheme();
