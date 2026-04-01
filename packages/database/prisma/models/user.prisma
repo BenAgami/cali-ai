@@ -9,6 +9,8 @@ model User {
 
   role Role @default(USER)
 
+  avatarUrl String? @map("avatar_url")
+
   experienceLevel ExperienceLevel @default(BEGINNER) @map("experience_level")
 
   createdAt DateTime @default(now()) @map("created_at")

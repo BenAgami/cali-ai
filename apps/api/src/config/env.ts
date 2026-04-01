@@ -18,6 +18,7 @@ const envSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
   R2_BUCKET_NAME: z.string().min(1),
+  R2_PUBLIC_DOMAIN: z.string().min(1),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -47,5 +48,6 @@ export const env = {
     accessKeyId: parsedData.R2_ACCESS_KEY_ID,
     secretAccessKey: parsedData.R2_SECRET_ACCESS_KEY,
     bucketName: parsedData.R2_BUCKET_NAME,
+    publicDomain: parsedData.R2_PUBLIC_DOMAIN,
   },
 };
