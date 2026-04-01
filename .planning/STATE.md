@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-04-01T11:02:34.468Z"
+stopped_at: "Checkpoint: 02-02 Task 3 human-verify"
+last_updated: "2026-04-01T11:11:03.630Z"
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 02 (user-profile) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Plan: 2 of 3
 
 *Updated after each plan completion*
 | Phase 02-user-profile P01 | 9 | 2 tasks | 12 files |
+| Phase 02-user-profile P02 | 5 | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -61,6 +62,9 @@ Recent decisions affecting current work:
 - Phase 2 before Phase 4: AI workout generation prompt requires fitness level and goal from user profile for calibration.
 - [Phase 02-user-profile]: Catch P2002 without meta.target check — Prisma 7 with pg driver adapter omits target field; code check alone is sufficient
 - [Phase 02-user-profile]: Mock getSignedUrl in avatar upload tests — appropriate exception to no-mock rule for external AWS SDK I/O
+- [Phase 02-user-profile]: useFocusEffect not useEffect on profile screen: Expo Router stack does not remount on back-navigation; useEffect with [] shows stale data after returning from profile-edit
+- [Phase 02-user-profile]: Goal change detection snapshots initial goal on load, compares all fields before POST /me/goals to prevent duplicate UserGoal records on unchanged Save
+- [Phase 02-user-profile]: AuthContext created as Rule 3 fix: native app had no JWT persistence; stores token in AsyncStorage under @cali_auth_token
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01T11:02:34.463Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-04-01T11:11:03.624Z
+Stopped at: Checkpoint: 02-02 Task 3 human-verify
 Resume file: None
