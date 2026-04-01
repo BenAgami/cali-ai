@@ -249,9 +249,7 @@ export class UserService {
         typeof error === "object" &&
         error !== null &&
         "code" in error &&
-        (error as { code: string }).code === "P2002" &&
-        "meta" in error &&
-        (error as { meta?: { target?: string[] } }).meta?.target?.includes("username")
+        (error as { code: string }).code === "P2002"
       ) {
         throw new ConflictError("Username already taken");
       }
