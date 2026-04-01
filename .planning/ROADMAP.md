@@ -44,10 +44,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can set a primary goal in free text and it persists across sessions
   4. Profile edits are reflected immediately on the profile screen without requiring a logout/login cycle
   5. User can schedule a local workout reminder notification and it fires at the chosen time
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 Plans:
-- [ ] 02-01-PLAN.md — Schema migration, Zod schemas, API endpoints (PATCH /me, POST /me/avatar-upload-url, POST /me/goals), integration tests
+- [x] 02-01-PLAN.md — Schema migration, Zod schemas, API endpoints (PATCH /me, POST /me/avatar-upload-url, POST /me/goals), integration tests
 - [ ] 02-02-PLAN.md — Native profile screens: AvatarDisplay, Home header, read-only profile, edit form with avatar upload
 - [ ] 02-03-PLAN.md — Workout reminder notifications: expo-notifications hook, ReminderCard widget on Home screen
 
@@ -115,7 +115,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 0/TBD | Not started | - |
-| 2. User Profile | 0/3 | Planned | - |
+| 2. User Profile | 1/3 | In Progress|  |
 | 3. Manual Workout Builder | 0/TBD | Not started | - |
 | 4. AI Workout Generation | 0/TBD | Not started | - |
 | 5. Post-Set AI Form Analysis | 0/TBD | Not started | - |

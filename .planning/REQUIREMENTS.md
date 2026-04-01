@@ -17,11 +17,11 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### User Profile
 
-- [ ] **PROF-01**: User can set a display name
-- [ ] **PROF-02**: User can upload an avatar image
-- [ ] **PROF-03**: User can set fitness level (beginner / intermediate / advanced)
-- [ ] **PROF-04**: User can set a primary goal (e.g. "build strength", "learn handstand", "lose weight")
-- [ ] **PROF-05**: User can view and edit their profile
+- [x] **PROF-01**: User can set a display name
+- [x] **PROF-02**: User can upload an avatar image
+- [x] **PROF-03**: User can set fitness level (beginner / intermediate / advanced)
+- [x] **PROF-04**: User can set a primary goal (e.g. "build strength", "learn handstand", "lose weight")
+- [x] **PROF-05**: User can view and edit their profile
 
 ### Workout Builder
 
@@ -107,11 +107,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-03 | Phase 1 | Pending |
 | INFRA-04 | Phase 1 | Pending |
 | INFRA-05 | Phase 1 | Pending |
-| PROF-01 | Phase 2 | Pending |
-| PROF-02 | Phase 2 | Pending |
-| PROF-03 | Phase 2 | Pending |
-| PROF-04 | Phase 2 | Pending |
-| PROF-05 | Phase 2 | Pending |
+| PROF-01 | Phase 2 | Complete |
+| PROF-02 | Phase 2 | Complete |
+| PROF-03 | Phase 2 | Complete |
+| PROF-04 | Phase 2 | Complete |
+| PROF-05 | Phase 2 | Complete |
 | WKT-01 | Phase 3 | Pending |
 | WKT-02 | Phase 3 | Pending |
 | WKT-03 | Phase 3 | Pending |
