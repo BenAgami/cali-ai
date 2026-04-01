@@ -16,7 +16,9 @@
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -44,7 +46,8 @@
         {
           "enableAndroidGpuLibraries": false
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ]
   }
 }
