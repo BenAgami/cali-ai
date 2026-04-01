@@ -26,6 +26,7 @@ import AuthFormFields, {
   type FieldConfig,
 } from "@src/components/AuthFormFields";
 import { baseColors } from "@src/theme/colors";
+import { useAuth } from "@src/context/AuthContext";
 
 const defaultFormData: LoginValues = {
   email: "",
@@ -50,15 +51,33 @@ const signInFields: FieldConfig<LoginValues>[] = [
   },
 ];
 
+const API_BASE = "http://localhost:3000";
+
 const SignInScreen: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const router = useRouter();
+  const { setToken } = useAuth();
 
-  const handleSignIn = (data: LoginValues) => {
-    console.log("Sign in data:", data, "Remember me:", rememberMe);
-    // Handle sign-in logic here
-    // Example: call your API endpoint
+  const handleSignIn = async (data: LoginValues) => {
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        setError(json.message ?? "Invalid email or password.");
+        return;
+      }
+      await setToken(json.data.token);
+      router.replace("/");
+    } catch {
+      setError("Network error. Please try again.");
+    }
   };
 
   const handleGoogleSignIn = () => {
@@ -120,6 +139,9 @@ const SignInScreen: React.FC = () => {
             />
 
             <View style={styles.formContainer}>
+              {error && (
+                <Text style={styles.errorText}>{error}</Text>
+              )}
               <AuthFormFields
                 schema={loginSchema}
                 defaultValues={defaultFormData}
@@ -215,5 +237,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  errorText: {
+    color: "#E57373",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 12,
   },
 });

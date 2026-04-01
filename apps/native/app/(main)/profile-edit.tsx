@@ -13,8 +13,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import * as ImageManipulator from "expo-image-manipulator";
-import { SaveFormat } from "expo-image-manipulator";
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { useAuth } from "@src/context/AuthContext";
@@ -140,7 +139,9 @@ const ProfileEditScreen: React.FC = () => {
       const manipResult = await ImageManipulator.manipulate(pickedUri)
         .resize({ width: 400, height: 400 })
         .renderAsync()
-        .then((ctx) => ctx.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 }));
+        .then((ctx) =>
+          ctx.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 }),
+        );
 
       const croppedUri = manipResult.uri;
 
@@ -161,7 +162,11 @@ const ProfileEditScreen: React.FC = () => {
       // Upload to R2
       const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
-        body: { uri: croppedUri, type: "image/jpeg", name: "avatar.jpg" } as unknown as BodyInit,
+        body: {
+          uri: croppedUri,
+          type: "image/jpeg",
+          name: "avatar.jpg",
+        } as unknown as BodyInit,
         headers: { "Content-Type": "image/jpeg" },
       });
       if (!uploadRes.ok) {
@@ -287,7 +292,11 @@ const ProfileEditScreen: React.FC = () => {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: colors.background }]}
       >
-        <ActivityIndicator size="large" color={colors.text} style={styles.loader} />
+        <ActivityIndicator
+          size="large"
+          color={colors.text}
+          style={styles.loader}
+        />
       </SafeAreaView>
     );
   }
@@ -312,7 +321,9 @@ const ProfileEditScreen: React.FC = () => {
               username={username || "U"}
               size={90}
             />
-            <View style={[styles.editAvatarBadge, { backgroundColor: "#007AFF" }]}>
+            <View
+              style={[styles.editAvatarBadge, { backgroundColor: "#007AFF" }]}
+            >
               <Text style={styles.editAvatarBadgeText}>Edit</Text>
             </View>
           </TouchableOpacity>
@@ -500,10 +511,7 @@ const ProfileEditScreen: React.FC = () => {
           onPress={() => setAvatarPickerVisible(false)}
         >
           <View
-            style={[
-              styles.modalSheet,
-              { backgroundColor: colors.surface },
-            ]}
+            style={[styles.modalSheet, { backgroundColor: colors.surface }]}
           >
             <Text style={[styles.modalTitle, { color: colors.text }]}>
               Change Avatar
