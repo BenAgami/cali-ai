@@ -11,7 +11,9 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore"
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\" --ignore-path .gitignore",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "devDependencies": {
     "prettier": "^3.1.1",
@@ -24,5 +26,11 @@
   "packageManager": "yarn@1.22.19",
   "engines": {
     "node": ">=18"
+  },
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
   }
 }

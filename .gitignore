@@ -17,6 +17,10 @@ build
 # expo
 .expo
 
+# expo prebuild — generated native dirs (EAS Build handles these)
+android/
+ios/
+
 # misc
 .DS_Store
 *.pem

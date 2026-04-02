@@ -13,17 +13,8 @@ import { useTheme } from "@src/context/ThemeContext";
 import { useAuth } from "@src/context/AuthContext";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import ReminderCard from "@src/components/ReminderCard";
-
-const API_BASE = "http://localhost:3000";
-
-type UserProfile = {
-  uuid: string;
-  username: string;
-  email: string;
-  fullName: string;
-  avatarUrl: string | null;
-  experienceLevel: string;
-};
+import { API_BASE } from "@src/lib/api";
+import type { UserProfile } from "@src/types/user";
 
 const Home: React.FC = () => {
   const { colors } = useTheme();
