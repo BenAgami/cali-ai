@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: "Checkpoint: 02-03 Task 2 human-verify"
-last_updated: "2026-04-03T08:42:25.846Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-04-03T09:22:01.460Z"
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 02 (user-profile) — EXECUTING
-Plan: 1 of 3
+Plan: 2 of 3
 
 ## Performance Metrics
 
@@ -48,6 +48,7 @@ Plan: 1 of 3
 *Updated after each plan completion*
 | Phase 02-user-profile P01 | 9 | 2 tasks | 12 files |
 | Phase 02-user-profile P02 | 5 | 2 tasks | 8 files |
+| Phase 02-user-profile P03 | 15 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - [Phase 02-user-profile]: useFocusEffect not useEffect on profile screen: Expo Router stack does not remount on back-navigation; useEffect with [] shows stale data after returning from profile-edit
 - [Phase 02-user-profile]: Goal change detection snapshots initial goal on load, compares all fields before POST /me/goals to prevent duplicate UserGoal records on unchanged Save
 - [Phase 02-user-profile]: AuthContext created as Rule 3 fix: native app had no JWT persistence; stores token in AsyncStorage under @cali_auth_token
+- [Phase 02-user-profile]: One scheduleNotificationAsync call per selected weekday — WeeklyTriggerInput only accepts one weekday, so scheduling N days requires N calls
+- [Phase 02-user-profile]: AsyncStorage stores both notification IDs (for cancellation) and config (for display) under separate keys workoutReminderIds and workoutReminderConfig
 
 ### Pending Todos
 
@@ -78,6 +81,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-03T08:42:25.840Z
-Stopped at: Checkpoint: 02-03 Task 2 human-verify
+Last session: 2026-04-03T09:22:01.454Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None

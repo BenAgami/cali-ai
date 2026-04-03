@@ -13,7 +13,7 @@ The project delivers its core value — AI-powered calisthenics form feedback �
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Infrastructure** - Async job pipeline, video upload, SSE, session state machine, and custom Expo dev build
-- [ ] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications
+- [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [ ] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions
 - [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
 - [ ] **Phase 5: AI Form Analysis** - Camera open during set; recording auto-submitted when set ends; form score + coaching feedback
@@ -44,12 +44,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can set a primary goal in free text and it persists across sessions
   4. Profile edits are reflected immediately on the profile screen without requiring a logout/login cycle
   5. User can schedule a local workout reminder notification and it fires at the chosen time
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 02-01-PLAN.md — Schema migration, Zod schemas, API endpoints (PATCH /me, POST /me/avatar-upload-url, POST /me/goals), integration tests
 - [x] 02-02-PLAN.md — Native profile screens: AvatarDisplay, Home header, read-only profile, edit form with avatar upload
-- [ ] 02-03-PLAN.md — Workout reminder notifications: expo-notifications hook, ReminderCard widget on Home screen
+- [x] 02-03-PLAN.md — Workout reminder notifications: expo-notifications hook, ReminderCard widget on Home screen
 
 ### Phase 3: Manual Workout Builder
 **Goal**: Users can browse the exercise catalog, assemble named workouts with sets/reps/rest, and start a workout session from a saved workout
@@ -115,7 +115,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure | 0/TBD | Not started | - |
-| 2. User Profile | 2/3 | In Progress|  |
+| 2. User Profile | 3/3 | Complete   | 2026-04-03 |
 | 3. Manual Workout Builder | 0/TBD | Not started | - |
 | 4. AI Workout Generation | 0/TBD | Not started | - |
 | 5. Post-Set AI Form Analysis | 0/TBD | Not started | - |

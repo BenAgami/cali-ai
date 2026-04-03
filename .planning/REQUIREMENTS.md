@@ -60,7 +60,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Notifications
 
-- [ ] **NOTF-01**: User can schedule local workout reminder notifications
+- [x] **NOTF-01**: User can schedule local workout reminder notifications
 - [ ] **NOTF-02**: User receives an in-app notification when post-set analysis is complete
 
 ## v2 Requirements
@@ -135,7 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROG-02 | Phase 7 | Pending |
 | PROG-03 | Phase 7 | Pending |
 | PROG-04 | Phase 7 | Pending |
-| NOTF-01 | Phase 2 | Pending |
+| NOTF-01 | Phase 2 | Complete |
 | NOTF-02 | Phase 5 | Pending |
 
 **Coverage:**
