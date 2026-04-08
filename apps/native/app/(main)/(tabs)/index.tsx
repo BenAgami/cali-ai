@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,12 +8,13 @@ import {
   ScrollView,
 } from "react-native";
 import { Stack, router } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { useAuth } from "@src/context/AuthContext";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import ReminderCard from "@src/components/ReminderCard";
-import { API_BASE } from "@src/lib/api";
+import { apiClient } from "@src/lib/api";
 import type { UserProfile } from "@src/types/user";
 
 const Home: React.FC = () => {
@@ -21,26 +22,14 @@ const Home: React.FC = () => {
   const { token } = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
 
-  useEffect(() => {
-    if (!token) return;
-
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        if (json.success && json.data) {
-          setUser(json.data);
-        }
-      } catch {
-        // ignore network errors on home screen
-      }
-    };
-
-    fetchUser();
-  }, [token]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!token) return;
+      apiClient.get<UserProfile>("/api/users/me", token)
+        .then(setUser)
+        .catch(() => {});
+    }, [token])
+  );
 
   return (
     <>

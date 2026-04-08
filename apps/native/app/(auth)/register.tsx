@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
@@ -25,6 +25,8 @@ import {
 import AuthFormFields, {
   type FieldConfig,
 } from "@src/components/AuthFormFields";
+import { apiClient, ApiError } from "@src/lib/api";
+import { useAuth } from "@src/context/AuthContext";
 import { baseColors } from "@src/theme/colors";
 
 const defaultFormData: RegisterValues = {
@@ -58,17 +60,30 @@ const registerFields: FieldConfig<RegisterValues>[] = [
 ];
 
 const RegistrationScreen: React.FC = () => {
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { setToken } = useAuth();
 
-  const handleSignUp = (data: RegisterValues) => {
-    console.log("Registration data:", data);
-    // Handle registration logic here
-    // Example: call API endpoint
+  const handleSignUp = async (data: RegisterValues) => {
+    setError(null);
+    try {
+      const result = await apiClient.post<{ token: string }>(
+        "/api/users/register",
+        data,
+      );
+      await setToken(result.token);
+      router.replace("/");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setError("An account with this email already exists.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+    }
   };
 
   const handleGoogleSignIn = () => {
     console.log("Google sign-in clicked");
-    // Handle Google sign-in logic here
   };
 
   const handleSignIn = () => {
@@ -125,6 +140,9 @@ const RegistrationScreen: React.FC = () => {
               />
 
               <View style={styles.formContainer}>
+                {error && (
+                  <Text style={styles.errorText}>{error}</Text>
+                )}
                 <AuthFormFields
                   schema={registerSchema}
                   defaultValues={defaultFormData}
@@ -216,5 +234,11 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  errorText: {
+    color: "#E57373",
+    fontSize: 13,
+    textAlign: "center",
+    marginBottom: 12,
   },
 });

@@ -1,8 +1,9 @@
 import { useState, useCallback } from "react";
 import { useFocusEffect } from "@react-navigation/native";
+import { router } from "expo-router";
 
 import { useAuth } from "@src/context/AuthContext";
-import { API_BASE } from "@src/lib/api";
+import { apiClient, ApiError } from "@src/lib/api";
 import type { UserProfile } from "@src/types/user";
 
 export function useProfile() {
@@ -13,28 +14,20 @@ export function useProfile() {
 
   const fetchUser = useCallback(async () => {
     if (!token) {
-      setLoading(false);
-      setError("Not authenticated. Please log in.");
+      router.replace("/(auth)/login");
       return;
     }
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`${API_BASE}/api/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        setError("Failed to load profile.");
+      const data = await apiClient.get<UserProfile>("/api/users/me", token);
+      setUser(data);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        router.replace("/(auth)/login");
         return;
       }
-      const json = await res.json();
-      if (json.success && json.data) {
-        setUser(json.data);
-      } else {
-        setError("Failed to load profile.");
-      }
-    } catch {
-      setError("Network error. Please try again.");
+      setError("Failed to load profile.");
     } finally {
       setLoading(false);
     }

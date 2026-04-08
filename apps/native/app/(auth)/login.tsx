@@ -12,6 +12,8 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 
+import { apiClient, ApiError } from "@src/lib/api";
+
 import { loginSchema, LoginValues } from "@repo/common";
 import {
   AuthImageHeader,
@@ -25,7 +27,6 @@ import {
 import AuthFormFields, {
   type FieldConfig,
 } from "@src/components/AuthFormFields";
-import { baseColors } from "@src/theme/colors";
 import { useAuth } from "@src/context/AuthContext";
 
 const defaultFormData: LoginValues = {
@@ -51,8 +52,6 @@ const signInFields: FieldConfig<LoginValues>[] = [
   },
 ];
 
-const API_BASE = "http://localhost:3000";
-
 const SignInScreen: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,20 +62,15 @@ const SignInScreen: React.FC = () => {
   const handleSignIn = async (data: LoginValues) => {
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/users/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        setError(json.message ?? "Invalid email or password.");
-        return;
-      }
-      await setToken(json.data.token);
+      const result = await apiClient.post<{ token: string }>("/api/users/login", data);
+      await setToken(result.token);
       router.replace("/");
-    } catch {
-      setError("Network error. Please try again.");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Invalid email or password.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
     }
   };
 
@@ -85,17 +79,8 @@ const SignInScreen: React.FC = () => {
     // Handle Google sign-in logic here
   };
 
-  const handleForgotPassword = () => {
-    console.log("Forgot password clicked");
-    // Navigate to forgot password screen
-  };
-
   const handleSignUp = () => {
     router.push("/register");
-  };
-
-  const handleNavigateHome = () => {
-    router.push("/");
   };
 
   return (
@@ -115,13 +100,12 @@ const SignInScreen: React.FC = () => {
           style={{ flex: 1 }}
         >
           <TouchableOpacity
-            onPress={() => handleNavigateHome()}
-            style={styles.navigateHomeButton}
+            onPress={() => router.push("/")}
+            style={styles.backButton}
             activeOpacity={0.8}
           >
-            <Text style={styles.navigateHomeButtonText}>{"←"}</Text>
+            <Text style={styles.backButtonText}>{"←"}</Text>
           </TouchableOpacity>
-
           <AuthImageHeader
             image={require("@assets/images/mars.png")}
             overlay={
@@ -151,7 +135,7 @@ const SignInScreen: React.FC = () => {
                   <AuthRememberRow
                     rememberMe={rememberMe}
                     onToggleRemember={() => setRememberMe(!rememberMe)}
-                    onForgotPassword={handleForgotPassword}
+                    onForgotPassword={() => {}}
                   />
                 }
                 renderSubmit={(submit) => (
@@ -192,15 +176,15 @@ const SignInScreen: React.FC = () => {
 export default SignInScreen;
 
 const styles = StyleSheet.create({
-  navigateHomeButton: {
+  backButton: {
     position: "absolute",
     top: 36,
     left: 24,
     padding: 10,
     zIndex: 10,
   },
-  navigateHomeButtonText: {
-    color: baseColors.grayDark,
+  backButtonText: {
+    color: "#767577",
     fontSize: 26,
     fontWeight: "bold",
   },

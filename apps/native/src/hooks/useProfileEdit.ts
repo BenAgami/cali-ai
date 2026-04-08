@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
 
 import { useAuth } from "@src/context/AuthContext";
-import { API_BASE } from "@src/lib/api";
+import { apiClient, ApiError, API_BASE } from "@src/lib/api";
 import type { GoalDraft } from "@src/types/user";
 
 export function useProfileEdit() {
@@ -35,13 +35,7 @@ export function useProfileEdit() {
       return;
     }
     try {
-      const res = await fetch(`${API_BASE}/api/users/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) return;
-      const json = await res.json();
-      if (!json.success) return;
-      const data = json.data;
+      const data = await apiClient.get<{ username: string; avatarUrl: string; experienceLevel: string; goals?: { goalType: string; title: string; targetValue?: number; targetUnit?: string }[] }>("/api/users/me", token);
 
       setUsername(data.username);
       setCharCount(data.username.length);
@@ -58,7 +52,7 @@ export function useProfileEdit() {
       setInitialGoal(snapshot);
       setGoalDraft(snapshot);
     } catch {
-      // ignore
+      // ignore — screen will show stale/empty state
     } finally {
       setLoading(false);
     }
@@ -101,15 +95,7 @@ export function useProfileEdit() {
 
       if (!token) return;
 
-      const urlRes = await fetch(`${API_BASE}/api/users/me/avatar-upload-url`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!urlRes.ok) {
-        Alert.alert("Error", "Failed to get upload URL.");
-        return;
-      }
-      const { uploadUrl, publicUrl } = (await urlRes.json()).data;
+      const { uploadUrl, publicUrl } = await apiClient.post<{ uploadUrl: string; publicUrl: string }>("/api/users/me/avatar-upload-url", {}, token);
 
       const uploadRes = await fetch(uploadUrl, {
         method: "PUT",
@@ -121,11 +107,7 @@ export function useProfileEdit() {
         return;
       }
 
-      await fetch(`${API_BASE}/api/users/me`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ avatarUrl: publicUrl }),
-      });
+      await apiClient.patch("/api/users/me", { avatarUrl: publicUrl }, token);
 
       setAvatarUri(publicUrl);
     } catch {
@@ -147,20 +129,7 @@ export function useProfileEdit() {
     setUsernameError(null);
 
     try {
-      const patchRes = await fetch(`${API_BASE}/api/users/me`, {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ username: username.trim(), experienceLevel }),
-      });
-
-      if (patchRes.status === 409) {
-        setUsernameError("Username already taken.");
-        return;
-      }
-      if (!patchRes.ok) {
-        Alert.alert("Error", "Failed to update profile.");
-        return;
-      }
+      await apiClient.patch("/api/users/me", { username: username.trim(), experienceLevel }, token);
 
       const goalChanged =
         goalDraft.goalType !== initialGoal?.goalType ||
@@ -169,20 +138,20 @@ export function useProfileEdit() {
         goalDraft.targetUnit !== initialGoal?.targetUnit;
 
       if (goalChanged && goalDraft.title.trim().length > 0) {
-        await fetch(`${API_BASE}/api/users/me/goals`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            goalType: goalDraft.goalType,
-            title: goalDraft.title,
-            ...(goalDraft.targetValue ? { targetValue: Number(goalDraft.targetValue) } : {}),
-            ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
-          }),
-        });
+        await apiClient.post("/api/users/me/goals", {
+          goalType: goalDraft.goalType,
+          title: goalDraft.title,
+          ...(goalDraft.targetValue ? { targetValue: Number(goalDraft.targetValue) } : {}),
+          ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
+        }, token);
       }
 
       router.back();
-    } catch {
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        setUsernameError("Username already taken.");
+        return;
+      }
       Alert.alert("Error", "Something went wrong. Please try again.");
     } finally {
       setSaving(false);
