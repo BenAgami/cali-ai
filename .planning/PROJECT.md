@@ -18,7 +18,7 @@ Users can record themselves doing calisthenics exercises and get actionable AI f
 
 ### Active
 
-- [ ] User profile — display name, avatar, bio
+- ✓ User profile — display name, avatar, fitness level, goal, workout reminders (validated in Phase 2)
 - [ ] Workout builder (manual) — pick exercises, set reps/sets/rest, save as named workout
 - [ ] Workout builder (AI-generated) — describe your goal, AI builds the workout
 - [ ] AI form analysis — camera open during set; real-time live cues mid-rep + automatic deep analysis when set ends
@@ -74,4 +74,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-21 after unified camera flow decision*
+*Last updated: 2026-04-08 after Phase 2 (user-profile) completion*
