@@ -18,7 +18,9 @@ const errorHandler = (
       : 500;
 
   const message =
-    error instanceof Error ? error.message : "Internal Server Error";
+    status < 500 && error instanceof Error
+      ? error.message
+      : "Internal Server Error";
 
   const code =
     typeof (error as { code?: unknown }).code === "string"
