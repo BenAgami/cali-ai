@@ -36,7 +36,7 @@ Inspect the working tree, craft a conventional commit message with a descriptive
    - Explain motivation and context, not the diff itself
    - Keep lines ≤72 chars
 
-4. **Commit** using a HEREDOC to preserve formatting:
+4. **Commit** using a HEREDOC to preserve formatting. Never append a `Co-Authored-By` trailer:
    ```bash
    git commit -m "$(cat <<'EOF'
    type(scope): subject

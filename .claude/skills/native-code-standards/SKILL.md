@@ -159,6 +159,80 @@ export function useProfile() {
 
 **One hook, one concern.** If a hook is managing both profile data AND goal mutations, split it.
 
+### When to Use TanStack Query (`useQuery` / `useMutation`)
+
+Use TanStack Query instead of manual `useState`/`useEffect` patterns when any of these apply:
+
+- The data is **read-heavy and benefits from caching** (e.g. user profile, exercise list)
+- You need **background refetch**, stale-while-revalidate, or window-focus refresh
+- You need **pagination or infinite scroll** (`useInfiniteQuery`)
+- You need a **mutation with automatic cache invalidation** (`useMutation` + `queryClient.invalidateQueries`)
+- You want **deduplication** of parallel fetches to the same endpoint
+
+Stick to manual `useState` + `useCallback` for:
+- Fire-and-forget side effects (e.g. logging an event)
+- Streaming/SSE data that doesn't fit the request-response model
+- Local UI state that never touches the network
+
+**The service layer is unchanged.** Services return typed promises — `useQuery` just calls them.
+
+```ts
+// apps/native/src/hooks/useProfile.ts — TanStack Query version
+import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@src/context/AuthContext";
+import { userService } from "@src/services/userService";
+import type { UserProfile } from "@repo/common";
+
+export function useProfile() {
+  const { token } = useAuth();
+
+  return useQuery<UserProfile, Error>({
+    queryKey: ["profile", token],
+    queryFn: () => userService.getMe(token!),
+    enabled: !!token,
+    staleTime: 5 * 60 * 1000, // 5 min — don't refetch if still fresh
+  });
+}
+
+// Screen consumes it the same way:
+const { data: user, isLoading, error } = useProfile();
+```
+
+```ts
+// Mutation with cache invalidation
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { userService } from "@src/services/userService";
+
+export function useUpdateProfile() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: UpdateProfileValues) =>
+      userService.updateProfile(token!, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    },
+  });
+}
+```
+
+**Query key conventions:**
+- First element is the resource name: `["profile"]`, `["sessions"]`, `["exercises"]`
+- Add scoping params after: `["sessions", sessionId]`, `["profile", token]`
+- Keep keys in a constants file when they're shared across hooks:
+
+```ts
+// apps/native/src/constants/queryKeys.ts
+export const QUERY_KEYS = {
+  profile: (token: string) => ["profile", token] as const,
+  sessions: () => ["sessions"] as const,
+  session: (id: string) => ["sessions", id] as const,
+} as const;
+```
+
+**Never** call `queryClient` directly from a screen or component. Invalidation logic belongs in the `onSuccess`/`onError` callbacks of `useMutation`, inside the hook.
+
 ---
 
 ## Rule 4 — Screens Are Thin
@@ -363,6 +437,8 @@ Before writing any code, answer these:
 - [ ] Is this type defined in `@repo/common` if it crosses the API boundary?
 - [ ] Does this API call go through a service in `src/services/`?
 - [ ] Does this hook call a service, not `apiClient` directly?
+- [ ] Should this hook use `useQuery`/`useMutation` (cached read or invalidation needed) rather than manual `useState`/`useEffect`?
+- [ ] Are query keys consistent with `QUERY_KEYS` constants and scoped correctly?
 - [ ] Is this screen JSX-only with no business logic?
 - [ ] Are all strings/numbers/URLs/colors coming from constants or env?
 - [ ] Are there any secrets, tokens, or credentials hardcoded?
