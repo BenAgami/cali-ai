@@ -6,13 +6,13 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const AUTH_TOKEN_KEY = "@cali_auth_token";
+import { tokenStore } from "@src/api/tokenStore";
+import { registerUnauthenticatedHandler } from "@src/api/client";
 
 type AuthContextType = {
   token: string | null;
-  setToken: (token: string | null) => Promise<void>;
+  setToken: (token: string | null, refreshToken?: string) => Promise<void>;
   isLoading: boolean;
 };
 
@@ -31,10 +31,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     const loadToken = async () => {
       try {
-        const stored = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
+        const stored = await tokenStore.getAccessToken();
         setTokenState(stored);
-      } catch {
-        // ignore
+      } catch (e) {
+        console.warn("[AuthContext] Failed to load token from storage", e);
       } finally {
         setIsLoading(false);
       }
@@ -42,18 +42,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     loadToken();
   }, []);
 
-  const setToken = useCallback(async (newToken: string | null) => {
-    setTokenState(newToken);
-    try {
-      if (newToken) {
-        await AsyncStorage.setItem(AUTH_TOKEN_KEY, newToken);
-      } else {
-        await AsyncStorage.removeItem(AUTH_TOKEN_KEY);
-      }
-    } catch {
-      // ignore
-    }
+  useEffect(() => {
+    registerUnauthenticatedHandler(() => setTokenState(null));
   }, []);
+
+  const setToken = useCallback(
+    async (newToken: string | null, refreshToken?: string) => {
+      setTokenState(newToken);
+      try {
+        if (newToken) {
+          await tokenStore.setTokens(newToken, refreshToken);
+        } else {
+          await tokenStore.clearTokens();
+        }
+      } catch (e) {
+        console.warn("[AuthContext] Failed to persist token to storage", e);
+      }
+    },
+    [],
+  );
 
   return (
     <AuthContext.Provider value={{ token, setToken, isLoading }}>

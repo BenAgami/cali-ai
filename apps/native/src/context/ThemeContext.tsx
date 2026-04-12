@@ -28,14 +28,14 @@ const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const getTheme = async () => {
       try {
         const savedTheme = (await AsyncStorage.getItem(
-          "theme"
+          "theme",
         )) as ThemeNames | null;
 
         if (savedTheme && themes[savedTheme]) {
           setTheme(savedTheme);
         }
-      } catch (error) {
-        console.error("Error loading theme.", error);
+      } catch (e) {
+        console.warn("[ThemeContext] Failed to load theme from storage", e);
       }
     };
     getTheme();
@@ -46,8 +46,8 @@ const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     setTheme(newTheme);
     try {
       await AsyncStorage.setItem("theme", newTheme);
-    } catch (error) {
-      console.error("Error saving theme.", error);
+    } catch (e) {
+      console.warn("[ThemeContext] Failed to persist theme to storage", e);
     }
   };
 
