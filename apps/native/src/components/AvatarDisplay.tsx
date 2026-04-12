@@ -10,16 +10,15 @@ const PALETTE = [
   "#4DB6AC",
 ];
 
-function avatarColor(username: string): string {
+const avatarColor = (username: string): string => {
   const hash = username
     .split("")
     .reduce((acc, c) => acc + c.charCodeAt(0), 0);
   return PALETTE[hash % PALETTE.length];
-}
+};
 
-function getInitials(username: string): string {
-  return username.slice(0, 2).toUpperCase();
-}
+const getInitials = (username: string): string =>
+  username.slice(0, 2).toUpperCase();
 
 type AvatarDisplayProps = {
   uri: string | null;

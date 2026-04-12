@@ -1,26 +1,25 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth } from "@src/context/AuthContext";
-import { apiClient, ApiError, API_BASE } from "@src/lib/api";
+import { userApi, ApiError, userKeys } from "@src/api";
+import type { ExperienceLevel } from "@repo/common";
 import type { GoalDraft } from "@src/types/user";
 
-export function useProfileEdit() {
+export const useProfileEdit = () => {
   const { token } = useAuth();
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
-
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [charCount, setCharCount] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [experienceLevel, setExperienceLevel] = useState("BEGINNER");
-
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("BEGINNER");
   const [initialGoal, setInitialGoal] = useState<GoalDraft | null>(null);
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({
     goalType: "STRENGTH",
@@ -29,20 +28,23 @@ export function useProfileEdit() {
     targetUnit: "",
   });
 
-  const fetchUser = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    try {
-      const data = await apiClient.get<{ username: string; avatarUrl: string; experienceLevel: string; goals?: { goalType: string; title: string; targetValue?: number; targetUnit?: string }[] }>("/api/users/me", token);
+  const seededRef = useRef(false);
+
+  const { isLoading } = useQuery({
+    queryKey: userKeys.me(),
+    queryFn: () => userApi.getMe(),
+    enabled: !!token,
+    select: (data) => {
+      // Seed local form state once on first load — don't reset while user is editing
+      if (seededRef.current) return data;
+      seededRef.current = true;
 
       setUsername(data.username);
       setCharCount(data.username.length);
       setAvatarUri(data.avatarUrl);
       setExperienceLevel(data.experienceLevel);
 
-      const activeGoal = data.goals?.[0];
+      const activeGoal = data.goals[0];
       const snapshot: GoalDraft = {
         goalType: activeGoal?.goalType ?? "STRENGTH",
         title: activeGoal?.title ?? "",
@@ -51,16 +53,61 @@ export function useProfileEdit() {
       };
       setInitialGoal(snapshot);
       setGoalDraft(snapshot);
-    } catch {
-      // ignore — screen will show stale/empty state
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+      return data;
+    },
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      await userApi.updateProfile({
+        username: username.trim(),
+        experienceLevel,
+      });
+
+      const goalChanged =
+        goalDraft.goalType !== initialGoal?.goalType ||
+        goalDraft.title !== initialGoal?.title ||
+        goalDraft.targetValue !== initialGoal?.targetValue ||
+        goalDraft.targetUnit !== initialGoal?.targetUnit;
+
+      if (goalChanged && goalDraft.title.trim().length > 0) {
+        await userApi.upsertGoal({
+          goalType: goalDraft.goalType,
+          title: goalDraft.title,
+          ...(goalDraft.targetValue ? { targetValue: Number(goalDraft.targetValue) } : {}),
+          ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+      router.back();
+    },
+    onError: (err) => {
+      if (err instanceof ApiError && err.status === 409) {
+        setUsernameError("Username already taken.");
+        return;
+      }
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    },
+  });
+
+  const avatarMutation = useMutation({
+    mutationFn: async (fileUri: string) => {
+      const { uploadUrl, publicUrl } = await userApi.getAvatarUploadUrl();
+      await userApi.uploadAvatarToS3(uploadUrl, fileUri);
+      await userApi.updateProfile({ avatarUrl: publicUrl });
+      return publicUrl;
+    },
+    onSuccess: (publicUrl) => {
+      setAvatarUri(publicUrl);
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+    onError: () => {
+      Alert.alert("Error", "Something went wrong with the avatar upload.");
+    },
+  });
 
   const handleUsernameChange = (text: string) => {
     setUsername(text);
@@ -87,35 +134,15 @@ export function useProfileEdit() {
 
     if (result.canceled || !result.assets?.[0]?.uri) return;
 
-    try {
-      const manipResult = await ImageManipulator.manipulate(result.assets[0].uri)
-        .resize({ width: 400, height: 400 })
-        .renderAsync()
-        .then((ctx) => ctx.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 }));
+    const manipResult = await ImageManipulator.manipulate(result.assets[0].uri)
+      .resize({ width: 400, height: 400 })
+      .renderAsync()
+      .then((ctx) => ctx.saveAsync({ format: SaveFormat.JPEG, compress: 0.8 }));
 
-      if (!token) return;
-
-      const { uploadUrl, publicUrl } = await apiClient.post<{ uploadUrl: string; publicUrl: string }>("/api/users/me/avatar-upload-url", {}, token);
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: { uri: manipResult.uri, type: "image/jpeg", name: "avatar.jpg" } as unknown as BodyInit,
-        headers: { "Content-Type": "image/jpeg" },
-      });
-      if (!uploadRes.ok) {
-        Alert.alert("Error", "Failed to upload image.");
-        return;
-      }
-
-      await apiClient.patch("/api/users/me", { avatarUrl: publicUrl }, token);
-
-      setAvatarUri(publicUrl);
-    } catch {
-      Alert.alert("Error", "Something went wrong with the avatar upload.");
-    }
+    avatarMutation.mutate(manipResult.uri);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (username.trim().length < 3) {
       setUsernameError("Username must be at least 3 characters.");
       return;
@@ -124,43 +151,13 @@ export function useProfileEdit() {
       setUsernameError("Username must be at most 30 characters.");
       return;
     }
-
-    setSaving(true);
     setUsernameError(null);
-
-    try {
-      await apiClient.patch("/api/users/me", { username: username.trim(), experienceLevel }, token);
-
-      const goalChanged =
-        goalDraft.goalType !== initialGoal?.goalType ||
-        goalDraft.title !== initialGoal?.title ||
-        goalDraft.targetValue !== initialGoal?.targetValue ||
-        goalDraft.targetUnit !== initialGoal?.targetUnit;
-
-      if (goalChanged && goalDraft.title.trim().length > 0) {
-        await apiClient.post("/api/users/me/goals", {
-          goalType: goalDraft.goalType,
-          title: goalDraft.title,
-          ...(goalDraft.targetValue ? { targetValue: Number(goalDraft.targetValue) } : {}),
-          ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
-        }, token);
-      }
-
-      router.back();
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setUsernameError("Username already taken.");
-        return;
-      }
-      Alert.alert("Error", "Something went wrong. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+    saveMutation.mutate();
   };
 
   return {
-    loading,
-    saving,
+    loading: isLoading,
+    saving: saveMutation.isPending,
     username,
     usernameError,
     charCount,
@@ -176,4 +173,4 @@ export function useProfileEdit() {
     handleSave,
     handleCancel: router.back,
   };
-}
+};

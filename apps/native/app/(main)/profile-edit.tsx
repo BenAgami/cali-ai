@@ -2,7 +2,7 @@ import React from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   SafeAreaView,
   ScrollView,
@@ -10,19 +10,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 
+import { EXPERIENCE_LEVELS, GOAL_TYPES } from "@repo/common";
 import { useTheme } from "@src/context/ThemeContext";
 import { useProfileEdit } from "@src/hooks/useProfileEdit";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import AvatarPickerModal from "@src/components/AvatarPickerModal";
-
-const EXPERIENCE_LEVELS = ["BEGINNER", "INTERMEDIATE", "ADVANCED"] as const;
-const GOAL_TYPES = [
-  "SKILL",
-  "STRENGTH",
-  "ENDURANCE",
-  "MOBILITY",
-  "CONSISTENCY",
-] as const;
 
 const ProfileEditScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -79,9 +71,9 @@ const ProfileEditScreen: React.FC = () => {
       >
         {/* Avatar */}
         <View style={styles.avatarSection}>
-          <TouchableOpacity
+          <Pressable
             onPress={() => setAvatarPickerVisible(true)}
-            activeOpacity={0.8}
+            style={({ pressed }) => pressed && styles.pressed}
           >
             <AvatarDisplay
               uri={avatarUri}
@@ -93,7 +85,7 @@ const ProfileEditScreen: React.FC = () => {
             >
               <Text style={styles.editAvatarBadgeText}>Edit</Text>
             </View>
-          </TouchableOpacity>
+          </Pressable>
         </View>
 
         {/* Username */}
@@ -129,17 +121,17 @@ const ProfileEditScreen: React.FC = () => {
             {EXPERIENCE_LEVELS.map((level) => {
               const active = experienceLevel === level;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={level}
-                  style={[
+                  style={({ pressed }) => [
                     styles.segmentButton,
                     {
                       backgroundColor: active ? "#007AFF" : colors.surface,
                       borderColor: active ? "#007AFF" : colors.text + "33",
+                      opacity: pressed ? 0.8 : 1,
                     },
                   ]}
                   onPress={() => setExperienceLevel(level)}
-                  activeOpacity={0.8}
                 >
                   <Text
                     style={[
@@ -149,7 +141,7 @@ const ProfileEditScreen: React.FC = () => {
                   >
                     {level.charAt(0) + level.slice(1).toLowerCase()}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </View>
@@ -170,19 +162,19 @@ const ProfileEditScreen: React.FC = () => {
             {GOAL_TYPES.map((gt) => {
               const active = goalDraft.goalType === gt;
               return (
-                <TouchableOpacity
+                <Pressable
                   key={gt}
-                  style={[
+                  style={({ pressed }) => [
                     styles.goalTypeButton,
                     {
                       backgroundColor: active ? "#007AFF" : colors.surface,
                       borderColor: active ? "#007AFF" : colors.text + "33",
+                      opacity: pressed ? 0.8 : 1,
                     },
                   ]}
                   onPress={() =>
                     setGoalDraft((prev) => ({ ...prev, goalType: gt }))
                   }
-                  activeOpacity={0.8}
                 >
                   <Text
                     style={[
@@ -192,7 +184,7 @@ const ProfileEditScreen: React.FC = () => {
                   >
                     {gt.charAt(0) + gt.slice(1).toLowerCase()}
                   </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -238,31 +230,35 @@ const ProfileEditScreen: React.FC = () => {
         </View>
 
         {/* Actions */}
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             styles.saveButton,
-            { backgroundColor: saving ? "#007AFF88" : "#007AFF" },
+            { backgroundColor: saving || pressed ? "#007AFF88" : "#007AFF" },
           ]}
           onPress={handleSave}
           disabled={saving}
-          activeOpacity={0.8}
         >
           {saving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.saveButtonText}>Save</Text>
           )}
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity
-          style={[styles.cancelButton, { borderColor: colors.text + "44" }]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.cancelButton,
+            {
+              borderColor: colors.text + "44",
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
           onPress={handleCancel}
-          activeOpacity={0.8}
         >
           <Text style={[styles.cancelButtonText, { color: colors.text }]}>
             Cancel
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
 
       <AvatarPickerModal
@@ -282,6 +278,7 @@ const styles = StyleSheet.create({
   loader: { marginTop: 60 },
   container: { padding: 24, paddingBottom: 48 },
   avatarSection: { alignItems: "center", marginBottom: 28 },
+  pressed: { opacity: 0.8 },
   editAvatarBadge: {
     position: "absolute",
     bottom: 0,

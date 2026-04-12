@@ -2,7 +2,7 @@ import React from "react";
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   SafeAreaView,
   ScrollView,
@@ -13,28 +13,33 @@ import { router } from "expo-router";
 import { useTheme } from "@src/context/ThemeContext";
 import { useProfile } from "@src/hooks/useProfile";
 import AvatarDisplay from "@src/components/AvatarDisplay";
+import { ApiError } from "@src/api";
 
-function formatExperienceLevel(level: string): string {
-  return level.charAt(0) + level.slice(1).toLowerCase();
-}
+const formatExperienceLevel = (level: string): string =>
+  level.charAt(0) + level.slice(1).toLowerCase();
 
 const ProfileScreen: React.FC = () => {
   const { colors } = useTheme();
-  const { user, loading, error } = useProfile();
+  const { data: user, isLoading, error } = useProfile();
   const activeGoal = user?.goals?.[0] ?? null;
+
+  if (error instanceof ApiError && error.status === 401) {
+    router.replace("/(auth)/login");
+    return null;
+  }
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        {loading && (
+        {isLoading && (
           <ActivityIndicator size="large" color={colors.text} style={styles.loader} />
         )}
 
-        {!loading && error && (
-          <Text style={[styles.errorText, { color: "#E57373" }]}>{error}</Text>
+        {!isLoading && error && (
+          <Text style={[styles.errorText, { color: "#E57373" }]}>Failed to load profile.</Text>
         )}
 
-        {!loading && user && (
+        {!isLoading && user && (
           <>
             <View style={styles.avatarSection}>
               <AvatarDisplay uri={user.avatarUrl} username={user.username} size={100} />
@@ -68,13 +73,15 @@ const ProfileScreen: React.FC = () => {
               )}
             </View>
 
-            <TouchableOpacity
-              style={[styles.editButton, { backgroundColor: "#007AFF" }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.editButton,
+                { backgroundColor: pressed ? "#006EE6" : "#007AFF" },
+              ]}
               onPress={() => router.push("/profile-edit")}
-              activeOpacity={0.8}
             >
               <Text style={styles.editButtonText}>Edit Profile</Text>
-            </TouchableOpacity>
+            </Pressable>
           </>
         )}
       </ScrollView>

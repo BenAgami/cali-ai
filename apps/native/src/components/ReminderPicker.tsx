@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import { useTheme } from "@src/context/ThemeContext";
@@ -8,11 +8,11 @@ import { baseColors } from "@src/theme/colors";
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 7];
 
-function formatTime(hour: number, minute: number): string {
+const formatTime = (hour: number, minute: number): string => {
   const period = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 === 0 ? 12 : hour % 12;
   return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
-}
+};
 
 type Props = {
   pickerDate: Date;
@@ -40,15 +40,17 @@ const ReminderPicker: React.FC<Props> = ({
   return (
     <View style={styles.container}>
       {Platform.OS === "android" && !showPicker && (
-        <TouchableOpacity
-          style={[styles.timeDisplay, { borderColor: baseColors.grayLight }]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.timeDisplay,
+            { borderColor: baseColors.grayLight, opacity: pressed ? 0.8 : 1 },
+          ]}
           onPress={onShowPicker}
-          activeOpacity={0.8}
         >
           <Text style={[styles.timeDisplayText, { color: colors.text }]}>
             {formatTime(pickerDate.getHours(), pickerDate.getMinutes())}
           </Text>
-        </TouchableOpacity>
+        </Pressable>
       )}
       {showPicker && (
         <DateTimePicker
@@ -64,17 +66,17 @@ const ReminderPicker: React.FC<Props> = ({
         {WEEKDAY_VALUES.map((weekday, idx) => {
           const active = selectedDays.includes(weekday);
           return (
-            <TouchableOpacity
+            <Pressable
               key={weekday}
-              style={[
+              style={({ pressed }) => [
                 styles.dayButton,
                 {
                   backgroundColor: active ? baseColors.blue : colors.surface,
                   borderColor: active ? baseColors.blue : baseColors.grayLight,
+                  opacity: pressed ? 0.7 : 1,
                 },
               ]}
               onPress={() => onToggleDay(weekday)}
-              activeOpacity={0.7}
             >
               <Text
                 style={[
@@ -84,26 +86,32 @@ const ReminderPicker: React.FC<Props> = ({
               >
                 {DAY_LABELS[idx]}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={[
+        <Pressable
+          style={({ pressed }) => [
             styles.saveButton,
-            { backgroundColor: selectedDays.length > 0 ? baseColors.blue : baseColors.grayLight },
+            {
+              backgroundColor:
+                selectedDays.length > 0
+                  ? pressed
+                    ? baseColors.grayLight
+                    : baseColors.blue
+                  : baseColors.grayLight,
+            },
           ]}
           onPress={onSave}
           disabled={selectedDays.length === 0}
-          activeOpacity={0.8}
         >
           <Text style={styles.saveButtonText}>Save</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onCancel} activeOpacity={0.7}>
+        </Pressable>
+        <Pressable onPress={onCancel} style={({ pressed }) => pressed && styles.pressed}>
           <Text style={[styles.cancelLink, { color: baseColors.grayDark }]}>Cancel</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );
@@ -161,5 +169,8 @@ const styles = StyleSheet.create({
   },
   cancelLink: {
     fontSize: 14,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });

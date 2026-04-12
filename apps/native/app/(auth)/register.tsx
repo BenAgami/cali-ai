@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   StyleSheet,
@@ -6,7 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
-  TouchableOpacity,
+  Pressable,
 } from "react-native";
 
 import { Stack, useRouter } from "expo-router";
@@ -25,8 +25,7 @@ import {
 import AuthFormFields, {
   type FieldConfig,
 } from "@src/components/AuthFormFields";
-import { apiClient, ApiError } from "@src/lib/api";
-import { useAuth } from "@src/context/AuthContext";
+import { useRegister } from "@src/hooks/useRegister";
 import { baseColors } from "@src/theme/colors";
 
 const defaultFormData: RegisterValues = {
@@ -60,47 +59,16 @@ const registerFields: FieldConfig<RegisterValues>[] = [
 ];
 
 const RegistrationScreen: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
+  const { handleSignUp, error } = useRegister();
   const router = useRouter();
-  const { setToken } = useAuth();
-
-  const handleSignUp = async (data: RegisterValues) => {
-    setError(null);
-    try {
-      const result = await apiClient.post<{ token: string }>(
-        "/api/users/register",
-        data,
-      );
-      await setToken(result.token);
-      router.replace("/");
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setError("An account with this email already exists.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
-    }
-  };
 
   const handleGoogleSignIn = () => {
-    console.log("Google sign-in clicked");
-  };
-
-  const handleSignIn = () => {
-    router.push("/login");
-  };
-
-  const handleNavigateHome = () => {
-    router.push("/");
+    // Google sign-in not yet implemented
   };
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -115,13 +83,15 @@ const RegistrationScreen: React.FC = () => {
             bounces={false}
             showsVerticalScrollIndicator={false}
           >
-            <TouchableOpacity
-              onPress={() => handleNavigateHome()}
-              style={styles.navigateHomeButton}
-              activeOpacity={0.8}
+            <Pressable
+              onPress={() => router.push("/")}
+              style={({ pressed }) => [
+                styles.navigateHomeButton,
+                pressed && styles.pressed,
+              ]}
             >
               <Text style={styles.navigateHomeButtonText}>{"←"}</Text>
-            </TouchableOpacity>
+            </Pressable>
 
             <AuthImageHeader
               image={require("@assets/images/saturn.png")}
@@ -149,10 +119,12 @@ const RegistrationScreen: React.FC = () => {
                   fields={registerFields}
                   onSubmit={handleSignUp}
                   renderSubmit={(submit) => (
-                    <TouchableOpacity
-                      style={styles.submitButton}
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.submitButton,
+                        pressed && styles.pressed,
+                      ]}
                       onPress={submit}
-                      activeOpacity={0.8}
                     >
                       <LinearGradient
                         colors={["#9333ea", "#4f46e5"]}
@@ -164,7 +136,7 @@ const RegistrationScreen: React.FC = () => {
                           Create Account
                         </Text>
                       </LinearGradient>
-                    </TouchableOpacity>
+                    </Pressable>
                   )}
                 />
 
@@ -175,7 +147,7 @@ const RegistrationScreen: React.FC = () => {
                 <AuthFooter
                   text="Already have an account?"
                   linkText="Sign In"
-                  onPressLink={handleSignIn}
+                  onPressLink={() => router.push("/login")}
                 />
               </View>
             </View>
@@ -195,6 +167,9 @@ const styles = StyleSheet.create({
     left: 24,
     padding: 10,
     zIndex: 10,
+  },
+  pressed: {
+    opacity: 0.8,
   },
   navigateHomeButtonText: {
     color: baseColors.grayDark,

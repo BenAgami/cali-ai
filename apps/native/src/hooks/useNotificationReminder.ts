@@ -12,7 +12,7 @@ export type ReminderConfig = {
   weekdays: number[]; // 1=Sunday, 2=Monday ... 7=Saturday
 };
 
-export function useNotificationReminder() {
+export const useNotificationReminder = () => {
   const [config, setConfig] = useState<ReminderConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -124,4 +124,4 @@ export function useNotificationReminder() {
   }, []);
 
   return { config, loading, scheduleReminder, cancelReminder };
-}
+};

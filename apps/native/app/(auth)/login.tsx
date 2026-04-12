@@ -5,14 +5,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
-  TouchableOpacity,
+  Pressable,
 } from "react-native";
 
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
-
-import { apiClient, ApiError } from "@src/lib/api";
 
 import { loginSchema, LoginValues } from "@repo/common";
 import {
@@ -27,7 +25,7 @@ import {
 import AuthFormFields, {
   type FieldConfig,
 } from "@src/components/AuthFormFields";
-import { useAuth } from "@src/context/AuthContext";
+import { useLogin } from "@src/hooks/useLogin";
 
 const defaultFormData: LoginValues = {
   email: "",
@@ -54,42 +52,16 @@ const signInFields: FieldConfig<LoginValues>[] = [
 
 const SignInScreen: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+  const { handleSignIn, error } = useLogin();
   const router = useRouter();
-  const { setToken } = useAuth();
-
-  const handleSignIn = async (data: LoginValues) => {
-    setError(null);
-    try {
-      const result = await apiClient.post<{ token: string }>("/api/users/login", data);
-      await setToken(result.token);
-      router.replace("/");
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        setError("Invalid email or password.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
-    }
-  };
 
   const handleGoogleSignIn = () => {
-    console.log("Google sign-in clicked");
-    // Handle Google sign-in logic here
-  };
-
-  const handleSignUp = () => {
-    router.push("/register");
+    // Google sign-in not yet implemented
   };
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+      <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
@@ -99,13 +71,12 @@ const SignInScreen: React.FC = () => {
           colors={["#0f0c29", "#302b63", "#24243e"]}
           style={{ flex: 1 }}
         >
-          <TouchableOpacity
+          <Pressable
             onPress={() => router.push("/")}
-            style={styles.backButton}
-            activeOpacity={0.8}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
           >
             <Text style={styles.backButtonText}>{"←"}</Text>
-          </TouchableOpacity>
+          </Pressable>
           <AuthImageHeader
             image={require("@assets/images/mars.png")}
             overlay={
@@ -139,10 +110,9 @@ const SignInScreen: React.FC = () => {
                   />
                 }
                 renderSubmit={(submit) => (
-                  <TouchableOpacity
-                    style={styles.submitButton}
+                  <Pressable
+                    style={({ pressed }) => [styles.submitButton, pressed && styles.pressed]}
                     onPress={submit}
-                    activeOpacity={0.8}
                   >
                     <LinearGradient
                       colors={["#667eea", "#764ba2"]}
@@ -152,7 +122,7 @@ const SignInScreen: React.FC = () => {
                     >
                       <Text style={styles.submitButtonText}>Sign In</Text>
                     </LinearGradient>
-                  </TouchableOpacity>
+                  </Pressable>
                 )}
               />
 
@@ -163,7 +133,7 @@ const SignInScreen: React.FC = () => {
               <AuthFooter
                 text="Don't have an account?"
                 linkText="Sign Up"
-                onPressLink={handleSignUp}
+                onPressLink={() => router.push("/register")}
               />
             </View>
           </View>
@@ -182,6 +152,9 @@ const styles = StyleSheet.create({
     left: 24,
     padding: 10,
     zIndex: 10,
+  },
+  pressed: {
+    opacity: 0.8,
   },
   backButtonText: {
     color: "#767577",

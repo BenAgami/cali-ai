@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import { useTheme } from "@src/context/ThemeContext";
@@ -7,16 +7,16 @@ import { baseColors } from "@src/theme/colors";
 import { useNotificationReminder } from "@src/hooks/useNotificationReminder";
 import ReminderPicker from "@src/components/ReminderPicker";
 
-function formatTime(hour: number, minute: number): string {
+const formatTime = (hour: number, minute: number): string => {
   const period = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 === 0 ? 12 : hour % 12;
   return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
-}
+};
 
-function formatDays(weekdays: number[]): string {
+const formatDays = (weekdays: number[]): string => {
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return weekdays.map((d) => names[d - 1]).join(", ");
-}
+};
 
 type Props = { username: string };
 
@@ -74,13 +74,15 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
             Set a workout reminder to keep your streak going
           </Text>
           {!expanded && (
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: baseColors.blue }]}
+            <Pressable
+              style={({ pressed }) => [
+                styles.button,
+                { backgroundColor: baseColors.blue, opacity: pressed ? 0.8 : 1 },
+              ]}
               onPress={() => { setShowPicker(Platform.OS === "ios"); setExpanded(true); }}
-              activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>Set Reminder</Text>
-            </TouchableOpacity>
+            </Pressable>
           )}
         </>
       ) : (
@@ -94,16 +96,18 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
           </Text>
           {!expanded && (
             <View style={styles.actionRow}>
-              <TouchableOpacity
-                style={[styles.button, { backgroundColor: baseColors.blue }]}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.button,
+                  { backgroundColor: baseColors.blue, opacity: pressed ? 0.8 : 1 },
+                ]}
                 onPress={handleEdit}
-                activeOpacity={0.8}
               >
                 <Text style={styles.buttonText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={cancelReminder} activeOpacity={0.7}>
+              </Pressable>
+              <Pressable onPress={cancelReminder} style={({ pressed }) => pressed && styles.pressed}>
                 <Text style={[styles.removeLink, { color: baseColors.grayDark }]}>Remove</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
           )}
         </>
@@ -146,4 +150,5 @@ const styles = StyleSheet.create({
   button: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 8 },
   buttonText: { color: baseColors.white, fontSize: 14, fontWeight: "600" },
   removeLink: { fontSize: 14 },
+  pressed: { opacity: 0.7 },
 });

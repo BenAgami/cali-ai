@@ -1,35 +1,22 @@
-import React, { useState, useCallback } from "react";
+import React from "react";
 import {
   StyleSheet,
   Text,
-  TouchableOpacity,
+  Pressable,
   View,
   SafeAreaView,
   ScrollView,
 } from "react-native";
 import { Stack, router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 
 import { useTheme } from "@src/context/ThemeContext";
-import { useAuth } from "@src/context/AuthContext";
+import { useProfile } from "@src/hooks/useProfile";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import ReminderCard from "@src/components/ReminderCard";
-import { apiClient } from "@src/lib/api";
-import type { UserProfile } from "@src/types/user";
 
 const Home: React.FC = () => {
   const { colors } = useTheme();
-  const { token } = useAuth();
-  const [user, setUser] = useState<UserProfile | null>(null);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (!token) return;
-      apiClient.get<UserProfile>("/api/users/me", token)
-        .then(setUser)
-        .catch(() => {});
-    }, [token])
-  );
+  const { data: user } = useProfile();
 
   return (
     <>
@@ -39,16 +26,16 @@ const Home: React.FC = () => {
       >
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.headerRow}>
-            <TouchableOpacity
+            <Pressable
               onPress={() => router.push("/profile")}
-              activeOpacity={0.8}
+              style={({ pressed }) => pressed && styles.pressed}
             >
               <AvatarDisplay
                 uri={user?.avatarUrl ?? null}
                 username={user?.username ?? "U"}
                 size={44}
               />
-            </TouchableOpacity>
+            </Pressable>
             <Text style={[styles.greeting, { color: colors.text }]}>
               Hello, {user?.username ?? "User"}
             </Text>
@@ -83,6 +70,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     gap: 12,
+  },
+  pressed: {
+    opacity: 0.8,
   },
   reminderSection: {
     marginTop: 20,

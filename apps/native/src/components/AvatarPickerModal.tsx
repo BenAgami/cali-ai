@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
+import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
 
 import { useTheme } from "@src/context/ThemeContext";
 
@@ -25,20 +25,29 @@ const AvatarPickerModal: React.FC<Props> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+      <Pressable style={styles.overlay} onPress={onClose}>
         <View style={[styles.sheet, { backgroundColor: colors.surface }]}>
           <Text style={[styles.title, { color: colors.text }]}>Change Avatar</Text>
-          <TouchableOpacity style={styles.option} onPress={onPickLibrary} activeOpacity={0.8}>
+          <Pressable
+            style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+            onPress={onPickLibrary}
+          >
             <Text style={styles.optionBlue}>Choose from Library</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.option} onPress={onPickCamera} activeOpacity={0.8}>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+            onPress={onPickCamera}
+          >
             <Text style={styles.optionBlue}>Take Photo</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.option} onPress={onClose} activeOpacity={0.8}>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.option, pressed && styles.pressed]}
+            onPress={onClose}
+          >
             <Text style={styles.optionRed}>Cancel</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     </Modal>
   );
 };
@@ -68,6 +77,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: "rgba(0,0,0,0.1)",
+  },
+  pressed: {
+    opacity: 0.6,
   },
   optionBlue: {
     fontSize: 16,
