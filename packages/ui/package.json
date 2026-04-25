@@ -8,6 +8,13 @@
     "build": "tsup",
     "clean": "rm -rf dist"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/react": "^18.2.14"

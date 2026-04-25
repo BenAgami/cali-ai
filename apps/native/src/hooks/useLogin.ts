@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
+import { StatusCodes } from "http-status-codes";
 
 import { useAuth } from "@src/context/AuthContext";
 import { authApi, ApiError } from "@src/api";
@@ -16,7 +17,7 @@ export const useLogin = () => {
       await setToken(result.token);
       router.replace("/");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
+      if (err instanceof ApiError && err.status === StatusCodes.UNAUTHORIZED) {
         setError("Invalid email or password.");
       } else {
         setError("Something went wrong. Please try again.");

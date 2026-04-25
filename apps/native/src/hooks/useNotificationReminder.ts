@@ -3,31 +3,28 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
+import { DayOfWeek, type ReminderConfig } from "@src/types/reminder";
+
 const REMINDER_IDS_KEY = "workoutReminderIds";
 const REMINDER_CONFIG_KEY = "workoutReminderConfig";
-
-export type ReminderConfig = {
-  hour: number;
-  minute: number;
-  weekdays: number[]; // 1=Sunday, 2=Monday ... 7=Saturday
-};
+const WORKOUT_REMINDER_CHANNEL_ID = "workout-reminders";
 
 export const useNotificationReminder = () => {
-  const [config, setConfig] = useState<ReminderConfig | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [reminderConfig, setReminderConfig] = useState<ReminderConfig | null>(
+    null,
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load saved config on mount
   useEffect(() => {
     (async () => {
       const stored = await AsyncStorage.getItem(REMINDER_CONFIG_KEY);
       if (stored) {
-        setConfig(JSON.parse(stored));
+        setReminderConfig(JSON.parse(stored));
       }
-      setLoading(false);
+      setIsLoading(false);
     })();
   }, []);
 
-  // Reconcile on mount: if AsyncStorage is empty but OS has notifications, cancel all
   useEffect(() => {
     (async () => {
       const storedIds = await AsyncStorage.getItem(REMINDER_IDS_KEY);
@@ -42,13 +39,15 @@ export const useNotificationReminder = () => {
   }, []);
 
   const requestPermissions = useCallback(async (): Promise<boolean> => {
-    // Android channel setup — required for Android 8+
     if (Platform.OS === "android") {
-      await Notifications.setNotificationChannelAsync("workout-reminders", {
-        name: "Workout Reminders",
-        importance: Notifications.AndroidImportance.MAX,
-        sound: "default",
-      });
+      await Notifications.setNotificationChannelAsync(
+        WORKOUT_REMINDER_CHANNEL_ID,
+        {
+          name: "Workout Reminders",
+          importance: Notifications.AndroidImportance.MAX,
+          sound: "default",
+        },
+      );
     }
 
     const { status } = await Notifications.requestPermissionsAsync({
@@ -62,30 +61,26 @@ export const useNotificationReminder = () => {
       username: string,
       hour: number,
       minute: number,
-      weekdays: number[],
+      daysOfWeek: DayOfWeek[],
     ): Promise<boolean> => {
-      const granted = await requestPermissions();
-      if (!granted) return false;
+      const isGranted = await requestPermissions();
+      if (!isGranted) return false;
 
-      // Cancel previous notifications (cancel-and-replace)
       const stored = await AsyncStorage.getItem(REMINDER_IDS_KEY);
       const prevIds: string[] = stored ? JSON.parse(stored) : [];
       await Promise.all(
-        prevIds.map((id) =>
-          Notifications.cancelScheduledNotificationAsync(id),
-        ),
+        prevIds.map((id) => Notifications.cancelScheduledNotificationAsync(id)),
       );
 
-      // Schedule one notification per selected day
       const newIds = await Promise.all(
-        weekdays.map((weekday) =>
+        daysOfWeek.map((weekday) =>
           Notifications.scheduleNotificationAsync({
             content: {
               title: "Cali AI",
               body: `Hey ${username}, time for your workout!`,
               sound: "default",
               ...(Platform.OS === "android" && {
-                channelId: "workout-reminders",
+                channelId: WORKOUT_REMINDER_CHANNEL_ID,
               }),
             },
             trigger: {
@@ -98,14 +93,13 @@ export const useNotificationReminder = () => {
         ),
       );
 
-      // Persist IDs and config
       await AsyncStorage.setItem(REMINDER_IDS_KEY, JSON.stringify(newIds));
-      const newConfig: ReminderConfig = { hour, minute, weekdays };
+      const newConfig: ReminderConfig = { hour, minute, daysOfWeek };
       await AsyncStorage.setItem(
         REMINDER_CONFIG_KEY,
         JSON.stringify(newConfig),
       );
-      setConfig(newConfig);
+      setReminderConfig(newConfig);
 
       return true;
     },
@@ -120,8 +114,8 @@ export const useNotificationReminder = () => {
     );
     await AsyncStorage.removeItem(REMINDER_IDS_KEY);
     await AsyncStorage.removeItem(REMINDER_CONFIG_KEY);
-    setConfig(null);
+    setReminderConfig(null);
   }, []);
 
-  return { config, loading, scheduleReminder, cancelReminder };
+  return { reminderConfig, loading: isLoading, scheduleReminder, cancelReminder };
 };

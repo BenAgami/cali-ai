@@ -10,7 +10,7 @@ import {
 import { Stack, router } from "expo-router";
 
 import { useTheme } from "@src/context/ThemeContext";
-import { useProfile } from "@src/hooks/useProfile";
+import { useProfile } from "@src/hooks/queries/useProfile";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import ReminderCard from "@src/components/ReminderCard";
 

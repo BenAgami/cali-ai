@@ -5,6 +5,7 @@ import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useTheme } from "@src/context/ThemeContext";
 import { baseColors } from "@src/theme/colors";
 import { useNotificationReminder } from "@src/hooks/useNotificationReminder";
+import { DayOfWeek } from "@src/types/reminder";
 import ReminderPicker from "@src/components/ReminderPicker";
 
 const formatTime = (hour: number, minute: number): string => {
@@ -13,16 +14,17 @@ const formatTime = (hour: number, minute: number): string => {
   return `${displayHour}:${minute.toString().padStart(2, "0")} ${period}`;
 };
 
-const formatDays = (weekdays: number[]): string => {
+const formatDays = (daysOfWeek: DayOfWeek[]): string => {
   const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return weekdays.map((d) => names[d - 1]).join(", ");
+  return daysOfWeek.map((d) => names[d - 1]).join(", ");
 };
 
 type Props = { username: string };
 
 const ReminderCard: React.FC<Props> = ({ username }) => {
   const { colors } = useTheme();
-  const { config, loading, scheduleReminder, cancelReminder } = useNotificationReminder();
+  const { reminderConfig, loading, scheduleReminder, cancelReminder } =
+    useNotificationReminder();
 
   const [expanded, setExpanded] = useState(false);
   const [pickerDate, setPickerDate] = useState(() => {
@@ -31,33 +33,42 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
     return d;
   });
   const [showPicker, setShowPicker] = useState(Platform.OS === "ios");
-  const [selectedDays, setSelectedDays] = useState<number[]>([2, 4, 6]);
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([
+    DayOfWeek.Monday,
+    DayOfWeek.Wednesday,
+    DayOfWeek.Friday,
+  ]);
 
   const handleTimeChange = (event: DateTimePickerEvent, selected?: Date) => {
     if (Platform.OS === "android") setShowPicker(false);
     if (selected) setPickerDate(selected);
   };
 
-  const handleToggleDay = (weekday: number) => {
+  const handleToggleDay = (day: DayOfWeek) => {
     setSelectedDays((prev) =>
-      prev.includes(weekday)
-        ? prev.filter((d) => d !== weekday)
-        : [...prev, weekday].sort((a, b) => a - b)
+      prev.includes(day)
+        ? prev.filter((d) => d !== day)
+        : ([...prev, day].sort((a, b) => a - b) as DayOfWeek[]),
     );
   };
 
   const handleSave = async () => {
     if (selectedDays.length === 0) return;
-    await scheduleReminder(username, pickerDate.getHours(), pickerDate.getMinutes(), selectedDays);
+    await scheduleReminder(
+      username,
+      pickerDate.getHours(),
+      pickerDate.getMinutes(),
+      selectedDays,
+    );
     setExpanded(false);
   };
 
   const handleEdit = () => {
-    if (config) {
+    if (reminderConfig) {
       const d = new Date();
-      d.setHours(config.hour, config.minute, 0, 0);
+      d.setHours(reminderConfig.hour, reminderConfig.minute, 0, 0);
       setPickerDate(d);
-      setSelectedDays(config.weekdays);
+      setSelectedDays(reminderConfig.daysOfWeek);
     }
     setShowPicker(Platform.OS === "ios");
     setExpanded(true);
@@ -66,10 +77,17 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
   if (loading) return null;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, shadowColor: baseColors.black }]}>
-      {!config ? (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, shadowColor: baseColors.black },
+      ]}
+    >
+      {!reminderConfig ? (
         <>
-          <Text style={[styles.nudgeTitle, { color: colors.text }]}>Stay consistent</Text>
+          <Text style={[styles.nudgeTitle, { color: colors.text }]}>
+            Stay consistent
+          </Text>
           <Text style={[styles.nudgeSubtitle, { color: baseColors.grayDark }]}>
             Set a workout reminder to keep your streak going
           </Text>
@@ -77,9 +95,15 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
             <Pressable
               style={({ pressed }) => [
                 styles.button,
-                { backgroundColor: baseColors.blue, opacity: pressed ? 0.8 : 1 },
+                {
+                  backgroundColor: baseColors.blue,
+                  opacity: pressed ? 0.8 : 1,
+                },
               ]}
-              onPress={() => { setShowPicker(Platform.OS === "ios"); setExpanded(true); }}
+              onPress={() => {
+                setShowPicker(Platform.OS === "ios");
+                setExpanded(true);
+              }}
             >
               <Text style={styles.buttonText}>Set Reminder</Text>
             </Pressable>
@@ -87,26 +111,38 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
         </>
       ) : (
         <>
-          <Text style={[styles.reminderTitle, { color: colors.text }]}>Workout Reminder</Text>
+          <Text style={[styles.reminderTitle, { color: colors.text }]}>
+            Workout Reminder
+          </Text>
           <Text style={[styles.reminderTime, { color: baseColors.blue }]}>
-            {formatTime(config.hour, config.minute)}
+            {formatTime(reminderConfig.hour, reminderConfig.minute)}
           </Text>
           <Text style={[styles.reminderDays, { color: baseColors.grayDark }]}>
-            {formatDays(config.weekdays)}
+            {formatDays(reminderConfig.daysOfWeek)}
           </Text>
           {!expanded && (
             <View style={styles.actionRow}>
               <Pressable
                 style={({ pressed }) => [
                   styles.button,
-                  { backgroundColor: baseColors.blue, opacity: pressed ? 0.8 : 1 },
+                  {
+                    backgroundColor: baseColors.blue,
+                    opacity: pressed ? 0.8 : 1,
+                  },
                 ]}
                 onPress={handleEdit}
               >
                 <Text style={styles.buttonText}>Edit</Text>
               </Pressable>
-              <Pressable onPress={cancelReminder} style={({ pressed }) => pressed && styles.pressed}>
-                <Text style={[styles.removeLink, { color: baseColors.grayDark }]}>Remove</Text>
+              <Pressable
+                onPress={cancelReminder}
+                style={({ pressed }) => pressed && styles.pressed}
+              >
+                <Text
+                  style={[styles.removeLink, { color: baseColors.grayDark }]}
+                >
+                  Remove
+                </Text>
               </Pressable>
             </View>
           )}

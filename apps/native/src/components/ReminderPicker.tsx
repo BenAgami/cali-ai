@@ -4,9 +4,18 @@ import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/dat
 
 import { useTheme } from "@src/context/ThemeContext";
 import { baseColors } from "@src/theme/colors";
+import { DayOfWeek } from "@src/types/reminder";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
-const WEEKDAY_VALUES = [1, 2, 3, 4, 5, 6, 7];
+const WEEKDAY_VALUES: DayOfWeek[] = [
+  DayOfWeek.Sunday,
+  DayOfWeek.Monday,
+  DayOfWeek.Tuesday,
+  DayOfWeek.Wednesday,
+  DayOfWeek.Thursday,
+  DayOfWeek.Friday,
+  DayOfWeek.Saturday,
+];
 
 const formatTime = (hour: number, minute: number): string => {
   const period = hour >= 12 ? "PM" : "AM";
@@ -17,10 +26,10 @@ const formatTime = (hour: number, minute: number): string => {
 type Props = {
   pickerDate: Date;
   showPicker: boolean;
-  selectedDays: number[];
+  selectedDays: DayOfWeek[];
   onTimeChange: (event: DateTimePickerEvent, date?: Date) => void;
   onShowPicker: () => void;
-  onToggleDay: (weekday: number) => void;
+  onToggleDay: (day: DayOfWeek) => void;
   onSave: () => void;
   onCancel: () => void;
 };

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { router } from "expo-router";
+import { StatusCodes } from "http-status-codes";
 
 import { useAuth } from "@src/context/AuthContext";
 import { authApi, ApiError } from "@src/api";
@@ -16,7 +17,7 @@ export const useRegister = () => {
       await setToken(result.token);
       router.replace("/");
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
+      if (err instanceof ApiError && err.status === StatusCodes.CONFLICT) {
         setError("An account with this email already exists.");
       } else {
         setError("Something went wrong. Please try again.");

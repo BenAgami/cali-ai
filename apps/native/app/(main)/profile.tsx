@@ -11,7 +11,7 @@ import {
 import { router } from "expo-router";
 
 import { useTheme } from "@src/context/ThemeContext";
-import { useProfile } from "@src/hooks/useProfile";
+import { useProfile } from "@src/hooks/queries/useProfile";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import { ApiError } from "@src/api";
 
@@ -29,27 +29,50 @@ const ProfileScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         {isLoading && (
-          <ActivityIndicator size="large" color={colors.text} style={styles.loader} />
+          <ActivityIndicator
+            size="large"
+            color={colors.text}
+            style={styles.loader}
+          />
         )}
 
         {!isLoading && error && (
-          <Text style={[styles.errorText, { color: "#E57373" }]}>Failed to load profile.</Text>
+          <Text style={[styles.errorText, { color: "#E57373" }]}>
+            Failed to load profile.
+          </Text>
         )}
 
         {!isLoading && user && (
           <>
             <View style={styles.avatarSection}>
-              <AvatarDisplay uri={user.avatarUrl} username={user.username} size={100} />
-              <Text style={[styles.username, { color: colors.text }]}>{user.username}</Text>
-              <Text style={[styles.email, { color: colors.text }]}>{user.email}</Text>
+              <AvatarDisplay
+                uri={user.avatarUrl}
+                username={user.username}
+                size={100}
+              />
+              <Text style={[styles.username, { color: colors.text }]}>
+                {user.username}
+              </Text>
+              <Text style={[styles.email, { color: colors.text }]}>
+                {user.email}
+              </Text>
             </View>
 
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.cardLabel, { color: colors.text }]}>Experience Level</Text>
-              <View style={[styles.badge, { backgroundColor: colors.background }]}>
+              <Text style={[styles.cardLabel, { color: colors.text }]}>
+                Experience Level
+              </Text>
+              <View
+                style={[styles.badge, { backgroundColor: colors.background }]}
+              >
                 <Text style={[styles.badgeText, { color: colors.text }]}>
                   {formatExperienceLevel(user.experienceLevel)}
                 </Text>
@@ -57,19 +80,28 @@ const ProfileScreen: React.FC = () => {
             </View>
 
             <View style={[styles.card, { backgroundColor: colors.surface }]}>
-              <Text style={[styles.cardLabel, { color: colors.text }]}>Active Goal</Text>
+              <Text style={[styles.cardLabel, { color: colors.text }]}>
+                Active Goal
+              </Text>
               {activeGoal ? (
                 <View>
-                  <Text style={[styles.goalType, { color: colors.text }]}>{activeGoal.goalType}</Text>
-                  <Text style={[styles.goalTitle, { color: colors.text }]}>{activeGoal.title}</Text>
+                  <Text style={[styles.goalType, { color: colors.text }]}>
+                    {activeGoal.goalType}
+                  </Text>
+                  <Text style={[styles.goalTitle, { color: colors.text }]}>
+                    {activeGoal.title}
+                  </Text>
                   {activeGoal.targetValue != null && (
                     <Text style={[styles.goalTarget, { color: colors.text }]}>
-                      Target: {activeGoal.targetValue} {activeGoal.targetUnit ?? ""}
+                      Target: {activeGoal.targetValue}{" "}
+                      {activeGoal.targetUnit ?? ""}
                     </Text>
                   )}
                 </View>
               ) : (
-                <Text style={[styles.noGoal, { color: colors.text }]}>No goal set yet</Text>
+                <Text style={[styles.noGoal, { color: colors.text }]}>
+                  No goal set yet
+                </Text>
               )}
             </View>
 
@@ -107,7 +139,12 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     marginBottom: 8,
   },
-  badge: { alignSelf: "flex-start", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4 },
+  badge: {
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
   badgeText: { fontSize: 15, fontWeight: "600" },
   goalType: {
     fontSize: 12,
@@ -119,6 +156,12 @@ const styles = StyleSheet.create({
   goalTitle: { fontSize: 16, fontWeight: "500" },
   goalTarget: { fontSize: 13, opacity: 0.6, marginTop: 4 },
   noGoal: { fontSize: 15, opacity: 0.5 },
-  editButton: { marginTop: 12, width: "100%", paddingVertical: 16, borderRadius: 12, alignItems: "center" },
+  editButton: {
+    marginTop: 12,
+    width: "100%",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
   editButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "600" },
 });

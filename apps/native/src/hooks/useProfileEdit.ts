@@ -1,25 +1,26 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { StatusCodes } from "http-status-codes";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useAuth } from "@src/context/AuthContext";
-import { userApi, ApiError, userKeys } from "@src/api";
 import type { ExperienceLevel } from "@repo/common";
+import { userApi, ApiError, userKeys } from "@src/api";
+import { useProfile } from "@src/hooks/queries/useProfile";
 import type { GoalDraft } from "@src/types/user";
 
 export const useProfileEdit = () => {
-  const { token } = useAuth();
   const queryClient = useQueryClient();
 
-  const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
+  const [isAvatarPickerVisible, setIsAvatarPickerVisible] = useState(false);
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [charCount, setCharCount] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("BEGINNER");
+  const [experienceLevel, setExperienceLevel] =
+    useState<ExperienceLevel>("BEGINNER");
   const [initialGoal, setInitialGoal] = useState<GoalDraft | null>(null);
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({
     goalType: "STRENGTH",
@@ -30,33 +31,27 @@ export const useProfileEdit = () => {
 
   const seededRef = useRef(false);
 
-  const { isLoading } = useQuery({
-    queryKey: userKeys.me(),
-    queryFn: () => userApi.getMe(),
-    enabled: !!token,
-    select: (data) => {
-      // Seed local form state once on first load — don't reset while user is editing
-      if (seededRef.current) return data;
-      seededRef.current = true;
+  const { data, isLoading } = useProfile();
 
-      setUsername(data.username);
-      setCharCount(data.username.length);
-      setAvatarUri(data.avatarUrl);
-      setExperienceLevel(data.experienceLevel);
+  useEffect(() => {
+    if (!data || seededRef.current) return;
+    seededRef.current = true;
 
-      const activeGoal = data.goals[0];
-      const snapshot: GoalDraft = {
-        goalType: activeGoal?.goalType ?? "STRENGTH",
-        title: activeGoal?.title ?? "",
-        targetValue: activeGoal?.targetValue?.toString() ?? "",
-        targetUnit: activeGoal?.targetUnit ?? "",
-      };
-      setInitialGoal(snapshot);
-      setGoalDraft(snapshot);
+    setUsername(data.username);
+    setCharCount(data.username.length);
+    setAvatarUri(data.avatarUrl);
+    setExperienceLevel(data.experienceLevel);
 
-      return data;
-    },
-  });
+    const activeGoal = data.goals[0];
+    const snapshot: GoalDraft = {
+      goalType: activeGoal?.goalType ?? "STRENGTH",
+      title: activeGoal?.title ?? "",
+      targetValue: activeGoal?.targetValue?.toString() ?? "",
+      targetUnit: activeGoal?.targetUnit ?? "",
+    };
+    setInitialGoal(snapshot);
+    setGoalDraft(snapshot);
+  }, [data]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -65,17 +60,19 @@ export const useProfileEdit = () => {
         experienceLevel,
       });
 
-      const goalChanged =
+      const hasGoalChanged =
         goalDraft.goalType !== initialGoal?.goalType ||
         goalDraft.title !== initialGoal?.title ||
         goalDraft.targetValue !== initialGoal?.targetValue ||
         goalDraft.targetUnit !== initialGoal?.targetUnit;
 
-      if (goalChanged && goalDraft.title.trim().length > 0) {
+      if (hasGoalChanged && goalDraft.title.trim().length > 0) {
         await userApi.upsertGoal({
           goalType: goalDraft.goalType,
           title: goalDraft.title,
-          ...(goalDraft.targetValue ? { targetValue: Number(goalDraft.targetValue) } : {}),
+          ...(goalDraft.targetValue
+            ? { targetValue: Number(goalDraft.targetValue) }
+            : {}),
           ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
         });
       }
@@ -85,7 +82,7 @@ export const useProfileEdit = () => {
       router.back();
     },
     onError: (err) => {
-      if (err instanceof ApiError && err.status === 409) {
+      if (err instanceof ApiError && err.status === StatusCodes.CONFLICT) {
         setUsernameError("Username already taken.");
         return;
       }
@@ -115,10 +112,10 @@ export const useProfileEdit = () => {
     if (usernameError) setUsernameError(null);
   };
 
-  const handlePickImage = async (useCamera: boolean) => {
-    setAvatarPickerVisible(false);
+  const handlePickImage = async (canUseCamera: boolean) => {
+    setIsAvatarPickerVisible(false);
 
-    const result = useCamera
+    const result = canUseCamera
       ? await ImagePicker.launchCameraAsync({
           mediaTypes: ["images"],
           allowsEditing: true,
@@ -164,10 +161,10 @@ export const useProfileEdit = () => {
     avatarUri,
     experienceLevel,
     goalDraft,
-    avatarPickerVisible,
+    avatarPickerVisible: isAvatarPickerVisible,
     setExperienceLevel,
     setGoalDraft,
-    setAvatarPickerVisible,
+    setAvatarPickerVisible: setIsAvatarPickerVisible,
     handleUsernameChange,
     handlePickImage,
     handleSave,
