@@ -6,6 +6,7 @@ import NotFoundError from "../errors/NotFoundError";
 import { normalizeString } from "../utils/normalizeString";
 import { lookAheadTake, paginate } from "../utils/pagination";
 import { parseOptionalDate } from "../utils/parseDate";
+import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 
 type ListWorkoutSessionsInput = {
   userUuid: string;
@@ -17,19 +18,6 @@ type ListWorkoutSessionsInput = {
 export class WorkoutSessionService {
   private get prisma() {
     return getPrismaClient();
-  }
-
-  private async getUserIdByUuid(uuid: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { uuid },
-      select: { id: true },
-    });
-
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-
-    return user.id;
   }
 
   private async getExerciseByCode(code: string) {
@@ -51,7 +39,7 @@ export class WorkoutSessionService {
   }
 
   async createSession(userUuid: string, data: CreateWorkoutSessionValues) {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const exerciseCode = normalizeString(data.exerciseCode);
     const exercise = await this.getExerciseByCode(exerciseCode);
 
@@ -86,7 +74,7 @@ export class WorkoutSessionService {
 
   async listSessions(input: ListWorkoutSessionsInput) {
     const { userUuid, limit, offset, exerciseCode } = input;
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const normalizedExerciseCode = exerciseCode
       ? normalizeString(exerciseCode)
       : undefined;

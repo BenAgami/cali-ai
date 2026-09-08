@@ -11,6 +11,7 @@ import BadRequestError from "../errors/BadRequestError";
 
 import { lookAheadTake, paginate } from "../utils/pagination";
 import { parseOptionalDate } from "../utils/parseDate";
+import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 
 type ListWorkoutsInput = {
   userUuid: string;
@@ -39,17 +40,6 @@ export class WorkoutService {
     return getPrismaClient();
   }
 
-  private async getUserIdByUuid(uuid: string): Promise<number> {
-    const user = await this.prisma.user.findUnique({
-      where: { uuid },
-      select: { id: true },
-    });
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-    return user.id;
-  }
-
   private validateExerciseInput(input: WorkoutExerciseInput): void {
     const hasReps = input.reps != null;
     const hasDuration = input.durationSecs != null;
@@ -75,7 +65,7 @@ export class WorkoutService {
   }
 
   async listWorkouts(input: ListWorkoutsInput) {
-    const userId = await this.getUserIdByUuid(input.userUuid);
+    const userId = await getUserIdByUuid(this.prisma, input.userUuid);
     const workouts = await this.prisma.workout.findMany({
       where: { userId },
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
@@ -88,7 +78,7 @@ export class WorkoutService {
   }
 
   async getWorkoutById(userUuid: string, workoutId: number) {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const workout = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
       include: workoutInclude,
@@ -98,7 +88,7 @@ export class WorkoutService {
   }
 
   async createWorkout(userUuid: string, data: CreateWorkoutValues) {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     data.exercises.forEach((ex) => this.validateExerciseInput(ex));
     await this.assertExercisesExist(data.exercises.map((ex) => ex.exerciseId));
 
@@ -127,7 +117,7 @@ export class WorkoutService {
     workoutId: number,
     data: UpdateWorkoutValues,
   ) {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const existing = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
       select: { id: true },
@@ -174,7 +164,7 @@ export class WorkoutService {
   }
 
   async deleteWorkout(userUuid: string, workoutId: number): Promise<void> {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const existing = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
       select: { id: true },
@@ -188,7 +178,7 @@ export class WorkoutService {
     workoutId: number,
     data: WorkoutLogValues,
   ) {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const workout = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
       select: { id: true },

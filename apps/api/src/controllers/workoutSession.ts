@@ -4,7 +4,6 @@ import { StatusCodes } from "http-status-codes";
 import { CreateWorkoutSessionValues } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
-
 import workoutSessionService from "../services/workoutSessionService";
 
 type ListWorkoutSessionsQuery = {
