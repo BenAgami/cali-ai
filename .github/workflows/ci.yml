@@ -76,8 +76,11 @@ jobs:
       - name: Check types
         run: yarn check-types
 
-      - name: Test
-        run: yarn workspace api test
+      - name: Unit tests
+        run: yarn workspace api test:unit
+
+      - name: Integration tests
+        run: yarn workspace api test:integration
 
       - name: Boot smoke test (apps/api production build)
         working-directory: apps/api
