@@ -6,6 +6,8 @@ export type VideoAnalysisJobData = {
   r2Key: string;
 };
 
+export const VIDEO_ANALYSIS_WORKER_CONCURRENCY = 5;
+
 export const videoAnalysisQueue = new Queue<VideoAnalysisJobData>(
   "video-analysis",
   { connection: redisConnection },
