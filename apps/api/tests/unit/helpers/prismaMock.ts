@@ -53,3 +53,6 @@ export const createPrismaMock = (): PrismaMock => {
 
 export const asPrismaClient = (mock: PrismaMock): PrismaClient =>
   mock as unknown as PrismaClient;
+
+export const prismaError = (code: string, target?: unknown) =>
+  Object.assign(new Error("prisma"), { code, meta: { target } });

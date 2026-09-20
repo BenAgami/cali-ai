@@ -53,7 +53,7 @@ export class RefreshTokenService {
       throw new UnauthorizedError("Invalid refresh token");
     }
 
-    if (tokenRecord.expiresAt < new Date()) {
+    if (tokenRecord.expiresAt <= new Date()) {
       throw new UnauthorizedError("Refresh token expired");
     }
 
