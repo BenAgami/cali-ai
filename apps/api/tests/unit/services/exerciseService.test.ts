@@ -20,17 +20,17 @@ const rows = (count: number) =>
   Array.from({ length: count }, (_, i) => ({ id: i + 1, code: `ex_${i}` }));
 
 let prisma: PrismaMock;
-let service: InstanceType<typeof ExerciseService>;
+let exerciseService: InstanceType<typeof ExerciseService>;
 
 beforeEach(() => {
   prisma = createPrismaMock();
   vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma));
-  service = new ExerciseService();
+  exerciseService = new ExerciseService();
 });
 
 describe("ExerciseService.listExercises", () => {
   const list = (limit: number, offset = 0, includeInactive = false) =>
-    service.listExercises({ limit, offset, includeInactive });
+    exerciseService.listExercises({ limit, offset, includeInactive });
 
   it("filters to active exercises by default", async () => {
     prisma.exercise.findMany.mockResolvedValue([]);
@@ -80,7 +80,7 @@ describe("ExerciseService.getExerciseByCode", () => {
   it("normalizes the code before querying", async () => {
     prisma.exercise.findFirst.mockResolvedValue({ id: 1 });
 
-    await service.getExerciseByCode("  PUSH_UP ");
+    await exerciseService.getExerciseByCode("  PUSH_UP ");
 
     expect(prisma.exercise.findFirst.mock.calls[0][0].where.code).toBe(
       "push_up",
@@ -90,7 +90,7 @@ describe("ExerciseService.getExerciseByCode", () => {
   it("restricts to active exercises by default", async () => {
     prisma.exercise.findFirst.mockResolvedValue({ id: 1 });
 
-    await service.getExerciseByCode("push_up");
+    await exerciseService.getExerciseByCode("push_up");
 
     expect(prisma.exercise.findFirst.mock.calls[0][0].where).toEqual({
       code: "push_up",
@@ -101,7 +101,7 @@ describe("ExerciseService.getExerciseByCode", () => {
   it("omits the isActive filter when inactive rows are allowed", async () => {
     prisma.exercise.findFirst.mockResolvedValue({ id: 1 });
 
-    await service.getExerciseByCode("push_up", true);
+    await exerciseService.getExerciseByCode("push_up", true);
 
     expect(prisma.exercise.findFirst.mock.calls[0][0].where).toEqual({
       code: "push_up",
@@ -111,7 +111,7 @@ describe("ExerciseService.getExerciseByCode", () => {
   it("throws when no exercise matches", async () => {
     prisma.exercise.findFirst.mockResolvedValue(null);
 
-    await expect(service.getExerciseByCode("push_up")).rejects.toThrow(
+    await expect(exerciseService.getExerciseByCode("push_up")).rejects.toThrow(
       new NotFoundError("Exercise not found"),
     );
   });

@@ -41,8 +41,8 @@ export class WorkoutService {
   }
 
   private validateExerciseInput(input: WorkoutExerciseInput): void {
-    const hasReps = input.reps != null;
-    const hasDuration = input.durationSecs != null;
+    const hasReps = !!input.reps;
+    const hasDuration = !!input.durationSecs;
     if (hasReps && hasDuration) {
       throw new BadRequestError("Cannot specify both reps and durationSecs");
     }

@@ -11,8 +11,8 @@ import requireUserUuid from "../utils/requireUserUuid";
 import workoutService from "../services/workoutService";
 
 type ListWorkoutsQuery = {
-  limit?: string;
-  offset?: string;
+  limit?: number;
+  offset?: number;
 };
 
 type WorkoutIdParam = {
@@ -30,8 +30,8 @@ export const listWorkouts = async (
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const limit = req.query.limit ? Number(req.query.limit) : 20;
-  const offset = req.query.offset ? Number(req.query.offset) : 0;
+  const limit = req.query.limit ?? 20;
+  const offset = req.query.offset ?? 0;
 
   const result = await workoutService.listWorkouts({
     userUuid,
