@@ -1,7 +1,7 @@
 import { getPrismaClient, SessionStatus } from "@repo/db";
 import { CreateWorkoutSessionValues } from "@repo/common";
 
-import NotFoundError from "../errors/NotFoundError";
+import { NotFoundError } from "../errors";
 
 import { normalizeString } from "../utils/normalizeString";
 import { lookAheadTake, paginate } from "../utils/pagination";

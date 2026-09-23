@@ -1,8 +1,7 @@
 import bcrypt from "bcrypt";
 import { getPrismaClient, Role } from "@repo/db";
 
-import ConflictError from "../../../src/errors/ConflictError";
-import UnauthorizedError from "../../../src/errors/UnauthorizedError";
+import { ConflictError, UnauthorizedError } from "../../../src/errors";
 import generateJwtToken from "../../../src/utils/generateJwtToken";
 import refreshTokenService from "../../../src/services/refreshTokenService";
 

@@ -2,8 +2,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { getPrismaClient } from "@repo/db";
 
-import ConflictError from "../../../src/errors/ConflictError";
-import NotFoundError from "../../../src/errors/NotFoundError";
+import { ConflictError, NotFoundError } from "../../../src/errors";
 import { env } from "../../../src/config/env";
 
 import {

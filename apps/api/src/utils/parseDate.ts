@@ -1,4 +1,4 @@
-import BadRequestError from "../errors/BadRequestError";
+import { BadRequestError } from "../errors";
 
 /**
  * Parses an optional client-supplied date. Returns `undefined` when the value is

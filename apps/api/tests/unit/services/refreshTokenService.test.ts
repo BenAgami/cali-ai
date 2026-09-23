@@ -2,7 +2,7 @@ import crypto from "crypto";
 import ms from "ms";
 import { getPrismaClient } from "@repo/db";
 
-import UnauthorizedError from "../../../src/errors/UnauthorizedError";
+import { UnauthorizedError } from "../../../src/errors";
 import { env } from "../../../src/config/env";
 
 import {

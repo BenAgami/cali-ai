@@ -1,6 +1,7 @@
 import { StatusCodes } from "http-status-codes";
 
-import NotFoundError from "../../../src/errors/NotFoundError";
+import { NotFoundError } from "../../../src/errors";
+
 import {
   createMockNext,
   createMockRequest,

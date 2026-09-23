@@ -1,4 +1,4 @@
-import BadRequestError from "../../../src/errors/BadRequestError";
+import { BadRequestError } from "../../../src/errors";
 import { parseOptionalDate } from "../../../src/utils/parseDate";
 
 describe("parseOptionalDate", () => {

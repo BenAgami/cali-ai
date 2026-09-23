@@ -1,4 +1,4 @@
-import NotFoundError from "../../../src/errors/NotFoundError";
+import { NotFoundError } from "../../../src/errors";
 import { getUserIdByUuid } from "../../../src/utils/getUserIdByUuid";
 
 import {

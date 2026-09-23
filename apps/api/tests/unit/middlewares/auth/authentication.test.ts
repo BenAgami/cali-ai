@@ -2,9 +2,9 @@ import jwt from "jsonwebtoken";
 import { Role } from "@repo/db";
 
 import authenticateToken from "../../../../src/middlewares/auth/authentication";
-import ForbiddenError from "../../../../src/errors/ForbiddenError";
-import UnauthorizedError from "../../../../src/errors/UnauthorizedError";
+import { ForbiddenError, UnauthorizedError } from "../../../../src/errors";
 import { env } from "../../../../src/config/env";
+
 import {
   createMockNext,
   createMockRequest,

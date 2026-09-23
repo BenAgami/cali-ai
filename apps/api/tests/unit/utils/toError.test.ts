@@ -1,5 +1,5 @@
 import { toError } from "../../../src/utils/toError";
-import NotFoundError from "../../../src/errors/NotFoundError";
+import { NotFoundError } from "../../../src/errors";
 
 describe("toError", () => {
   describe("Error values", () => {

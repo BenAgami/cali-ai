@@ -3,7 +3,7 @@ import type { Request } from "express";
 
 import { Role } from "@repo/db";
 
-import ForbiddenError from "../../../src/errors/ForbiddenError";
+import { ForbiddenError } from "../../../src/errors";
 import exerciseService from "../../../src/services/exerciseService";
 
 import {
