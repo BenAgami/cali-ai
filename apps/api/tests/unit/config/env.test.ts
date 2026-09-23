@@ -1,5 +1,7 @@
 import { envSchema } from "../../../src/config/env";
 
+import { unitEnv } from "../helpers/unitEnv";
+
 /** Minimum set of variables with no schema default. */
 const requiredEnv = {
   DATABASE_URL: "postgresql://u:p@127.0.0.1:1/db?schema=public",
@@ -106,5 +108,13 @@ describe("envSchema", () => {
     it("rejects a DATABASE_URL that is not a URL", () => {
       expectIssueOn("DATABASE_URL", { DATABASE_URL: "not-a-url" });
     });
+  });
+});
+
+describe("unit project env", () => {
+  it("supplies inline values for exactly the vars envSchema declares", () => {
+    expect(Object.keys(unitEnv).sort()).toEqual(
+      Object.keys(envSchema.shape).sort(),
+    );
   });
 });

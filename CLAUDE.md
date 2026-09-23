@@ -67,11 +67,11 @@ Vitest 4, configured as two projects in `apps/api/vitest.config.ts`.
 
 **Integration tests** (`apps/api/tests/integration/`) — Vitest + Supertest against a real Postgres on `:5433`. Each suite wipes relevant tables before running. Never mock the database in an integration test. This project owns `tests/globalSetup.ts` (applies test migrations) and `tests/setup.ts` (asserts `NODE_ENV=test` and a `_test` database), runs on `pool: "forks"` with `fileParallelism: false`, and requires a live database.
 
-**Unit tests** (`apps/api/tests/unit/`) — no database, no network, no `globalSetup`, no `setupFiles`; `pool: "threads"` with full file parallelism. `yarn workspace api test:unit` must pass with Docker stopped; if it doesn't, something under test reached a real client. The unit project supplies all env vars inline via `test.env` in `vitest.config.ts` — it never reads `.env.test` (gitignored, absent in CI). Add new env vars in both places when you add them to `src/config/env.ts`.
+**Unit tests** (`apps/api/tests/unit/`) — no database, no network, no `globalSetup`, no `setupFiles`; `pool: "threads"` with full file parallelism. `yarn workspace api test:unit` must pass with Docker stopped; if it doesn't, something under test reached a real client. The unit project supplies all env vars inline from `tests/unit/helpers/unitEnv.ts`, wired via `test.env` in `vitest.config.ts` — it never reads `.env.test` (gitignored, absent in CI). Add new env vars there when you add them to `src/config/env.ts`; `tests/unit/config/env.test.ts` asserts the two stay in sync.
 
 Layout mirrors `src/`: `tests/unit/{utils,errors,config,middlewares,services,controllers}/`. Test files are `*.test.ts` and live under `tests/` — never co-located in `src/`, because `tsconfig.json`'s `include`, the eslint `no-unsafe-*`/`unbound-method` relaxation, and the tsup build all key off that boundary.
 
-**Scripts:** `test` (both projects), `test:unit`, `test:integration`, `test:unit:watch`, `test:coverage`.
+**Scripts:** `test` (both projects), `test:unit`, `test:integration`, `test:coverage`.
 
 **Unit test conventions:**
 

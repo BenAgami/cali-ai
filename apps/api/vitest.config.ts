@@ -1,26 +1,9 @@
 import { defineConfig } from "vitest/config";
 import { config } from "dotenv";
 
-const nodeEnv = process.env.NODE_ENV || "test";
-config({ path: `.env.${nodeEnv}` });
+import { unitEnv } from "./tests/unit/helpers/unitEnv";
 
-const unitEnv = {
-  NODE_ENV: "test",
-  PORT: "3000",
-  SERVICE_NAME: "api",
-  LOG_LEVEL: "silent",
-  DATABASE_URL: "postgresql://unit:unit@127.0.0.1:1/unit?schema=public",
-  JWT_SECRET: "unit-test-jwt-secret-not-a-real-secret-000000",
-  JWT_EXPIRES_IN: "15m",
-  REFRESH_TOKEN_EXPIRES_IN: "7d",
-  REDIS_URL: "redis://127.0.0.1:1",
-  CORS_ALLOWED_ORIGINS: "http://localhost:8081",
-  R2_ACCOUNT_ID: "unit-account-id",
-  R2_ACCESS_KEY_ID: "unit-access-key-id",
-  R2_SECRET_ACCESS_KEY: "unit-secret-access-key",
-  R2_BUCKET_NAME: "unit-bucket",
-  R2_PUBLIC_DOMAIN: "https://unit.example.com",
-};
+config({ path: ".env.test" });
 
 export default defineConfig({
   test: {
