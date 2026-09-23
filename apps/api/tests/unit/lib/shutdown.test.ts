@@ -49,6 +49,10 @@ beforeEach(() => {
   vi.spyOn(process, "exit").mockImplementation((): never => undefined as never);
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("registerShutdownHandlers", () => {
   it("registers handlers for both termination signals and both crash events", async () => {
     const handlers = await registerAndCapture(() => undefined);
@@ -168,6 +172,5 @@ describe("registerShutdownHandlers", () => {
       "Graceful shutdown timed out, forcing exit",
     );
     expect(process.exit).toHaveBeenCalledWith(1);
-    vi.useRealTimers();
   });
 });

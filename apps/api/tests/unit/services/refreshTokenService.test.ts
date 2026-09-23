@@ -44,6 +44,10 @@ beforeEach(() => {
   refreshTokenService = new RefreshTokenService();
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe("refreshTokenService.createRefreshToken", () => {
   it("persists the sha256 of the token it returns, never the raw value", async () => {
     prisma.refreshToken.create.mockResolvedValue({});
@@ -95,7 +99,6 @@ describe("refreshTokenService.createRefreshToken", () => {
     expect(prisma.refreshToken.create.mock.calls[0][0].data.expiresAt).toEqual(
       new Date(NOW.getTime() + ms(env.jwt.refreshExpiresIn)),
     );
-    vi.useRealTimers();
   });
 });
 
@@ -158,7 +161,6 @@ describe("refreshTokenService.rotateRefreshToken", () => {
 
     expect(prisma.refreshToken.updateMany).not.toHaveBeenCalled();
     expect(prisma.refreshToken.update).not.toHaveBeenCalled();
-    vi.useRealTimers();
   });
 
   it("revokes the presented token and issues a successor in the same family", async () => {
