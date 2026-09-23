@@ -3,7 +3,7 @@ import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { Agent as HttpsAgent } from "node:https";
 
 import { env } from "../config/env";
-import { VIDEO_ANALYSIS_WORKER_CONCURRENCY } from "./queue";
+import { VIDEO_ANALYSIS_WORKER_CONCURRENCY } from "../config/constants";
 
 const R2_CONNECTION_TIMEOUT_MS = 5_000;
 const R2_REQUEST_TIMEOUT_MS = 10_000;
