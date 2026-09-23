@@ -1,7 +1,9 @@
 import { getPrismaClient } from "@repo/db";
 
 import NotFoundError from "../errors/NotFoundError";
+
 import { normalizeString } from "../utils/normalizeString";
+import { lookAheadTake, paginate } from "../utils/pagination";
 
 type ListExercisesInput = {
   limit: number;
@@ -21,21 +23,10 @@ export class ExerciseService {
       where: includeInactive ? {} : { isActive: true },
       orderBy: [{ displayName: "asc" }, { id: "asc" }],
       skip: offset,
-      take: limit + 1,
+      take: lookAheadTake(limit),
     });
 
-    const hasMore = exercises.length > limit;
-    const items = hasMore ? exercises.slice(0, limit) : exercises;
-
-    return {
-      items,
-      page: {
-        limit,
-        offset,
-        hasMore,
-        nextOffset: hasMore ? offset + limit : null,
-      },
-    };
+    return paginate(exercises, limit, offset);
   }
 
   async getExerciseByCode(code: string, includeInactive = false) {

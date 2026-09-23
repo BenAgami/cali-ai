@@ -7,7 +7,7 @@ import UnauthorizedError from "../errors/UnauthorizedError";
 import { generateRefreshToken } from "../utils/generateRefreshToken";
 import { env } from "../config/env";
 
-class RefreshTokenService {
+export class RefreshTokenService {
   private get prisma() {
     return getPrismaClient();
   }
@@ -53,7 +53,7 @@ class RefreshTokenService {
       throw new UnauthorizedError("Invalid refresh token");
     }
 
-    if (tokenRecord.expiresAt < new Date()) {
+    if (tokenRecord.expiresAt <= new Date()) {
       throw new UnauthorizedError("Refresh token expired");
     }
 

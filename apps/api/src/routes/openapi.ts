@@ -2,8 +2,6 @@ import { Router, Request, Response } from "express";
 import helmet from "helmet";
 import { apiReference } from "@scalar/express-api-reference";
 
-import asyncHandler from "../utils/asyncWrapper";
-
 const router = Router();
 
 let specPromise: Promise<{ spec: unknown }> | undefined;
@@ -12,13 +10,10 @@ const getSpec = () => {
   return specPromise;
 };
 
-router.get(
-  "/openapi.json",
-  asyncHandler(async (_req: Request, res: Response) => {
-    const { spec } = await getSpec();
-    res.json(spec);
-  }),
-);
+router.get("/openapi.json", async (_req: Request, res: Response) => {
+  const { spec } = await getSpec();
+  res.json(spec);
+});
 
 router.use(
   "/docs",

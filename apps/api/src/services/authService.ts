@@ -18,6 +18,8 @@ import refreshTokenService from "./refreshTokenService";
 class AuthService {
   private static readonly BCRYPT_ROUNDS = 10;
   private static readonly MAX_USERNAME_ATTEMPTS = 10;
+  private static readonly INVALID_CREDENTIALS_MESSAGE =
+    "Invalid email or password";
 
   private get prisma() {
     return getPrismaClient();
@@ -112,13 +114,13 @@ class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedError("Invalid email or password");
+      throw new UnauthorizedError(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new UnauthorizedError("Invalid email or password");
+      throw new UnauthorizedError(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
     const token = generateJwtToken({ uuid: user.uuid, role: user.role });

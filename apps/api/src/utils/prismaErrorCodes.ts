@@ -10,4 +10,7 @@ type PrismaKnownRequestError = {
 export const isPrismaKnownRequestError = (
   error: unknown,
 ): error is PrismaKnownRequestError =>
-  typeof error === "object" && error !== null && "code" in error;
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  typeof error.code === "string";

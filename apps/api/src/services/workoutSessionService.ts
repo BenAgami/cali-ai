@@ -2,9 +2,11 @@ import { getPrismaClient, SessionStatus } from "@repo/db";
 import { CreateWorkoutSessionValues } from "@repo/common";
 
 import NotFoundError from "../errors/NotFoundError";
-import BadRequestError from "../errors/BadRequestError";
 
 import { normalizeString } from "../utils/normalizeString";
+import { lookAheadTake, paginate } from "../utils/pagination";
+import { parseOptionalDate } from "../utils/parseDate";
+import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 
 type ListWorkoutSessionsInput = {
   userUuid: string;
@@ -16,19 +18,6 @@ type ListWorkoutSessionsInput = {
 export class WorkoutSessionService {
   private get prisma() {
     return getPrismaClient();
-  }
-
-  private async getUserIdByUuid(uuid: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { uuid },
-      select: { id: true },
-    });
-
-    if (!user) {
-      throw new NotFoundError("User not found");
-    }
-
-    return user.id;
   }
 
   private async getExerciseByCode(code: string) {
@@ -50,16 +39,11 @@ export class WorkoutSessionService {
   }
 
   async createSession(userUuid: string, data: CreateWorkoutSessionValues) {
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const exerciseCode = normalizeString(data.exerciseCode);
     const exercise = await this.getExerciseByCode(exerciseCode);
 
-    const performedAt = data.performedAt
-      ? new Date(data.performedAt)
-      : undefined;
-    if (performedAt && Number.isNaN(performedAt.getTime())) {
-      throw new BadRequestError("Invalid performedAt value");
-    }
+    const performedAt = parseOptionalDate(data.performedAt, "performedAt");
 
     const session = await this.prisma.workoutSession.create({
       data: {
@@ -68,11 +52,11 @@ export class WorkoutSessionService {
         notes: data.notes,
         performedAt,
         processingStatus: SessionStatus.PENDING,
-        videoDurationSec: data.videoMeta?.durationSec,
-        videoFps: data.videoMeta?.fps,
-        videoWidth: data.videoMeta?.width,
-        videoHeight: data.videoMeta?.height,
-        videoSizeBytes: data.videoMeta?.sizeBytes,
+        videoDurationSec: data.videoMeta?.durationSec ?? null,
+        videoFps: data.videoMeta?.fps ?? null,
+        videoWidth: data.videoMeta?.width ?? null,
+        videoHeight: data.videoMeta?.height ?? null,
+        videoSizeBytes: data.videoMeta?.sizeBytes ?? null,
       },
       include: {
         exercise: {
@@ -90,7 +74,7 @@ export class WorkoutSessionService {
 
   async listSessions(input: ListWorkoutSessionsInput) {
     const { userUuid, limit, offset, exerciseCode } = input;
-    const userId = await this.getUserIdByUuid(userUuid);
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
     const normalizedExerciseCode = exerciseCode
       ? normalizeString(exerciseCode)
       : undefined;
@@ -104,7 +88,7 @@ export class WorkoutSessionService {
       },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
       skip: offset,
-      take: limit + 1,
+      take: lookAheadTake(limit),
       include: {
         exercise: {
           select: {
@@ -123,18 +107,7 @@ export class WorkoutSessionService {
       },
     });
 
-    const hasMore = sessions.length > limit;
-    const items = hasMore ? sessions.slice(0, limit) : sessions;
-
-    return {
-      items,
-      page: {
-        limit,
-        offset,
-        hasMore,
-        nextOffset: hasMore ? offset + limit : null,
-      },
-    };
+    return paginate(sessions, limit, offset);
   }
 }
 

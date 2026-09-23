@@ -12,6 +12,7 @@ class ApiError extends Error {
     this.status = this.statusCode = status;
 
     Object.setPrototypeOf(this, new.target.prototype);
+    this.name = new.target.name;
     Error.captureStackTrace?.(this);
   }
 }

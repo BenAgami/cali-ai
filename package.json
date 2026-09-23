@@ -1,10 +1,16 @@
 {
   "name": "cali-ai",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": {
+    "packages": [
+      "apps/*",
+      "packages/*"
+    ],
+    "comment": "vitest itself does not hoist to the root, so its coverage provider must stay beside it in apps/api/node_modules or it cannot resolve `vitest`.",
+    "nohoist": [
+      "**/@vitest/coverage-v8"
+    ]
+  },
   "version": "1.0.0",
   "engines": {
     "node": ">=22"

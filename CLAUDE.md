@@ -22,7 +22,7 @@ Package manager: Yarn Classic 1.22.19. Task runner: Turborepo.
 
 **Three-tier architecture:** route → controller → service → Prisma. No business logic in controllers; no direct Prisma calls outside services.
 
-**Always wrap async route handlers** with `asyncWrapper` from `apps/api/src/utils/asyncWrapper.ts`. Never use try/catch in controllers.
+**Async route handlers need no wrapper.** Express 5's router natively try/catches handler invocation and forwards a rejected returned Promise to `next(error)`, so controllers are plain `async` functions — no `asyncWrapper`, no try/catch.
 
 **Zod validation at boundaries.** Validate all request bodies in middleware before they reach controllers. Schemas live in `packages/common/src/validations/`.
 
@@ -38,7 +38,9 @@ Package manager: Yarn Classic 1.22.19. Task runner: Turborepo.
 
 ## Linting & Type Checking
 
-ESLint 9 flat config (typescript-eslint, type-checked rules) at the repo root in `eslint.config.mjs`, extended by each workspace's own `eslint.config.mjs`. `apps/native` additionally applies `eslint-plugin-react-hooks`. Run `yarn lint` / `yarn check-types` from the root (Turborepo tasks) or per-workspace. `apps/api/tests/**` relaxes the `no-unsafe-*` rules since `supertest`'s `Response#body` is typed `any` by design.
+ESLint 9 flat config (typescript-eslint, type-checked rules) at the repo root in `eslint.config.mjs`, extended by each workspace's own `eslint.config.mjs`. `apps/native` additionally applies `eslint-plugin-react-hooks`. Run `yarn lint` / `yarn check-types` from the root (Turborepo tasks) or per-workspace. `apps/api/tests/**` relaxes the `no-unsafe-*` rules since `supertest`'s `Response#body` and vitest's `Mock` are typed `any` by design, and `unbound-method` since `vi.mocked(service.method)` is an unbound method reference by construction.
+
+Prettier is enforced in CI via `yarn format:check` (root `.prettierrc`, `printWidth` 80). Run `yarn format` before pushing — hand-written files, test files included, will otherwise fail the gate.
 
 ## Phase 1 Scope (Infrastructure)
 
@@ -61,9 +63,30 @@ Schema: `packages/database/prisma/schema.prisma`. After schema changes run `yarn
 
 ## Testing
 
-Vitest + Supertest for API integration tests. Tests live in `apps/api/tests/integration/`. Each suite wipes relevant tables before running. Never mock the database in integration tests.
+Vitest 4, configured as two projects in `apps/api/vitest.config.ts`.
 
-Zero unit tests currently exist — don't add them unless a phase plan explicitly calls for it.
+**Integration tests** (`apps/api/tests/integration/`) — Vitest + Supertest against a real Postgres on `:5433`. Each suite wipes relevant tables before running. Never mock the database in an integration test. This project owns `tests/globalSetup.ts` (applies test migrations) and `tests/setup.ts` (asserts `NODE_ENV=test` and a `_test` database), runs on `pool: "forks"` with `fileParallelism: false`, and requires a live database.
+
+**Unit tests** (`apps/api/tests/unit/`) — no database, no network, no `globalSetup`, no `setupFiles`; `pool: "threads"` with full file parallelism. `yarn workspace api test:unit` must pass with Docker stopped; if it doesn't, something under test reached a real client. The unit project supplies all env vars inline from `tests/unit/helpers/unitEnv.ts`, wired via `test.env` in `vitest.config.ts` — it never reads `.env.test` (gitignored, absent in CI). Add new env vars there when you add them to `src/config/env.ts`; `tests/unit/config/env.test.ts` asserts the two stay in sync.
+
+Layout mirrors `src/`: `tests/unit/{utils,errors,config,middlewares,services,controllers}/`. Test files are `*.test.ts` and live under `tests/` — never co-located in `src/`, because `tsconfig.json`'s `include`, the eslint `no-unsafe-*`/`unbound-method` relaxation, and the tsup build all key off that boundary.
+
+**Scripts:** `test` (both projects), `test:unit`, `test:integration`, `test:coverage`.
+
+**Unit test conventions:**
+
+- `globals: true` — never import `describe`/`it`/`expect`/`vi`.
+- Arrow functions everywhere, including helpers and factories.
+- Assert HTTP status via `http-status-codes` `StatusCodes`, never raw numbers.
+- Mock Prisma with `createPrismaMock()` from `tests/unit/helpers/prismaMock.ts`, wired in a `beforeEach` via `vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma))`. `vi.mock("@repo/db", ...)` must be a **partial** mock via `importOriginal` — the package also re-exports the generated Prisma enums (`Role`, `SessionStatus`) that the code needs. Services read Prisma through the lazy `private get prisma()` getter, so the mock resolves per call and per-test rewiring works.
+- Build fake `req`/`res`/`next` with `tests/unit/helpers/expressMocks.ts`. Controllers are plain `async` functions — `await` the call directly before asserting.
+- Test private helpers **through their public caller** with mocked collaborators. Do not add an `export` purely so a test can reach an internal function.
+- Prefer real `zod` schemas and a real `jsonwebtoken` over mocking them — only mock at true I/O boundaries (Prisma, bcrypt, AWS SDK, pino, `config/env`).
+- Where a test pins behaviour that is arguably wrong (e.g. `getExerciseByCode` grants inactive exercises to any authenticated user), say so in a comment on the test. The test documents current behaviour; the comment records that it isn't an endorsement.
+
+Don't unit-test what the integration suite already proves end-to-end (pagination over HTTP, duplicate-email 409, refresh-token reuse detection). Unit tests earn their place on branches integration can't reach: error-mapping paths, retry exhaustion, time-dependent logic under fake timers, and exact Prisma call shapes.
+
+**Shared helpers over duplicated logic.** Look-ahead pagination goes through `lookAheadTake`/`paginate` (`src/utils/pagination.ts`) and optional date parsing through `parseOptionalDate` (`src/utils/parseDate.ts`) — both are unit-tested once; services assert only that they wire them up correctly.
 
 ## Native App
 

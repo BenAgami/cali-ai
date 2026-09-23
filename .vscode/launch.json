@@ -25,8 +25,8 @@
       "console": "integratedTerminal",
       "args": [
         "run",
-        // Change file by your needs
-        "tests/integration/health.test.ts",
+        // Debugs whichever test file is focused in the editor
+        "${file}",
         "--no-file-parallelism",
         "--config",
         "vitest.config.ts"

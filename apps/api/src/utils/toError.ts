@@ -17,6 +17,7 @@ export const toError = (value: unknown): Error => {
 
     const err = new Error(message);
     Object.assign(err, value);
+    err.message = message;
     return err;
   }
 
