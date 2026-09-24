@@ -4,7 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import { Role } from "@repo/db";
 
 import exerciseService from "../services/exerciseService";
-import ForbiddenError from "../errors/ForbiddenError";
+import { ForbiddenError } from "../errors";
 
 type ListExercisesQuery = {
   limit?: number;

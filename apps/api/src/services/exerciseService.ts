@@ -1,6 +1,6 @@
 import { getPrismaClient } from "@repo/db";
 
-import NotFoundError from "../errors/NotFoundError";
+import { NotFoundError } from "../errors";
 
 import { normalizeString } from "../utils/normalizeString";
 import { lookAheadTake, paginate } from "../utils/pagination";

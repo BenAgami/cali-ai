@@ -3,8 +3,7 @@ import bcrypt from "bcrypt";
 import { getPrismaClient } from "@repo/db";
 import { RegisterValues, LoginValues } from "@repo/common";
 
-import ConflictError from "../errors/ConflictError";
-import UnauthorizedError from "../errors/UnauthorizedError";
+import { ConflictError, UnauthorizedError } from "../errors";
 
 import generateJwtToken from "../utils/generateJwtToken";
 import {

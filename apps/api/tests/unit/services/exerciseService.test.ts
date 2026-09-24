@@ -1,6 +1,6 @@
 import { getPrismaClient } from "@repo/db";
 
-import NotFoundError from "../../../src/errors/NotFoundError";
+import { NotFoundError } from "../../../src/errors";
 
 import {
   asPrismaClient,

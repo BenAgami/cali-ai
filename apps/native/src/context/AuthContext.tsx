@@ -76,5 +76,3 @@ export const useAuth = (): AuthContextType => {
   }
   return ctx;
 };
-
-export default AuthContext;

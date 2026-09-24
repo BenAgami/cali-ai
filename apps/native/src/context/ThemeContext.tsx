@@ -15,7 +15,7 @@ type ThemeContextType = {
   colors: ThemeColors;
 };
 
-export const ThemeContext = createContext<ThemeContextType>({
+const ThemeContext = createContext<ThemeContextType>({
   currentTheme: "light",
   toggleTheme: () => {},
   colors: themes.light,

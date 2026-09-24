@@ -3,7 +3,7 @@ import { StatusCodes } from "http-status-codes";
 
 import { getPrismaClient } from "@repo/db";
 
-import ServiceUnavailableError from "../errors/ServiceUnavailableError";
+import { ServiceUnavailableError } from "../errors";
 
 const router: Router = Router();
 

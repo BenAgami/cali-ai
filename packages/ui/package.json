@@ -1,6 +1,7 @@
 {
   "name": "@repo/ui",
   "version": "0.0.0",
+  "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
@@ -20,11 +21,14 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@types/react": "^18.2.14"
-  },
-  "dependencies": {
+    "@types/react": "~19.1.10",
     "@expo/vector-icons": "^15.0.2",
-    "react": "^18.2.0",
-    "react-native": "0.76.9"
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "peerDependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "react": "*",
+    "react-native": "*"
   }
 }

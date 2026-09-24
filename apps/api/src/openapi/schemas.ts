@@ -83,7 +83,7 @@ export const CreateWorkoutSessionBody = registry.register(
 
 // ── Response envelope ─────────────────────────────────────────────────────────
 
-export const ErrorResponse = registry.register(
+const ErrorResponse = registry.register(
   "ErrorResponse",
   z.object({
     success: z.literal(false),
@@ -125,7 +125,7 @@ export const messageResponse = (description: string) => ({
   },
 });
 
-export const PageMeta = registry.register("PageMeta", pageMetaSchema);
+const PageMeta = registry.register("PageMeta", pageMetaSchema);
 
 export const paginatedData = (itemSchema: z.ZodTypeAny) =>
   z.object({

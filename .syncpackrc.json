@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/syncpack/schema.json",
+  "versionGroups": [
+    {
+      "label": "Internal workspace packages are always referenced as *",
+      "dependencies": ["@repo/**"],
+      "dependencyTypes": ["!local"],
+      "pinVersion": "*"
+    },
+    {
+      "label": "Peer ranges are intentionally wider than the installed versions",
+      "dependencyTypes": ["peer"],
+      "isIgnored": true
+    }
+  ]
+}

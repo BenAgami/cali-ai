@@ -1,6 +1,6 @@
 import type { getPrismaClient } from "@repo/db";
 
-import NotFoundError from "../errors/NotFoundError";
+import { NotFoundError } from "../errors";
 
 type PrismaClient = ReturnType<typeof getPrismaClient>;
 

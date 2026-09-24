@@ -1,13 +1,15 @@
 import { StatusCodes } from "http-status-codes";
 
-import ApiError from "../../../src/errors/ApiError";
-import BadRequestError from "../../../src/errors/BadRequestError";
-import ConflictError from "../../../src/errors/ConflictError";
-import ForbiddenError from "../../../src/errors/ForbiddenError";
-import InternalError from "../../../src/errors/InternalError";
-import NotFoundError from "../../../src/errors/NotFoundError";
-import ServiceUnavailableError from "../../../src/errors/ServiceUnavailableError";
-import UnauthorizedError from "../../../src/errors/UnauthorizedError";
+import {
+  ApiError,
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  InternalError,
+  NotFoundError,
+  ServiceUnavailableError,
+  UnauthorizedError,
+} from "../../../src/errors";
 
 type Subclass = new (message?: string) => ApiError;
 

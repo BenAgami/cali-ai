@@ -42,6 +42,10 @@ ESLint 9 flat config (typescript-eslint, type-checked rules) at the repo root in
 
 Prettier is enforced in CI via `yarn format:check` (root `.prettierrc`, `printWidth` 80). Run `yarn format` before pushing — hand-written files, test files included, will otherwise fail the gate.
 
+Knip (`knip.ts` at the root) is enforced in CI via `yarn knip` — it fails on unused or unlisted dependencies, unused files, and unused exports across all workspaces. It runs once from the root, not as a Turborepo task. Declare every dependency in the workspace that imports it — don't rely on hoisting from another workspace. Fix findings by deleting dead code; add an `ignoreDependencies` entry only for deps Knip can't see, such as ones loaded by string name or from gitignored generated code, and tag deliberately unused exports `/** @public */`.
+
+syncpack (`.syncpackrc.json` at the root) is enforced in CI via `yarn deps:lint` — every workspace depending on the same package must use the same version range. Run `yarn deps:fix` to align them. Internal `@repo/*` packages are always referenced as `*`. Shared runtime libraries in `packages/ui` (`react`, `react-native`, `@expo/vector-icons`) are `peerDependencies` plus matching `devDependencies`, so the app's copy is the only one installed.
+
 ## Phase 1 Scope (Infrastructure)
 
 What Phase 1 is building:

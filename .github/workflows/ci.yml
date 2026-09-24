@@ -70,6 +70,12 @@ jobs:
       - name: Check formatting
         run: yarn format:check
 
+      - name: Check unused dependencies, files and exports
+        run: yarn knip
+
+      - name: Check dependency versions are consistent
+        run: yarn deps:lint
+
       - name: Lint
         run: yarn lint
 

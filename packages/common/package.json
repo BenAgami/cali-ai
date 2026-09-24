@@ -19,8 +19,7 @@
     }
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "zod": "^4.1.12"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

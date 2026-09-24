@@ -18,7 +18,3 @@ export const consumePickedExercise = (): PickedExercise | undefined => {
   pending = undefined;
   return value;
 };
-
-export const __resetPickedExerciseStore = (): void => {
-  pending = undefined;
-};

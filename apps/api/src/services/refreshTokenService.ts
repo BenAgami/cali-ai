@@ -3,7 +3,7 @@ import ms from "ms";
 
 import { getPrismaClient } from "@repo/db";
 
-import UnauthorizedError from "../errors/UnauthorizedError";
+import { UnauthorizedError } from "../errors";
 import { generateRefreshToken } from "../utils/generateRefreshToken";
 import { env } from "../config/env";
 

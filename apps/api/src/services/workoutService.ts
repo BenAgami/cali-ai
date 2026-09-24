@@ -6,8 +6,7 @@ import type {
   WorkoutExerciseInput,
 } from "@repo/common";
 
-import NotFoundError from "../errors/NotFoundError";
-import BadRequestError from "../errors/BadRequestError";
+import { NotFoundError, BadRequestError } from "../errors";
 
 import { lookAheadTake, paginate } from "../utils/pagination";
 import { parseOptionalDate } from "../utils/parseDate";

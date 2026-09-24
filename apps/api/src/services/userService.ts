@@ -4,8 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getPrismaClient } from "@repo/db";
 import { UpdateProfileValues, UpsertGoalValues } from "@repo/common";
 
-import ConflictError from "../errors/ConflictError";
-import NotFoundError from "../errors/NotFoundError";
+import { ConflictError, NotFoundError } from "../errors";
 
 import {
   PrismaErrorCode,
