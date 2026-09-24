@@ -60,7 +60,8 @@
           "photosPermission": "Cali AI needs access to your photo library to set a profile picture.",
           "cameraPermission": "Cali AI needs access to your camera to take a profile picture."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }
