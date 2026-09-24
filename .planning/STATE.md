@@ -80,10 +80,10 @@ None yet.
 
 - INFRA-05: EAS Android dev builds succeed (2026-09-24). iOS is unverified — the `development` profile in `apps/native/eas.json` has no `ios.simulator: true`, so an iOS simulator build needs its own profile. If the gate fails on either platform, Phase 6 (real-time) must be redesigned around server-side inference only.
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
-- Pre-existing `expo-doctor` findings to fix before the dev-build gate: `expo-secure-store` 14 vs SDK 54's ~15, 7 Expo patch updates, `assets/logo.png` is a JPEG.
+- `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
 ## Session Continuity
 
 Last session: 2026-09-24T12:00:00.000Z
-Stopped at: Planning docs reconciled with code — Phase 03 complete, Phase 01 in progress
+Stopped at: Expo packages aligned with SDK 54 and doctor findings fixed; Android dev build needs rebuilding for expo-secure-store 15
 Resume file: None
