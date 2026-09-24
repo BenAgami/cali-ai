@@ -22,7 +22,7 @@
     "@repo/common": "*",
     "@repo/ui": "*",
     "@tanstack/react-query": "^5.96.2",
-    "expo": "^54.0.0",
+    "expo": "~54.0.33",
     "expo-constants": "~18.0.8",
     "expo-dev-client": "~6.0.20",
     "expo-image-manipulator": "~14.0.8",
