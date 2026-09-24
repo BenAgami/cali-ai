@@ -5,7 +5,7 @@ const globalForPrisma = global as unknown as {
   prisma?: PrismaClient;
 };
 
-export let prisma!: PrismaClient;
+let prisma!: PrismaClient;
 
 export const connectPrisma = async (
   connectionString: string,

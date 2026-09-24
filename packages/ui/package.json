@@ -20,7 +20,7 @@
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
-    "@types/react": "^18.2.14"
+    "@types/react": "~19.1.10"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
