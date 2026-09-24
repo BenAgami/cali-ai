@@ -25,10 +25,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Workout Builder
 
-- [ ] **WKT-01**: User can browse the exercise catalog and view exercise details
-- [ ] **WKT-02**: User can create a named workout by selecting exercises and setting sets, reps, and rest
-- [ ] **WKT-03**: User can edit and delete their saved workouts
-- [ ] **WKT-04**: User can start a workout session from a saved workout
+- [x] **WKT-01**: User can browse the exercise catalog and view exercise details
+- [x] **WKT-02**: User can create a named workout by selecting exercises and setting sets, reps, and rest
+- [x] **WKT-03**: User can edit and delete their saved workouts
+- [x] **WKT-04**: User can start a workout session from a saved workout
 - [ ] **WKT-05**: User can generate a workout from a natural language goal description (AI-generated)
 - [ ] **WKT-06**: AI-generated workouts are validated against the exercise catalog (no hallucinated exercise names)
 - [ ] **WKT-07**: AI-generated workouts respect user fitness level and goal from profile
@@ -112,10 +112,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROF-03     | Phase 2 | Complete |
 | PROF-04     | Phase 2 | Complete |
 | PROF-05     | Phase 2 | Complete |
-| WKT-01      | Phase 3 | Pending  |
-| WKT-02      | Phase 3 | Pending  |
-| WKT-03      | Phase 3 | Pending  |
-| WKT-04      | Phase 3 | Pending  |
+| WKT-01      | Phase 3 | Complete |
+| WKT-02      | Phase 3 | Complete |
+| WKT-03      | Phase 3 | Complete |
+| WKT-04      | Phase 3 | Complete |
 | WKT-05      | Phase 4 | Pending  |
 | WKT-06      | Phase 4 | Pending  |
 | WKT-07      | Phase 4 | Pending  |
