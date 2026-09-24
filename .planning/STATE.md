@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-stopped_at: Completed Phase 02 user-profile — verification passed (14/14)
-last_updated: "2026-05-01T14:48:50.196Z"
+status: in_progress
+stopped_at: Completed Phase 03 manual-workout-builder (merged 2026-06-19); Phase 01 infrastructure partially built
+last_updated: "2026-09-24T12:00:00.000Z"
 progress:
   total_phases: 7
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 2
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # Project State
@@ -19,12 +19,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Users can record themselves doing calisthenics exercises and get actionable AI feedback on their form — what they did well and what to fix.
-**Current focus:** Phase 03 — manual-workout-builder
+**Current focus:** Phase 01 — infrastructure
 
 ## Current Position
 
-Phase: 3
+Phase: 1
 Plan: Not started
+
+Already built: `processingStatus` enum on WorkoutSession, BullMQ `videoAnalysisQueue`, Redis connection, R2 client, EAS dev build (Android, with vision-camera + fast-tflite plugins).
+Remaining: `POST /api/sessions/:id/recording` (202 + job ID), video analysis worker, SSE `GET /api/sessions/:id/status`, 10-minute stuck-PROCESSING reaper, and the dev-build gate (vision-camera + fast-tflite running on both iOS and Android simulators).
 
 ## Performance Metrics
 
@@ -75,12 +78,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- INFRA-05: EAS Build or local Xcode/Android Studio availability must be confirmed before Phase 1 starts. If neither is available, Phase 6 (real-time) must be redesigned around server-side inference only.
-- Redis instance: BullMQ requires Redis. Confirm infrastructure (Upstash or managed Redis) before Phase 1 kicks off.
-- Codebase fix backlog (from CONCERNS.md): error handler `any` type, BigInt global serializer, CORS wildcard — all must be addressed during Phase 1 before AI errors are introduced.
+- INFRA-05: EAS Android dev builds succeed (2026-09-24). iOS is unverified — the `development` profile in `apps/native/eas.json` has no `ios.simulator: true`, so an iOS simulator build needs its own profile. If the gate fails on either platform, Phase 6 (real-time) must be redesigned around server-side inference only.
+- Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
+- `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
 ## Session Continuity
 
-Last session: 2026-04-08T15:49:04.950Z
-Stopped at: Completed Phase 02 user-profile — verification passed (14/14)
+Last session: 2026-09-24T12:00:00.000Z
+Stopped at: Expo packages aligned with SDK 54 and doctor findings fixed; Android dev build needs rebuilding for expo-secure-store 15
 Resume file: None

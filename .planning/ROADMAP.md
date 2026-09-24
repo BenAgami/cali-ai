@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Infrastructure** - Async job pipeline, video upload, SSE, session state machine, and custom Expo dev build
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
-- [ ] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions
+- [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
 - [ ] **Phase 5: AI Form Analysis** - Camera open during set; recording auto-submitted when set ends; form score + coaching feedback
 - [ ] **Phase 6: Real-Time Form Cues** - On-device MoveNet pose estimation with live audio/visual coaching cues
@@ -130,9 +130,9 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
-| 1. Infrastructure            | 0/TBD          | Not started | -          |
+| 1. Infrastructure            | 0/TBD          | In progress | -          |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
-| 3. Manual Workout Builder    | 0/TBD          | Not started | -          |
+| 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 0/TBD          | Not started | -          |
 | 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Not started | -          |

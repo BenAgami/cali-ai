@@ -94,4 +94,8 @@ Don't unit-test what the integration suite already proves end-to-end (pagination
 
 ## Native App
 
-Expo Router file-based routing. Auth screens in `app/(auth)/`, main tabs in `app/(main)/(tabs)/`. Theme tokens in `src/theme/`. Currently a managed workflow build; Phase 1 requires switching to a custom dev build for native camera + ML modules.
+Expo Router file-based routing. Auth screens in `app/(auth)/`, main tabs in `app/(main)/(tabs)/`. Theme tokens in `src/theme/`. Runs as a custom EAS dev build (`expo-dev-client`) for the native camera + ML modules; run Expo and EAS commands from `apps/native`, never the repo root.
+
+## Planning Docs
+
+`.planning/` (`STATE.md`, `ROADMAP.md`, `REQUIREMENTS.md`) is only updated automatically by GSD commands. When work done outside GSD completes a requirement or phase, or adds or resolves a blocker, current-position item, or concern listed there, update the affected files in the same branch — never leave them for a later pass. Verify against the code before marking anything complete.
