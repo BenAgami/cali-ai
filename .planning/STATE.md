@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in_progress
-stopped_at: Completed Phase 03 manual-workout-builder (merged 2026-06-19); Phase 01 infrastructure partially built
-last_updated: "2026-09-24T12:00:00.000Z"
+status: unknown
+stopped_at: Phase 1 context gathered
+last_updated: "2026-10-21T21:45:43.082Z"
 progress:
-  total_phases: 7
-  completed_phases: 2
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 8
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -27,7 +27,7 @@ Phase: 1
 Plan: Not started
 
 Already built: `processingStatus` enum on WorkoutSession, BullMQ `videoAnalysisQueue`, Redis connection, R2 client (avatars), EAS dev build (Android, with vision-camera + fast-tflite plugins).
-Remaining: `POST /api/sessions/:id/capture` (keypoints in, 202 + job ID; replaces the earlier `/recording` video endpoint), analysis worker, SSE `GET /api/sessions/:id/status`, 10-minute stuck-PROCESSING reaper, and the dev-build gate (vision-camera + fast-tflite running on both iOS and Android simulators, plus a pose-accuracy check on real clips).
+Remaining: `POST /api/sessions/:id/capture` (keypoints in, 202 + job ID; replaces the earlier `/recording` video endpoint), analysis worker, SSE `GET /api/sessions/:id/status`, 3-minute stuck-PROCESSING reaper, and the dev-build gate (vision-camera + fast-tflite running on Android, with the iOS simulator build compiling on EAS (iOS runtime check deferred, no Mac or Apple account), plus a pose-accuracy check on real clips).
 
 Architecture changed 2026-10-21: pose runs on-device, the server receives keypoints (no video, no R2 video, no frame extraction), the LLM scores at launch, and an own model is trained later from consented, labeled data. See docs/architecture.md. The `videoR2Key`/`video*` columns on WorkoutSession and the `r2Key` field in `VideoAnalysisJobData` are now obsolete and need a migration. Phase 5.1 (training data and labeling) was inserted.
 
@@ -63,7 +63,7 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - Phase 1: Custom Expo dev build (react-native-vision-camera + react-native-fast-tflite) is a hard gate — validate on both simulators before writing any ML code. If it fails, on-device pose (Phase 5) is blocked and a new decision is needed.
-- Phase 1: processingStatus state machine must implement full PENDING → PROCESSING → COMPLETED / FAILED with a 10-minute server-side timeout cleanup job. It currently never advances beyond PENDING.
+- Phase 1: processingStatus state machine must implement full PENDING → PROCESSING → COMPLETED / FAILED with a 3-minute server-side timeout cleanup job. It currently never advances beyond PENDING.
 - Phase 6 (real-time cues) is deferred (2026-10-21). When it returns, it follows Phase 5: post-set analysis validates the angle-detection approach and locks the feedback format that the real-time rule engine keys off.
 - Phase 2 before Phase 4: AI workout generation prompt requires fitness level and goal from user profile for calibration.
 - [Phase 02-user-profile]: Catch P2002 without meta.target check — Prisma 7 with pg driver adapter omits target field; code check alone is sufficient
@@ -87,6 +87,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-24T12:00:00.000Z
-Stopped at: Expo packages aligned with SDK 54 and doctor findings fixed; Android dev build needs rebuilding for expo-secure-store 15
-Resume file: None
+Last session: 2026-10-21T21:45:43.063Z
+Stopped at: Phase 1 context gathered
+Resume file: .planning/phases/01-infrastructure/01-CONTEXT.md

@@ -34,8 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 1. A POST to the keypoint capture endpoint (`/api/sessions/:id/capture`) returns 202 with a job ID in under 500 ms for a typical set (~25-60 KB compressed)
 2. A BullMQ worker picks up the job and processes it asynchronously without blocking the HTTP handler
 3. The client receives SSE events as the job progresses from QUEUED through PROCESSING to COMPLETED or FAILED
-4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 10 minutes — it never stays stuck in PROCESSING indefinitely
-5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on both iOS and Android simulators without crashing
+4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 3 minutes — it never stays stuck in PROCESSING indefinitely
+5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on Android without crashing (pose pass runs on a test image or video), and the iOS simulator build compiles on EAS; iOS runtime verification is deferred
 6. MoveNet (and a 33-point alternative) is checked on real clips of the four core exercises (push-up down position, pull-up top position, dip, squat), and the result decides the pose model
    **Plans**: TBD
 

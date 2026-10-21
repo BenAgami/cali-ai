@@ -53,7 +53,7 @@ What Phase 1 is building:
 - **Async keypoint capture**: `POST /api/sessions/:id/capture` (on-device pose keypoints, no video) returns 202 + job ID immediately
 - **BullMQ job queue** (Redis-backed): worker computes metrics from the keypoints and calls the LLM off the request thread
 - **SSE endpoint**: `GET /api/sessions/:id/status` streams job progress events to the client
-- **State machine**: `WorkoutSession.processingStatus` transitions PENDING → PROCESSING → COMPLETED | FAILED; stuck PROCESSING jobs auto-fail after 10 minutes
+- **State machine**: `WorkoutSession.processingStatus` transitions PENDING → PROCESSING → COMPLETED | FAILED; stuck PROCESSING jobs auto-fail after 3 minutes
 - **Custom Expo dev build**: `react-native-vision-camera` + `react-native-fast-tflite` configured in `apps/native`
 
 ## Database

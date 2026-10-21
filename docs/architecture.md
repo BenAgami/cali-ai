@@ -102,7 +102,7 @@ Used for user avatars only. No video or frames are stored.
 7. The session becomes `COMPLETED` (or `FAILED`); the phone receives the event
    and shows the feedback.
 
-Sessions stuck in `PROCESSING` for more than 10 minutes are failed
+Sessions stuck in `PROCESSING` for more than 3 minutes are failed
 automatically.
 
 ---
