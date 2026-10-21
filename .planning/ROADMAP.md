@@ -42,14 +42,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 
 - [ ] 01-01-PLAN.md — Prisma migration (PoseCapture, AnalysisStage columns, drop video columns), video-field removal, queue renamed to form-analysis
-- [ ] 01-02-PLAN.md — Status-event contract + stage-to-percent mapping, analysis env config with retry-budget check, Redis pub/sub progress bus
+- [ ] 01-02-PLAN.md — Status-event contract + stage-to-percent mapping, analysis env config with retry-budget and 3-minute-ceiling checks (150 s stuck timeout, 15 s reaper tick), Redis pub/sub progress bus
 - [ ] 01-03-PLAN.md — Dev-build gate: worklets-core + MoveNet pose-check screen, Android + iOS-simulator EAS builds, device verification
 - [ ] 01-04-PLAN.md — Pose-model gate: offline evaluator, shot list, filmed clips, MoveNet vs 33-point decision
 - [ ] 01-05-PLAN.md — Session state machine service (guarded transitions, reaper query) with unit + real-DB tests
 - [ ] 01-06-PLAN.md — Capture payload schema + caps, gzip storage codec, withTimeout utility
 - [ ] 01-07-PLAN.md — POST /api/sessions/:id/capture and /analysis/retry (202 + job id, 409/413 rules) with integration tests
-- [ ] 01-08-PLAN.md — BullMQ analysis worker, retries/backoff, LLM-timeout seam, reaper job scheduler, startup/shutdown wiring
-- [ ] 01-09-PLAN.md — GET /api/sessions/:id/status SSE stream (current state first, live pub/sub events, terminal close)
+- [ ] 01-08-PLAN.md — BullMQ analysis worker, retries/backoff, LLM-timeout seam, reaper job scheduler (every 15 s), startup/shutdown wiring
+- [ ] 01-09-PLAN.md — GET /api/sessions/:id/status SSE stream via analysisStreamService (current state first, live pub/sub events, terminal close), thin controller
 - [ ] 01-10-PLAN.md — Native sessions API (gzip upload), react-native-sse status hook, dev pipeline-check screen, end-to-end device check
 
 ### Phase 2: User Profile
