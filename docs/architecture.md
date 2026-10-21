@@ -4,27 +4,34 @@
 
 # 1. High-Level Overview
 
-CaliAI follows a Hybrid Monorepo + Microservice architecture with a clear separation between:
+CaliAI is a Turborepo monorepo with three runtime pieces:
 
-- Mobile Client
-- Backend API
-- AI Processing Service
-- Database
+- Mobile client (React Native / Expo custom dev build)
+- Backend API and analysis worker (Node.js / Express 5)
+- Database (Postgres) and Redis (job queue)
 
----
+Pose estimation runs **on the phone**. Video never leaves the device; the server
+receives body keypoints and turns them into feedback. There is no separate AI
+microservice.
 
 ```mermaid
 flowchart TD
     Mobile["Mobile App (React Native)"]
-    Backend["Backend API (Node.js)"]
-    AI["AI Service (Python)"]
-    DB["Postgres Database"]
+    API["Backend API (Express)"]
+    Worker["Analysis Worker (BullMQ)"]
+    LLM["LLM API (Claude)"]
+    DB["Postgres"]
+    Redis["Redis"]
 
-    Mobile -->|Upload Video| Backend
-    Backend -->|Send Video| AI
-    AI -->|Return JSON Analysis| Backend
-    Backend -->|Store Results| DB
-    Backend -->|Return Feedback| Mobile
+    Mobile -->|"Keypoints, gzipped"| API
+    API -->|"Store capture, enqueue"| DB
+    API --> Redis
+    Redis --> Worker
+    Worker -->|"Metrics + rubric"| LLM
+    LLM -->|"Score, findings"| Worker
+    Worker -->|"Store result"| DB
+    Worker -->|"Progress events"| API
+    API -->|"SSE"| Mobile
 ```
 
 ---
@@ -33,179 +40,130 @@ flowchart TD
 
 ## 2.1 Mobile Application
 
-- Native app (React Native & Expo)
-- Handles:
-  - User interaction
-  - Video recording
-  - Uploading media
-  - Displaying feedback
+- Camera capture with `react-native-vision-camera`
+- A frame processor runs the pose model on each frame via
+  `react-native-fast-tflite` (MoveNet)
+- Keypoints are buffered with timestamps; no video file is recorded
+- A quality gate checks framing and keypoint confidence before the set starts
+- Sends the keypoints to the API when the set ends, then listens for progress
+  and results over SSE
+- Asks for, and records, consent to use data for model training
 
-## 2.2 Backend API (Node.js)
+Requires a custom Expo dev build (`expo-dev-client`); it does not run in Expo Go.
 
-Responsibilities:
+## 2.2 Backend API
 
-- Authentication
-- Session management
-- Workout management
-- Video metadata storage
-- Communication with AI service
-- Returning feedback results
+Three tiers: route → controller → service → Prisma.
 
-## 2.3 AI Service (Python)
+- Authentication, sessions, workouts, profile
+- `POST /api/sessions/:id/capture`: validates and stores the keypoints,
+  enqueues an analysis job, returns 202 with a job ID
+- `GET /api/sessions/:id/status`: SSE stream of job progress
 
-Responsibilities:
+## 2.3 Analysis Worker
 
-- Pose estimation
-- Keypoint extraction
-- Form evaluation logic
-- Score calculation
-- Feedback generation
+A BullMQ worker. For each job it:
 
-Runs as a separate service and communicates via HTTP.
+1. Loads the stored keypoints
+2. Smooths them, drops low-confidence frames, and splits them into reps
+3. Computes per-rep metrics (angles, range, symmetry, tempo, body line) with
+   pure TypeScript shared via `@repo/common`
+4. Sends metrics, the exercise rubric and user context to the LLM
+5. Validates the structured result (at most 2 corrections, positive first)
+6. Stores the result and a label, deletes the keypoints if the user has not
+   consented to training use, and emits the completion event
+
+If keypoint confidence is too low, it returns camera advice instead of
+calling the LLM.
 
 ## 2.4 Database (Postgres)
 
-Stores:
+Stores users, exercises, workout sessions, pose captures, analysis results,
+findings, form labels and training consent. See `data-model.md`.
 
-- Users
-- Sessions
-- Exercises
-- Feedback results
-- Scores
+## 2.5 Object Storage (Cloudflare R2)
 
-## 2.5 Temporary Media Handling (MVP)
-
-Stores:
-
-- Videos are stored temporarily during analysis
-- After processing, raw files are deleted
-- Only structured feedback data is persisted
-- This reduces storage cost and privacy concerns
-
-### Future enhancement – object storage
-
-For scalability and resilience, a later iteration may offload the temporary blobs to an
-object store such as Amazon S3 (or GCP/Azure equivalent). Benefits include:
-
-- avoids filling local disk on API nodes
-- enables stateless, horizontally scaled backend instances
-- durable storage in case of crashes or retries
-- works with serverless deployments
-
-Implementation could use either:
-
-1. backend uploads/transcodes directly to S3 and passes the key to the AI service, or
-2. client performs a pre‑signed upload and backend/AI service pulls from S3.
-
-Objects would still be deleted immediately after processing or via a short
-automated lifecycle rule.
+Used for user avatars only. No video or frames are stored.
 
 ---
 
-# 3. Request Flow – Video Analysis
+# 3. Request Flow – Form Analysis
 
-1. User records exercise video
-2. Mobile uploads video to Backend API
-3. Backend:
-   - **Temporarily stores video** in local storage while it normalizes/transcodes it.
-     The file is not kept long‑term – it exists only for the duration of processing and is
-     deleted once the AI service has finished.
-   - Creates workout session record (metadata only)
-   - Sends video reference or the normalized copy to AI Service
-4. AI Service:
-   - Analyzes video
-   - Generates feedback
-   - Returns structured result
-5. Backend:
-   - Stores analysis result (JSON/metrics) in the database
-   - Deletes the temporary video file
-   - Returns feedback to user
+1. User picks an exercise and is offered the option to record the set. If they
+   decline, the set is logged without analysis and nothing below runs.
+2. If they accept, the camera opens. The phone runs pose estimation on live
+   frames and buffers keypoints.
+3. The set ends. The phone compresses the keypoints and calls
+   `POST /api/sessions/:id/capture`.
+4. The API validates (Zod), stores a `PoseCapture`, sets the session to
+   `PROCESSING`, enqueues the job and returns 202.
+5. The phone subscribes to the SSE status stream.
+6. The worker analyzes the capture and stores the result.
+7. The session becomes `COMPLETED` (or `FAILED`); the phone receives the event
+   and shows the feedback.
 
----
-
-```mermaid
-flowchart TD
-    Upload["Upload Video"]
-    Normalize["Normalize Video
-    (H.264, 720p, 30fps, Trim)"]
-    Extract["Extract Frames & Keypoints"]
-    Evaluate["Evaluate Form"]
-    Generate["Generate Feedback JSON"]
-    Store["Store Result in DB"]
-    Delete["Delete Temporary Video"]
-
-    Upload --> Normalize
-    Normalize --> Extract
-    Extract --> Evaluate
-    Evaluate --> Generate
-    Generate --> Store
-    Store --> Delete
-```
+Sessions stuck in `PROCESSING` for more than 10 minutes are failed
+automatically.
 
 ---
 
-# 4. Turborepo Structure
+# 4. Feedback Quality
 
-Turborepo is used to manage:
-
-- Mobile app
-- API
-- AI service
-- Shared packages
-
-Benefits:
-
-- Shared TypeScript types
-- Unified linting
-- Faster builds
-- Monorepo consistency
+- The LLM never receives raw coordinates, only per-rep metrics, target ranges,
+  the exercise rubric and a summary of the user's recent sessions.
+- Output is structured and validated: score, up to 2 corrections, at least one
+  positive observation where deserved.
+- Every result records the LLM model, prompt version, rubric version and
+  metrics version so results can be compared and recomputed.
+- Per-exercise definitions (keypoints used, metrics, target ranges, error tags,
+  rubric) are data in `@repo/common`, so adding an exercise is configuration,
+  not a new pipeline.
 
 ---
 
-# 5. Architecture Principles
+# 5. Training Data and Own Model
 
-- Clear separation of concerns
-- Service isolation
-- Scalable processing layer
-- Clean domain boundaries
+The LLM is the scorer at launch. Meanwhile:
 
----
-
-# 6. Service Communication
-
-## Backend → AI Service
-
-- Communication protocol: HTTP
-- Payload type: multipart/form-data (video upload)
-- Response type: JSON
-- Synchronous (blocking) request
-
-The backend waits for AI processing to complete before responding to the client.
+- Consented sets keep their raw keypoints. Non-consented sets keep only the
+  result.
+- Each result also creates a `FormLabel` (source `LLM`, score bucket, error
+  tags, versions). Other label sources (`SELF_REVIEW`, `USER_RATING`,
+  `OWN_MODEL`) can be added for the same capture.
+- The owner spot-checks a sample of sets by watching skeleton replays.
+- A model trained on these labels can only match the LLM, so the goal is to
+  cut cost, not to improve quality. The LLM keeps writing the coaching text.
+- Training splits by user. The new model first runs in shadow mode, unseen by
+  users, before it replaces the LLM score.
 
 ---
 
-# 7. Media Normalization (MVP)
+# 6. Turborepo Structure
 
-To ensure stable AI processing, all uploaded videos are normalized before analysis.
-
-The backend performs:
-
-- Codec normalization (convert to H.264)
-- Container normalization (MP4)
-- Resolution downscaling (max 720p)
-- Frame rate normalization (30 FPS)
-- Duration trimming (max 30 seconds)
-
-This ensures consistent input for the AI service regardless of device origin (iOS, Android, etc.).
+- `apps/api` – Express API and worker
+- `apps/native` – Expo app
+- `packages/database` – Prisma schema and client
+- `packages/common` – Zod schemas, analysis functions, exercise definitions
+- `packages/ui` – component library
 
 ---
 
-# 8. AI Service Design
+# 7. Architecture Principles
 
-The AI service is stateless.
+- Pose runs where the video is, so video stays on the device.
+- Deterministic code measures; the LLM explains.
+- Store the least data that serves the purpose; ask before keeping more.
+- Version everything that affects a result (pose model, metrics, rubric,
+  prompt, LLM).
+- Exercises are data, not code.
 
-- It does not persist data.
-- It processes a video and returns structured analysis.
-- All persistence is handled by the Backend API.
+---
 
-This keeps responsibilities clearly separated and simplifies scaling.
+# 8. Open Decisions
+
+- Pricing model and the cost cap per analysis
+- Pose model: MoveNet versus a 33-point model for inverted and horizontal
+  skills (decided by an accuracy check)
+- Keypoint payload format (gzip JSON versus quantized binary)
+- Retention period and sampling of consented sets
+- Consent wording, minimum age and legal review

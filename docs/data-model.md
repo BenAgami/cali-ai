@@ -4,8 +4,9 @@
 
 This model is designed for the MVP while staying compatible with near-term growth.
 
-- Keep AI service stateless.
-- Persist only structured outputs (no long-term raw video files).
+- Never persist video or frames; the phone sends keypoints only.
+- Keep raw keypoints only for users who consented to training use.
+- Persist structured outputs and labels, each with the versions that produced them.
 - Support session history and progress analytics.
 - Keep tables query-friendly for mobile timelines and comparisons.
 
@@ -17,8 +18,11 @@ erDiagram
     User ||--o{ UserGoal : sets
     User ||--o{ WorkoutSession : performs
     Exercise ||--o{ WorkoutSession : selected_in
+    WorkoutSession ||--o| PoseCapture : captures
     WorkoutSession ||--o| AnalysisResult : produces
     AnalysisResult ||--o{ AnalysisFinding : contains
+    PoseCapture ||--o{ FormLabel : labeled_by
+    User ||--o{ TrainingConsent : grants
     MilestoneDefinition ||--o{ UserMilestone : unlocks
     User ||--o{ UserMilestone : earns
 
@@ -53,11 +57,8 @@ erDiagram
         string processing_status
         text notes
         timestamp performed_at
-        int video_duration_sec
-        int video_fps
-        int video_width
-        int video_height
-        int video_size_bytes
+        decimal capture_duration_sec
+        decimal capture_fps
         timestamp processing_started_at
         timestamp processing_finished_at
         text failure_reason
@@ -72,9 +73,50 @@ erDiagram
         json score_breakdown
         text summary_feedback
         json raw_feedback
+        json metrics
+        text metrics_version
         text ai_model_name
         text ai_model_version
+        text prompt_version
+        text rubric_version
         timestamp analyzed_at
+        timestamp created_at
+    }
+
+    PoseCapture {
+        int id PK
+        int session_id FK
+        bytes keypoints
+        string keypoints_format
+        string pose_model_name
+        string pose_model_version
+        decimal fps
+        int frame_count
+        string camera_view
+        string device_model
+        string app_version
+        boolean training_consent
+        timestamp retain_until
+        timestamp created_at
+    }
+
+    FormLabel {
+        int id PK
+        int capture_id FK
+        string source
+        string score_bucket
+        json tags
+        string model_version
+        string prompt_version
+        string rubric_version
+        timestamp created_at
+    }
+
+    TrainingConsent {
+        int id PK
+        int user_id FK
+        boolean granted
+        string policy_version
         timestamp created_at
     }
 ```
@@ -218,7 +260,7 @@ Indexes:
 
 ### 4.5 `workout_sessions`
 
-Purpose: one user attempt/video submission for a selected exercise.
+Purpose: one user attempt (a captured set) for a selected exercise.
 
 Fields:
 
@@ -228,11 +270,8 @@ Fields:
 - `processing_status` `SessionStatus` DEFAULT `PENDING`.
 - `notes` TEXT NULL.
 - `performed_at` TIMESTAMPTZ DEFAULT `now()`.
-- `video_duration_sec` NUMERIC(6,2) NULL.
-- `video_fps` NUMERIC(6,2) NULL.
-- `video_width` INT NULL.
-- `video_height` INT NULL.
-- `video_size_bytes` BIGINT NULL.
+- `capture_duration_sec` NUMERIC(6,2) NULL.
+- `capture_fps` NUMERIC(6,2) NULL.
 - `processing_started_at` TIMESTAMPTZ NULL.
 - `processing_finished_at` TIMESTAMPTZ NULL.
 - `failure_reason` TEXT NULL.
@@ -241,11 +280,8 @@ Fields:
 
 Constraints:
 
-- video_duration_sec > 0.
-- video_fps > 0.
-- video_width > 0.
-- video_height > 0.
-- video_size_bytes > 0.
+- capture_duration_sec > 0.
+- capture_fps > 0.
 
 Indexes:
 
@@ -255,8 +291,9 @@ Indexes:
 
 Notes:
 
-- No raw video blob or storage URL is persisted long-term in MVP.
-- Video metadata is persisted for analytics/debugging only.
+- No video or frames are persisted. Capture metadata is persisted for
+  analytics/debugging only.
+- The keypoints live in `pose_captures`, not here, so session lists stay light.
 
 ### 4.6 `analysis_results`
 
@@ -271,8 +308,12 @@ Fields:
   (example keys: `posture`, `range_of_motion`, `stability`, `symmetry`).
 - `summary_feedback` TEXT NULL.
 - `raw_feedback` JSONB NOT NULL DEFAULT `'{}'::jsonb`.
+- `metrics` JSONB NOT NULL DEFAULT `'{}'::jsonb` (per-rep metrics the LLM was given).
+- `metrics_version` VARCHAR(40) NULL.
 - `ai_model_name` VARCHAR(80) NULL.
 - `ai_model_version` VARCHAR(40) NULL.
+- `prompt_version` VARCHAR(40) NULL.
+- `rubric_version` VARCHAR(40) NULL.
 - `analyzed_at` TIMESTAMPTZ DEFAULT `now()`.
 - `created_at` TIMESTAMPTZ DEFAULT `now()`.
 
@@ -280,6 +321,63 @@ Indexes:
 
 - unique on `session_id`.
 - `idx_analysis_results_analyzed_at` on (`analyzed_at` DESC).
+
+### 4.6a `pose_captures`
+
+Purpose: the keypoints a phone sent for one session. Separate from
+`workout_sessions` so session lists never load them.
+
+Fields:
+
+- `id` INT PK.
+- `session_id` INT UNIQUE FK -> `workout_sessions(id)` ON DELETE CASCADE.
+- `keypoints` BYTEA NULL (gzipped series; NULL after deletion).
+- `keypoints_format` VARCHAR(40) (payload format version).
+- `pose_model_name` VARCHAR(80), `pose_model_version` VARCHAR(40).
+- `fps` NUMERIC(6,2), `frame_count` INT.
+- `camera_view` VARCHAR(20) NULL (example: `side`, `front`).
+- `device_model` VARCHAR(80) NULL, `app_version` VARCHAR(40) NULL.
+- `context` JSONB NULL (snapshot at capture time of body and profile values, exercise variation and equipment, set position and targets, capture quality, and outcome signals; NULL for non-consented sets).
+- `context_version` VARCHAR(40) NULL.
+- `training_consent` BOOLEAN (snapshot of the user's consent at capture time).
+- `retain_until` TIMESTAMPTZ NULL.
+- `created_at` TIMESTAMPTZ DEFAULT `now()`.
+
+Notes:
+
+- When `training_consent` is false, the worker sets `keypoints` to NULL after
+  analysis finishes.
+- Payload size is roughly 25-60 KB per set.
+
+### 4.6b `form_labels`
+
+Purpose: judgments about a capture, from several sources, for training and
+evaluation.
+
+Fields:
+
+- `id` INT PK.
+- `capture_id` INT FK -> `pose_captures(id)` ON DELETE CASCADE.
+- `source` VARCHAR(20) (`LLM`, `SELF_REVIEW`, `USER_RATING`, `OWN_MODEL`).
+- `score_bucket` VARCHAR(20) (for example `90-100`, `50-60`).
+- `tags` JSONB (error tags per rep).
+- `model_version`, `prompt_version`, `rubric_version` VARCHAR(40) NULL.
+- `created_at` TIMESTAMPTZ DEFAULT `now()`.
+
+### 4.6c `training_consents`
+
+Purpose: history of a user's consent to training use, for audit and
+withdrawal.
+
+Fields:
+
+- `id` INT PK.
+- `user_id` INT FK -> `users(id)` ON DELETE CASCADE.
+- `granted` BOOLEAN.
+- `policy_version` VARCHAR(40).
+- `created_at` TIMESTAMPTZ DEFAULT `now()`.
+
+The latest row per user is the current state.
 
 ### 4.7 `analysis_findings`
 
@@ -291,7 +389,8 @@ Fields:
 - `analysis_result_id` INT FK -> `analysis_results(id)` ON DELETE CASCADE.
 - `finding_type` `FindingType`.
 - `severity` `FindingSeverity` DEFAULT `MEDIUM`.
-- `code` VARCHAR(80) NULL (stable code for analytics, example: `KNEE_VALGUS`).
+- `code` VARCHAR(80) NULL (stable error tag from the exercise definition, example: `KNEE_VALGUS`).
+- `rep_index` SMALLINT NULL (which rep the finding refers to).
 - `title` VARCHAR(140).
 - `description` TEXT.
 - `correction` TEXT NULL.
@@ -353,4 +452,5 @@ Indexes:
 - Keep UUIDs for public APIs; keep integer IDs for relational performance.
 - Keep one `analysis_results` row per session in MVP (`session_id` unique).
 - Persist structured AI output (`raw_feedback`/`score_breakdown`) and findings, not media files.
-- Seed `exercises` with MVP set: `push_up`, `pull_up`, `squat`, `plank`.
+- Seed `exercises` with MVP set: `push_up`, `pull_up`, `dip`, `squat`. Static holds (for example `plank`, `front_lever`) use `STATIC_HOLD` and are added with their research-based definitions.
+- Training exports select only captures where `training_consent` is true and `keypoints` is not NULL, and split by user.
