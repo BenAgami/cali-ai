@@ -1,5 +1,11 @@
 # Technology Stack — AI Form Analysis & Workout Generation
 
+> **Superseded in part (2026-10-21).** Video upload to S3/R2 and "Path B"
+> (frame upload to Claude vision) are no longer planned; R2 is used for
+> avatars only. Path A (on-device pose, server-side analysis with an LLM) is
+> the design, except that the server computes the metrics from raw keypoints.
+> See `docs/architecture.md`.
+
 **Project:** Cali AI (subsequent milestone)
 **Researched:** 2026-03-21
 **Dimension:** Stack additions for AI video form analysis + AI-generated workout plans

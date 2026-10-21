@@ -13,28 +13,30 @@ The project delivers its core value — AI-powered calisthenics form feedback �
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Async job pipeline, video upload, SSE, session state machine, and custom Expo dev build
+- [ ] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
-- [ ] **Phase 5: AI Form Analysis** - Camera open during set; recording auto-submitted when set ends; form score + coaching feedback
-- [ ] **Phase 6: Real-Time Form Cues** - On-device MoveNet pose estimation with live audio/visual coaching cues
+- [ ] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback
+- [ ] **Phase 5.1: Training Data & Labeling** (INSERTED) - Consent, retention, form labels, spot-check tool; foundation for training an own model
+- [ ] **Phase 6: Real-Time Form Cues** (DEFERRED — future milestone, not in v1) - Live audio/visual coaching cues from on-device pose estimation
 - [ ] **Phase 7: Progress Tracking** - Session history, per-exercise form score trends, overall form arc over time
 
 ## Phase Details
 
 ### Phase 1: Infrastructure
 
-**Goal**: The async video analysis pipeline, session state machine, and custom Expo dev build are in place — every AI feature that follows can be built on top of a correct, non-blocking foundation
+**Goal**: The async analysis pipeline (keypoints in, no video), session state machine, and custom Expo dev build are in place — every AI feature that follows can be built on top of a correct, non-blocking foundation
 **Depends on**: Nothing (first phase)
 **Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05
 **Success Criteria** (what must be TRUE):
 
-1. A POST to the video upload endpoint returns 202 with a job ID in under 500 ms regardless of file size
+1. A POST to the keypoint capture endpoint (`/api/sessions/:id/capture`) returns 202 with a job ID in under 500 ms for a typical set (~25-60 KB compressed)
 2. A BullMQ worker picks up the job and processes it asynchronously without blocking the HTTP handler
 3. The client receives SSE events as the job progresses from QUEUED through PROCESSING to COMPLETED or FAILED
 4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 10 minutes — it never stays stuck in PROCESSING indefinitely
 5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on both iOS and Android simulators without crashing
+6. MoveNet (and a 33-point alternative) is checked on real push-up and front-lever clips, and the result decides the pose model
    **Plans**: TBD
 
 ### Phase 2: User Profile
@@ -74,7 +76,7 @@ Plans:
 
 **Goal**: Users can describe a fitness goal in natural language and receive a ready-to-use workout plan that only references exercises in the seeded catalog and respects their fitness level and primary goal from their profile
 **Depends on**: Phase 3 (baseline for comparison), Phase 2 (profile context for calibration)
-**Requirements**: WKT-05, WKT-06, WKT-07
+**Requirements**: WKT-05, WKT-06, WKT-07, PROF-06
 **Success Criteria** (what must be TRUE):
 
 1. User can enter a natural language goal description and receive a named, structured workout plan
@@ -85,23 +87,41 @@ Plans:
 
 ### Phase 5: AI Form Analysis (Camera + Post-Set)
 
-**Goal**: Camera is open during a set; when the set ends the recording is automatically analyzed — user receives a form score, dimension breakdown, and rep-level coaching text with no manual upload step
+**Goal**: Users can choose to record a set; the camera and on-device pose estimation run only for recorded sets, and when such a set ends the keypoints are automatically analyzed (metrics → LLM) — user receives a form band, dimension breakdown, and rep-level coaching text with no manual upload step
 **Depends on**: Phase 1
-**Requirements**: FORM-01, FORM-02, FORM-03, FORM-04, FORM-05, FORM-06, FORM-07, FORM-08, NOTF-02
+**Requirements**: FORM-01, FORM-02, FORM-03, FORM-04, FORM-05, FORM-06, FORM-07, FORM-08, FORM-09, PROF-07, NOTF-02
 **Success Criteria** (what must be TRUE):
 
-1. User selects an exercise (push-up, pull-up, dip, or squat), the camera opens when the set starts, and the recording is automatically submitted when the set ends — no upload screen
-2. User receives a numeric form score (0-100) and a breakdown by dimension (range of motion, core stability, symmetry) when analysis completes
+1. User selects an exercise (push-up, pull-up, dip, or squat), is offered the option to record the set, the camera opens only if they accept, and the keypoints are automatically submitted when the recorded set ends — no upload screen. A set they decline to record is logged without analysis
+2. User receives a form band (5 levels) and a breakdown by dimension (range of motion, core stability, symmetry) when analysis completes; the 0-100 score is stored but not shown per set
 3. Feedback text references specific reps and leads with at least one positive observation before corrections; no more than 2 corrections are surfaced per set
 4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
 5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
+6. When the body cannot be tracked reliably, the user sees camera advice instead of feedback
    **Plans**: TBD
 
-### Phase 6: Real-Time Form Cues
+### Phase 5.1: Training Data & Labeling (INSERTED)
+
+**Goal**: Every analysis produces a versioned label, consented sets keep their keypoints for future training, and the owner can spot-check the LLM's scores — the foundation for training an in-house form model
+**Depends on**: Phase 5
+**Requirements**: DATA-01, DATA-02, DATA-03, DATA-04, DATA-05
+**Success Criteria** (what must be TRUE):
+
+1. User is asked for opt-in consent and can withdraw it; the app respects the current state
+2. Sets from non-consented users keep no raw keypoints after analysis completes
+3. Each analysis stores a label with score bucket, error tags, and the model, prompt, rubric and metrics versions
+4. The owner can open a skeleton replay next to its score and record whether they agree
+5. The same stored input run through the LLM several times produces a measured agreement rate
+6. A consented capture stores a context snapshot (body, exercise variation, set, capture quality, outcome signals) that does not change when the profile later does
+   **Plans**: TBD
+
+### Phase 6: Real-Time Form Cues (DEFERRED)
+
+**Status**: Deferred to a future milestone. Kept here for reference; skipped in execution order and not counted in v1.
 
 **Goal**: The camera session established in Phase 5 gains a live overlay — on-device pose estimation fires instant cues for form deviations during the set, complementing the deep analysis that runs after
 **Depends on**: Phase 5 (same camera session; validates angle-detection approach and feedback format before real-time rule engine is built on top)
-**Requirements**: RT-01, RT-02, RT-03, RT-04
+**Requirements**: RT-01, RT-02, RT-03, RT-04 (moved to v2 in REQUIREMENTS.md)
 **Success Criteria** (what must be TRUE):
 
 1. User can toggle real-time form cues on before starting a set and the live skeleton overlay appears on the camera feed
@@ -118,15 +138,15 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
 1. User can view a paginated history of all completed workout sessions
-2. User can view a chart showing their form score trend for a specific exercise across sessions (requires at least 3 sessions to render a trend line)
-3. User can view an overall form score trend across all exercises and sessions
+2. User can view a chart showing their form score trend for a specific exercise across sessions (requires at least 3 sessions to render a trend line; the line is smoothed over several sets so one noisy score does not look like a drop)
+3. User can view an overall form score trend across all exercises and sessions (smoothed the same way)
 4. A user with fewer than 3 sessions sees an empty state that explains what will appear once enough data exists, rather than a blank or broken chart
    **Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is deferred)
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
@@ -135,5 +155,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 0/TBD          | Not started | -          |
 | 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
-| 6. Real-Time Form Cues       | 0/TBD          | Not started | -          |
+| 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
+| 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
