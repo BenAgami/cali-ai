@@ -37,7 +37,20 @@ Decimal phases appear between their surrounding integers in numeric order.
 4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 3 minutes — it never stays stuck in PROCESSING indefinitely
 5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on Android without crashing (pose pass runs on a test image or video), and the iOS simulator build compiles on EAS; iOS runtime verification is deferred
 6. MoveNet (and a 33-point alternative) is checked on real clips of the four core exercises (push-up down position, pull-up top position, dip, squat), and the result decides the pose model
-   **Plans**: TBD
+   **Plans:** 10 plans
+
+Plans:
+
+- [ ] 01-01-PLAN.md — Prisma migration (PoseCapture, AnalysisStage columns, drop video columns), video-field removal, queue renamed to form-analysis
+- [ ] 01-02-PLAN.md — Status-event contract + stage-to-percent mapping, analysis env config with retry-budget check, Redis pub/sub progress bus
+- [ ] 01-03-PLAN.md — Dev-build gate: worklets-core + MoveNet pose-check screen, Android + iOS-simulator EAS builds, device verification
+- [ ] 01-04-PLAN.md — Pose-model gate: offline evaluator, shot list, filmed clips, MoveNet vs 33-point decision
+- [ ] 01-05-PLAN.md — Session state machine service (guarded transitions, reaper query) with unit + real-DB tests
+- [ ] 01-06-PLAN.md — Capture payload schema + caps, gzip storage codec, withTimeout utility
+- [ ] 01-07-PLAN.md — POST /api/sessions/:id/capture and /analysis/retry (202 + job id, 409/413 rules) with integration tests
+- [ ] 01-08-PLAN.md — BullMQ analysis worker, retries/backoff, LLM-timeout seam, reaper job scheduler, startup/shutdown wiring
+- [ ] 01-09-PLAN.md — GET /api/sessions/:id/status SSE stream (current state first, live pub/sub events, terminal close)
+- [ ] 01-10-PLAN.md — Native sessions API (gzip upload), react-native-sse status hook, dev pipeline-check screen, end-to-end device check
 
 ### Phase 2: User Profile
 
@@ -150,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
-| 1. Infrastructure            | 0/TBD          | In progress | -          |
+| 1. Infrastructure            | 0/10           | In progress | -          |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 0/TBD          | Not started | -          |

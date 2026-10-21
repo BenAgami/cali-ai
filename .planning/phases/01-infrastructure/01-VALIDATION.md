@@ -2,7 +2,7 @@
 phase: 01
 slug: infrastructure
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-10-22
 ---
@@ -38,16 +38,34 @@ created: 2026-10-22
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 01-XX-XX | — | — | INFRA-01 | unit + integration | `yarn workspace api test:unit -t worker` | ❌ W0 | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-02 | integration | `yarn workspace api test:integration capture` | ❌ W0 | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-02 | unit | `yarn workspace api test:unit -t poseCaptureService` | ❌ W0 | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-03 | integration | `yarn workspace api test:integration status` | ❌ W0 | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-03 | unit | `yarn workspace api test:unit -t progress` | ❌ W0 | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-04 | unit + integration | `yarn workspace api test:unit -t reaper` | ❌ W0 | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-04 | unit | `yarn workspace api test:unit -t env` | ✅ (extend) | ⬜ pending |
-| 01-XX-XX | — | — | INFRA-05 | manual | `eas build --profile development-simulator --platform ios` | manual-only | ⬜ pending |
+| 01-01-01 | 01 | 1 | INFRA-02, INFRA-04 | migration | `npx prisma migrate status` (packages/database) | ✅ | ⬜ pending |
+| 01-01-02 | 01 | 1 | INFRA-01 | lint | `yarn workspace api lint` | ✅ | ⬜ pending |
+| 01-01-03 | 01 | 1 | INFRA-01, INFRA-02 | unit + integration | `yarn workspace api test` | ✅ (update) | ⬜ pending |
+| 01-02-01 | 02 | 1 | INFRA-03 | unit (TDD) | `yarn workspace api test:unit -t progressPercent` | ❌ W0 (created in task) | ⬜ pending |
+| 01-02-02 | 02 | 1 | INFRA-04 | unit | `yarn workspace api test:unit -t envSchema` | ✅ (extend) | ⬜ pending |
+| 01-02-03 | 02 | 1 | INFRA-03 | unit (TDD) | `yarn workspace api test:unit -t progressBus` | ❌ W0 (created in task) | ⬜ pending |
+| 01-03-01 | 03 | 1 | INFRA-05 | bundle + types | `npx expo export --platform android` + `yarn workspace native check-types` | n/a | ⬜ pending |
+| 01-03-02 | 03 | 1 | INFRA-05 | EAS build | `npx eas-cli build:list --limit 2 --json` | n/a | ⬜ pending |
+| 01-03-03 | 03 | 1 | INFRA-05 | manual (device) | checkpoint | manual-only | ⬜ pending |
+| 01-04-01 | 04 | 1 | INFRA-05 | script self-test | `evaluate.py --self-test` | ❌ W0 (created in task) | ⬜ pending |
+| 01-04-02 | 04 | 1 | INFRA-05 | manual (filming) | checkpoint | manual-only | ⬜ pending |
+| 01-04-03 | 04 | 1 | INFRA-05 | script run | `test -s scripts/pose-eval/results/summary.csv` | n/a | ⬜ pending |
+| 01-05-01 | 05 | 2 | INFRA-04 | unit (TDD) | `yarn workspace api test:unit -t analysisStateService` | ❌ W0 (created in task) | ⬜ pending |
+| 01-05-02 | 05 | 2 | INFRA-04 | integration | `yarn workspace api test:integration sessionAnalysis` | ❌ W0 (created in task) | ⬜ pending |
+| 01-06-01 | 06 | 2 | INFRA-02 | unit (TDD) | `yarn workspace api test:unit -t captureCodec` | ❌ W0 (created in task) | ⬜ pending |
+| 01-06-02 | 06 | 2 | INFRA-01 | unit (TDD) | `yarn workspace api test:unit -t withTimeout` | ❌ W0 (created in task) | ⬜ pending |
+| 01-07-01 | 07 | 3 | INFRA-02 | unit (TDD) | `yarn workspace api test:unit -t captureService` | ❌ W0 (created in task) | ⬜ pending |
+| 01-07-02 | 07 | 3 | INFRA-02 | unit + types | `yarn workspace api test:unit -t rejectOversizedBody` | ❌ W0 (created in task) | ⬜ pending |
+| 01-07-03 | 07 | 3 | INFRA-02, INFRA-04 | integration | `yarn workspace api test:integration sessions` | ❌ W0 (created in task) | ⬜ pending |
+| 01-08-01 | 08 | 3 | INFRA-01 | unit (TDD) | `yarn workspace api test:unit -t analysisProcessor` | ❌ W0 (created in task) | ⬜ pending |
+| 01-08-02 | 08 | 3 | INFRA-04 | unit (TDD) | `yarn workspace api test:unit -t "shutdown|reaper"` | ✅ (extend) | ⬜ pending |
+| 01-08-03 | 08 | 3 | INFRA-01 | integration | `yarn workspace api test:integration workers` | ❌ W0 (created in task) | ⬜ pending |
+| 01-09-01 | 09 | 4 | INFRA-03 | unit (TDD) | `yarn workspace api test:unit -t streamAnalysisStatus` | ❌ W0 (created in task) | ⬜ pending |
+| 01-09-02 | 09 | 4 | INFRA-03 | integration | `yarn workspace api test:integration analysisStatusStream` | ❌ W0 (created in task) | ⬜ pending |
+| 01-10-01 | 10 | 5 | INFRA-02 | types + lint | `yarn workspace native check-types` | n/a | ⬜ pending |
+| 01-10-02 | 10 | 5 | INFRA-03 | types + bundle | `npx expo export --platform android` + `yarn knip` | n/a | ⬜ pending |
+| 01-10-03 | 10 | 5 | INFRA-02, INFRA-03 | manual (device) | checkpoint | manual-only | ⬜ pending |
 
-*Task IDs and plan/wave columns are filled in once plans exist.*
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
 ---
