@@ -81,7 +81,7 @@ None yet.
 ### Blockers/Concerns
 
 - INFRA-05: EAS Android dev builds succeed (2026-09-24). iOS is unverified — the `development` profile in `apps/native/eas.json` has no `ios.simulator: true`, so an iOS simulator build needs its own profile. If the gate fails on either platform, on-device pose (and therefore Phase 5) is blocked. The video-upload fallback was ruled out, so a failure would need a new decision. Real-time cues (Phase 6) are deferred, so the gate no longer protects them.
-- Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; advanced-skill rubrics need a multi-source research task before Phase 5 planning.
+- Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 

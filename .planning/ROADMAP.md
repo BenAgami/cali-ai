@@ -36,7 +36,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 3. The client receives SSE events as the job progresses from QUEUED through PROCESSING to COMPLETED or FAILED
 4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 10 minutes — it never stays stuck in PROCESSING indefinitely
 5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on both iOS and Android simulators without crashing
-6. MoveNet (and a 33-point alternative) is checked on real push-up and front-lever clips, and the result decides the pose model
+6. MoveNet (and a 33-point alternative) is checked on real clips of the four core exercises (push-up down position, pull-up top position, dip, squat), and the result decides the pose model
    **Plans**: TBD
 
 ### Phase 2: User Profile

@@ -162,8 +162,8 @@ The LLM is the scorer at launch. Meanwhile:
 # 8. Open Decisions
 
 - Pricing model and the cost cap per analysis
-- Pose model: MoveNet versus a 33-point model for inverted and horizontal
-  skills (decided by an accuracy check)
+- Pose model: MoveNet versus a 33-point model, checked on the core
+  exercises (push-up down position, pull-up top position, dip, squat)
 - Keypoint payload format (gzip JSON versus quantized binary)
 - Retention period and sampling of consented sets
 - Consent wording, minimum age and legal review
