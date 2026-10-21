@@ -1,237 +1,264 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-03-21
+**Analysis Date:** 2026-10-21
 
 ## Directory Layout
 
 ```
-cali-ai/                          # Monorepo root (Turborepo + Yarn workspaces)
+cali-ai/
 ├── apps/
-│   ├── api/                      # Express 5 REST API
-│   │   ├── src/
-│   │   │   ├── index.ts          # Server bootstrap entry point
-│   │   │   ├── app.ts            # Express app factory
-│   │   │   ├── config/           # Env validation (Zod)
-│   │   │   ├── routes/           # Route declarations + middleware wiring
-│   │   │   ├── controllers/      # Request parsing + response formatting
-│   │   │   ├── services/         # Business logic + Prisma queries
-│   │   │   ├── middlewares/      # Auth, validation, error handling
-│   │   │   ├── errors/           # Typed HTTP error classes
-│   │   │   ├── types/            # Express augmentation + JWT payload type
-│   │   │   └── utils/            # asyncWrapper, JWT generator, Zod error formatter
-│   │   └── tests/
-│   │       └── integration/      # Vitest integration tests (real DB)
-│   │           ├── auth/
-│   │           ├── exercises/
-│   │           ├── sessions/
-│   │           ├── users/
-│   │           ├── builders/     # Test data builder classes
-│   │           └── helpers/      # testSetup, requestSender helpers, DB helpers
-│   ├── native/                   # Expo React Native mobile app
-│   │   ├── app/                  # Expo Router file-system routes
-│   │   │   ├── _layout.tsx       # Root Stack navigator + providers
-│   │   │   ├── (auth)/           # Auth route group (login, register)
-│   │   │   └── (main)/(tabs)/    # Tab navigator group (home, settings)
-│   │   └── src/
-│   │       ├── components/       # App-specific components (e.g. AuthFormFields)
-│   │       ├── context/          # React context providers (ThemeContext)
-│   │       └── theme/            # Color tokens and theme definitions
-│   └── web/                      # Next.js 14 web app (early scaffold)
-│       ├── app/                  # App Router (layout.tsx, page.tsx)
-│       └── styles/               # CSS modules
+│   ├── api/                    # Express 5 REST API (TypeScript, ESM, tsup build)
+│   │   ├── src/                # Application source
+│   │   ├── tests/              # Vitest: unit/ and integration/ projects
+│   │   ├── vitest.config.ts    # Two projects: unit, integration
+│   │   └── tsup.config.ts      # Single entry: src/index.ts
+│   └── native/                 # Expo SDK 54 app (Expo Router, custom dev build)
+│       ├── app/                # File-based routes (Expo Router)
+│       ├── src/               # Non-route app code (api, hooks, components, ...)
+│       └── index.js            # Expo entry
 ├── packages/
-│   ├── common/                   # @repo/common — Zod schemas + inferred types
-│   │   └── src/
-│   │       ├── validations/      # auth.ts, workoutSession.ts
-│   │       └── constants/        # Validation error message strings
-│   ├── database/                 # @repo/db — Prisma client + generated types
-│   │   ├── prisma/
-│   │   │   ├── schema.prisma     # Generator + datasource config
-│   │   │   ├── enums.prisma      # All database enums
-│   │   │   ├── models/           # One .prisma file per model
-│   │   │   ├── migrations/       # Timestamped migration history
-│   │   │   └── seed.ts           # Database seed script
-│   │   ├── src/
-│   │   │   ├── prisma.ts         # connectPrisma / getPrismaClient / disconnectPrisma
-│   │   │   └── index.ts          # Public package exports
-│   │   └── generated/prisma/     # Prisma-generated client (committed, not hand-edited)
-│   ├── ui/                       # @repo/ui — shared React Native UI components
-│   │   └── src/
-│   │       ├── auth/             # Auth screen primitives (AuthInput, AuthHeader, etc.)
-│   │       ├── ScreenHeader.tsx
-│   │       ├── SwitchRow.tsx
-│   │       └── index.tsx         # Barrel export
-│   └── typescript-config/        # Shared tsconfig base files
-├── docs/                         # Project documentation
-├── docker-compose.yaml           # Local postgres-dev (:5432) + postgres-test (:5433)
-├── turbo.json                    # Turborepo pipeline (build, dev, test, db:*)
-├── package.json                  # Root workspace manifest + shared devDependencies
-└── tsconfig.json                 # Root TypeScript config (references packages)
+│   ├── database/               # @repo/db: Prisma 7 schema, generated client, connection singleton
+│   │   ├── prisma/             # schema.prisma, models/, enums.prisma, migrations/, seed.ts
+│   │   └── src/                # prisma.ts, index.ts
+│   ├── common/                 # @repo/common: Zod schemas and shared types
+│   │   └── src/validations/    # One file per resource
+│   ├── ui/                     # @repo/ui: React Native component library
+│   │   └── src/                # Shared components, auth/ widgets
+│   ├── eslint-config/          # Shared ESLint flat-config builder
+│   └── typescript-config/      # Shared tsconfig bases (base, node, react-native-library)
+├── docs/                       # architecture.md, data-model.md, features.md, vision.md
+├── .planning/                  # GSD planning docs (PROJECT, ROADMAP, STATE, REQUIREMENTS, research/, codebase/)
+├── .claude/                    # Claude Code commands and skills
+├── .github/workflows/          # ci.yml
+├── docker-compose.yaml         # Local Postgres (dev :5434, test :5433) and Redis
+├── turbo.json                  # Turborepo task graph
+├── knip.ts                     # Unused deps/exports checks (root-level)
+├── eslint.config.mjs           # Root ESLint flat config
+└── package.json                # Yarn Classic workspaces root
 ```
 
 ## Directory Purposes
 
-**`apps/api/src/config/`:**
+### `apps/api/src/`
 
-- Purpose: Environment variable parsing and typed export
-- Key files: `apps/api/src/config/env.ts` — Zod schema validates `NODE_ENV`, `PORT`, `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN` at startup
+**`apps/api/src/index.ts`:** Process entry. Connects Prisma, listens, registers shutdown.
+
+**`apps/api/src/app.ts`:** `createApp()` factory (middleware stack and `/api` mount). Imported by tests.
+
+**`apps/api/src/config/`:**
+- Purpose: Environment and constants.
+- Contains: `env.ts` (Zod env schema, single `env` object), `constants.ts` (`VIDEO_ANALYSIS_WORKER_CONCURRENCY`).
+- Rule: Add env vars here only, and also add them to `apps/api/tests/unit/helpers/unitEnv.ts`.
 
 **`apps/api/src/routes/`:**
-
-- Purpose: Route definitions only — no business logic here
-- Pattern: Each resource gets its own file; `index.ts` aggregates them under `/api`
-- Key files: `index.ts`, `user.ts`, `session.ts`, `exercise.ts`, `health.ts`
+- Purpose: Route definitions with middleware chains.
+- Contains: `index.ts` (aggregator), one file per resource: `auth.ts`, `user.ts`, `exercise.ts`, `workout.ts`, `workoutSession.ts`, `health.ts`, `openapi.ts`.
+- Mount points: `/api/auth`, `/api/users`, `/api/exercises`, `/api/workouts`, `/api/workout-sessions`, `/api/health`.
 
 **`apps/api/src/controllers/`:**
-
-- Purpose: Extract request data, delegate to service, return JSON
-- Pattern: Functions are NOT class methods; exported as named functions and wrapped with `asyncHandler`
-- Key files: `user.ts`, `workoutSession.ts`, `exercise.ts`
+- Purpose: HTTP adapters. One file per resource, named `auth.ts`, `user.ts`, `exercise.ts`, `workout.ts`, `workoutSession.ts`.
 
 **`apps/api/src/services/`:**
+- Purpose: Business logic and Prisma access. One file per resource: `authService.ts`, `userService.ts`, `exerciseService.ts`, `workoutService.ts`, `workoutSessionService.ts`, `refreshTokenService.ts`.
 
-- Purpose: All business logic and Prisma queries live here
-- Pattern: Class-based singletons. `getPrismaClient()` accessed via a `private get prisma()` getter (lazy evaluation)
-- Key files: `userService.ts`, `workoutSessionService.ts`, `exerciseService.ts`
+**`apps/api/src/middlewares/`:**
+- `auth/`: `authentication.ts` (`authenticateToken`), `optionalAuth.ts`, `authorization.ts` (`authorize`, not mounted), barrel `index.ts`.
+- Top-level: `validateSchema.ts`, `errorHandler.ts`, `authRateLimiter.ts`.
 
 **`apps/api/src/errors/`:**
+- Purpose: Typed HTTP errors. `ApiError.ts` (base) plus `BadRequestError.ts`, `UnauthorizedError.ts`, `ForbiddenError.ts`, `NotFoundError.ts`, `ConflictError.ts`, `InternalError.ts`, `ServiceUnavailableError.ts`; barrel `index.ts`.
 
-- Purpose: Typed error objects that carry the correct HTTP status code
-- Hierarchy: All extend `ApiError` which extends `Error`
-- Key files: `ApiError.ts` (base), `NotFoundError.ts`, `ConflictError.ts`, `UnauthorizedError.ts`, `ForbiddenError.ts`, `BadRequestError.ts`, `InternalError.ts`
+**`apps/api/src/lib/`:**
+- Infrastructure singletons: `logger.ts` (pino), `redis.ts` (ioredis), `queue.ts` (BullMQ `video-analysis` queue, scaffold), `r2.ts` (S3 client for Cloudflare R2), `shutdown.ts` (process signal handling).
 
-**`apps/api/tests/integration/builders/`:**
+**`apps/api/src/utils/`:**
+- Small pure helpers, each in its own file: `pagination.ts` (`lookAheadTake`, `paginate`), `parseDate.ts` (`parseOptionalDate`), `normalizeString.ts`, `getUserIdByUuid.ts`, `requireUserUuid.ts`, `generateJwtToken.ts`, `generateRefreshToken.ts`, `prismaErrorCodes.ts`, `toError.ts`, `zodErrorMessage.ts`.
 
-- Purpose: Builder-pattern factories for test data DTOs
-- Key files: `registerUserBuilder.ts`, `loginUserBuilder.ts`, `workoutSessionBuilder.ts`, `exerciseBuilder.ts`
+**`apps/api/src/types/`:**
+- `express.d.ts` (augments `Request` with `user`), `myJwtPayload.ts`.
 
-**`apps/api/tests/integration/helpers/`:**
+**`apps/api/src/openapi/`:**
+- Purpose: OpenAPI generation via `@asteasolutions/zod-to-openapi`.
+- Contains: `registry.ts` (`OpenAPIRegistry`), `extend.ts` (imported first by `app.ts`), `schemas.ts` (presentation metadata, `.openapi()` calls live here, not in `@repo/common`), `spec.ts`, `paths/*.ts` (one per resource).
+- Note: `paths/workoutSessions.ts` documents `/workout-sessions`.
 
-- Purpose: Test infrastructure — app/DB setup, typed request senders
-- Key files: `helpers/testSetup.ts` (setup/teardown with full DB cleanup), `helpers/requestSender/authRequests.ts`, `helpers/requestSender/usersRequests.ts`, `helpers/requestSender/exercisesRequests.ts`, `helpers/requestSender/sessionsRequests.ts`, `helpers/db/exerciseHelper.ts`
+### `apps/api/tests/`
 
-**`packages/database/prisma/models/`:**
+- `globalSetup.ts`, `setup.ts`: Integration project setup (migrations; `NODE_ENV=test` and `_test` database assertion).
+- `unit/`: Mirrors `src/`: `config/`, `controllers/`, `errors/`, `lib/`, `middlewares/`, `services/`, `utils/`. Shared helpers in `unit/helpers/` (`prismaMock.ts`, `expressMocks.ts`, `unitEnv.ts`).
+- `integration/`: Supertest suites grouped by resource (`auth/`, `users/`, `workouts/`, `workoutSessions/`, `exercises/`), with `builders/`, `helpers/db/`, `helpers/requestSender/`, and `testSetup.ts`.
 
-- Purpose: One Prisma model file per domain entity
-- Models present: `user.prisma`, `exercise.prisma`, `workout-session.prisma`, `analysis-result.prisma`, `analysis-finding.prisma`, `body-metric.prisma`, `user-goal.prisma`, `user-milestone.prisma`, `milestone-definition.prisma`
+### `apps/native/`
 
-**`packages/common/src/validations/`:**
+**`apps/native/app/`:** Expo Router routes. Files here define URLs; keep logic in `src/`.
+- `_layout.tsx`: Root providers (`QueryClientProvider`, `AuthProvider`, `ThemeProvider`, `SafeAreaProvider`, `GestureHandlerRootView`) and root `Stack`.
+- `(auth)/`: `_layout.tsx`, `login.tsx`, `register.tsx`.
+- `(main)/`: `_layout.tsx` (Stack with headers), `(tabs)/` (`_layout.tsx`, `index.tsx` home, `workouts.tsx`, `settings.tsx`), and detail screens `profile.tsx`, `profile-edit.tsx`, `exercise-catalog.tsx`, `exercise-detail.tsx`, `workout-builder.tsx`, `workout-detail.tsx`, `workout-execute.tsx`.
 
-- Purpose: Single source of truth for input validation schemas used by both API and native client
-- Key files: `auth.ts` (loginSchema, registerSchema), `workoutSession.ts` (createWorkoutSessionSchema)
+**`apps/native/src/`:**
+- `api/`: `client.ts` (fetch wrapper), `tokenStore.ts`, `errors.ts` (`ApiError`), `keys.ts` (query key factories), `index.ts` (barrel), `endpoints/` (`auth.ts`, `user.ts`, `workouts.ts`, `exercises.ts`, `index.ts`).
+- `hooks/`: Feature hooks at the top level (`useWorkoutExecution.ts`, `useWorkoutBuilder.ts`, `useLogin.ts`, `useRegister.ts`, `useLogout.ts`, `useProfileEdit.ts`, `useNotificationReminder.ts`, `useCountdown.ts`), plus `queries/` (`useWorkouts.ts`, `useWorkoutDetail.ts`, `useExercises.ts`, `useExerciseDetail.ts`, `useProfile.ts`) and `mutations/` (`useCreateWorkout.ts`, `useUpdateWorkout.ts`, `useDeleteWorkout.ts`, `useStartWorkout.ts`).
+- `components/`: Reusable presentational components (e.g. `WorkoutCard.tsx`, `ExerciseCard.tsx`, `RestTimer.tsx`, `AvatarPickerModal.tsx`, `ReminderPicker.tsx`).
+- `context/`: `AuthContext.tsx`, `ThemeContext.tsx`.
+- `state/`: `pickedExerciseStore.ts` (module-level store).
+- `theme/`: `colors.ts` (theme tokens).
+- `constants/`: `routes.ts` (API path builders as `*_ROUTES` objects).
+- `types/`: Local UI/form-state types only (`reminder.ts`, `user.ts`, `images.d.ts`). Do not add API response types here.
 
-**`apps/native/app/`:**
+**Path aliases:** `@src/*` maps to `apps/native/src/*` (used throughout `app/` and `src/`).
 
-- Purpose: Expo Router file-system routing
-- `(auth)/` group — unauthenticated screens: `login.tsx`, `register.tsx`
-- `(main)/(tabs)/` group — authenticated tab screens: `index.tsx` (Home), `settings.tsx`
+### `packages/database/`
+
+- `prisma/schema.prisma`: Generator (`prisma-client`, output `../generated/prisma`) and datasource only.
+- `prisma/models/*.prisma`: One model per file (`user.prisma`, `exercise.prisma`, `workout.prisma` containing `Workout`, `WorkoutExercise`, `WorkoutLog`, `workout-session.prisma`, `analysis-result.prisma`, `analysis-finding.prisma`, `refresh-token.prisma`, `user-goal.prisma`, `user-milestone.prisma`, `milestone-definition.prisma`, `body-metric.prisma`).
+- `prisma/enums.prisma`: All enums (`Role`, `SessionStatus`, `ExerciseType`, `FindingType`, `FindingSeverity`, ...).
+- `prisma/migrations/`: Timestamped SQL migrations. Latest: `20260522174849_add_refresh_tokens`.
+- `prisma/seed.ts`: Exercise and dev seed data.
+- `prisma.config.ts`: Prisma 7 config.
+- `src/prisma.ts`: `connectPrisma`, `getPrismaClient`, `disconnectPrisma` (singleton).
+- `src/index.ts`: Public surface, re-exports the client and enums.
+- `generated/prisma/`: Generated client. Gitignored; regenerate with `yarn workspace @repo/db db:generate`.
+
+### `packages/common/`
+
+- `src/validations/`: One file per resource: `auth.ts`, `user.ts`, `workout.ts`, `workoutSession.ts`, `exercise.ts`, `pagination.ts`.
+- `src/constants/messages.ts`: Shared user-facing message strings.
+- `src/index.ts`: Barrel re-exporting every validation file. Add new validation files here.
+
+### `packages/ui/`
+
+- `src/`: `ScreenHeader.tsx`, `SwitchRow.tsx`, `index.tsx` (barrel), `auth/` (`AuthHeader.tsx`, `AuthInput.tsx`, `AuthFooter.tsx`, `AuthImageHeader.tsx`, `AuthOrDivider.tsx`, `AuthRememberRow.tsx`, `GoogleSignInButton.tsx`).
+
+### `docs/`
+
+- `architecture.md`: Target architecture (on-device pose and keypoints). Mixes implemented and planned work; check `ARCHITECTURE.md` in `.planning/codebase/` for what is implemented.
+- `data-model.md`, `features.md`, `vision.md`.
 
 ## Key File Locations
 
 **Entry Points:**
-
-- `apps/api/src/index.ts`: API server bootstrap
-- `apps/native/app/_layout.tsx`: Native app root layout
-- `apps/web/app/layout.tsx`: Web app root layout
+- `apps/api/src/index.ts`: API process start.
+- `apps/api/src/app.ts`: Express app factory.
+- `apps/native/index.js`: Expo entry.
+- `apps/native/app/_layout.tsx`: Native root layout.
 
 **Configuration:**
-
-- `apps/api/src/config/env.ts`: API env schema and typed export
-- `turbo.json`: Monorepo task pipeline
-- `docker-compose.yaml`: Local development databases
+- `apps/api/src/config/env.ts`: API env schema (only place `process.env` is read in API).
+- `apps/native/app.json`, `apps/native/eas.json`, `apps/native/metro.config.js`, `apps/native/babel.config.js`: Expo, EAS and bundler config.
+- `apps/api/tsup.config.ts`, `apps/api/vitest.config.ts`, `apps/api/tsconfig.json`: API build and test config.
+- `packages/database/prisma.config.ts`: Prisma config.
+- `turbo.json`, `knip.ts`, `.syncpackrc.json`, `.prettierrc`, `eslint.config.mjs`: Monorepo tooling.
+- `apps/api/.env.example`, `packages/database/.env.example`: Env templates (values are never committed).
 
 **Core Logic:**
-
-- `apps/api/src/services/userService.ts`: User auth logic (register, login)
-- `apps/api/src/services/workoutSessionService.ts`: Session creation and listing
-- `apps/api/src/services/exerciseService.ts`: Exercise catalog queries
-- `packages/database/src/prisma.ts`: Prisma client lifecycle management
+- `apps/api/src/services/*.ts`: Business logic.
+- `apps/api/src/middlewares/auth/authentication.ts`: JWT verification.
+- `packages/common/src/validations/*.ts`: API contracts.
+- `apps/native/src/api/client.ts`: Native HTTP client.
+- `apps/native/src/hooks/useWorkoutExecution.ts`: Set/rest state machine for the workout screen.
 
 **Testing:**
-
-- `apps/api/tests/integration/helpers/testSetup.ts`: Integration test setup/teardown
-- `apps/api/vitest.config.ts`: Vitest configuration
+- `apps/api/tests/unit/`: No DB, no network. Mirrors `src/`.
+- `apps/api/tests/integration/`: Real Postgres on `:5433`.
+- `apps/native/`: No test directory or test runner configured yet.
 
 ## Naming Conventions
 
 **Files (API):**
+- Services, controllers, routes, middleware: camelCase `resourceService.ts`, `workoutSession.ts`. Route file name matches the resource (`workoutSession.ts`) but the URL uses kebab-case (`/workout-sessions`).
+- Errors: PascalCase `NotFoundError.ts`, one class per file.
+- Utils: camelCase verb or noun (`parseDate.ts`, `getUserIdByUuid.ts`).
+- Tests: `*.test.ts`, under `tests/` only.
 
-- Routes: camelCase resource name — `user.ts`, `session.ts`, `exercise.ts`
-- Controllers: camelCase resource name — `user.ts`, `workoutSession.ts`
-- Services: camelCase + `Service` suffix — `userService.ts`, `workoutSessionService.ts`
-- Errors: PascalCase class name — `NotFoundError.ts`, `ApiError.ts`
+**Files (native):**
+- Routes under `app/`: kebab-case (`workout-execute.tsx`, `exercise-detail.tsx`), as Expo Router requires.
+- Components: PascalCase `WorkoutCard.tsx`.
+- Hooks: `useXxx.ts`, grouped into `queries/` and `mutations/` where they wrap TanStack Query.
+- Route-group folders: `(auth)`, `(main)`, `(tabs)`.
 
-**Files (Packages):**
-
-- Prisma models: kebab-case — `workout-session.prisma`, `analysis-finding.prisma`
-- UI components: PascalCase — `AuthInput.tsx`, `ScreenHeader.tsx`
+**Files (packages):**
+- Prisma models: kebab-case `workout-session.prisma`, one model per file.
+- Migrations: `YYYYMMDDHHMMSS_snake_case_name/migration.sql`.
+- Validations: camelCase resource name, e.g. `workoutSession.ts`.
 
 **Directories:**
+- API: lowercase single words (`controllers`, `services`, `middlewares`).
+- Native `src/`: lowercase single words; `queries/` and `mutations/` nested under `hooks/`.
 
-- Apps use flat camelCase directories for logical groupings: `controllers/`, `services/`, `middlewares/`
-- Native routes use Expo Router parenthesised group convention: `(auth)/`, `(main)/(tabs)/`
+**Identifiers:**
+- Functions and variables: camelCase. Classes: PascalCase, used only for services and errors.
+- Zod schemas: `camelCaseSchema` (e.g. `createWorkoutSessionSchema`). Inferred types: `XxxValues` (e.g. `CreateWorkoutSessionValues`).
+- Enums: `SCREAMING_SNAKE` values (`PENDING`, `PROCESSING`).
+- Express routers: `const router: Router = Router();`, exported as default.
 
 ## Where to Add New Code
 
-**New API Resource (e.g. `programs`):**
+**New API resource (CRUD endpoint):**
+1. Zod schema: `packages/common/src/validations/<resource>.ts`, then re-export from `packages/common/src/index.ts`.
+2. Prisma model: `packages/database/prisma/models/<model>.prisma`, enums in `enums.prisma`, then `yarn workspace @repo/db db:generate` and a migration.
+3. Service: `apps/api/src/services/<resource>Service.ts` (class + `export default new ...`).
+4. Controller: `apps/api/src/controllers/<resource>.ts`.
+5. Route: `apps/api/src/routes/<resource>.ts`, registered in `apps/api/src/routes/index.ts`.
+6. OpenAPI: presentation metadata in `apps/api/src/openapi/schemas.ts`, path registration in `apps/api/src/openapi/paths/<resource>.ts`.
+7. Tests: unit under `apps/api/tests/unit/{services,controllers}/`, integration under `apps/api/tests/integration/<resource>/`, builders in `tests/integration/builders/`.
 
-1. Schema: `packages/common/src/validations/program.ts` + export from `packages/common/src/index.ts`
-2. Prisma model: `packages/database/prisma/models/program.prisma`
-3. Service: `apps/api/src/services/programService.ts` — extend `class ProgramService`, export singleton
-4. Controller: `apps/api/src/controllers/program.ts` — named exports wrapped with `asyncHandler`
-5. Route: `apps/api/src/routes/program.ts` — register schemas + middleware + controller
-6. Mount: `apps/api/src/routes/index.ts` — `router.use("/programs", programRoutes)`
-7. Tests: `apps/api/tests/integration/programs/` + builder in `tests/integration/builders/`
+**New API env var:** Add to `envSchema` and to `env` in `apps/api/src/config/env.ts`, plus `apps/api/tests/unit/helpers/unitEnv.ts`, and `apps/api/.env.example`.
 
-**New Custom Error:**
+**New shared utility (API):** `apps/api/src/utils/<name>.ts`, with a test in `apps/api/tests/unit/utils/<name>.test.ts`.
 
-- Add to `apps/api/src/errors/` extending `ApiError` with the appropriate `StatusCodes.*` value
+**New typed error:** `apps/api/src/errors/<Name>Error.ts` extending `ApiError`, exported from `apps/api/src/errors/index.ts`.
 
-**New Shared UI Component:**
+**New background job (planned pipeline):**
+- Producer: called from a service in `apps/api/src/services/`, using the queue exported from `apps/api/src/lib/queue.ts`. Replace the scaffold `VideoAnalysisJobData` contract with the keypoint-based payload.
+- Consumer: a new entry file such as `apps/api/src/worker/index.ts` (no such directory yet), added to `apps/api/tsup.config.ts` `entry`. Derive `logger.child({ jobId, sessionId })` per job.
+- Pure analysis logic (metrics, exercise definitions): `packages/common/src/` in a new folder (e.g. `analysis/`), so both the worker and tests import it without I/O.
 
-- Add to `packages/ui/src/` (or `packages/ui/src/auth/` if auth-related)
-- Export from `packages/ui/src/index.tsx`
+**New native screen:**
+- Route file: `apps/native/app/(main)/<kebab-name>.tsx` (register its `Stack.Screen` in `apps/native/app/(main)/_layout.tsx` for a custom title or header).
+- Logic: `apps/native/src/hooks/<useName>.ts`; server data via `hooks/queries/` or `hooks/mutations/`.
+- Components: `apps/native/src/components/<Name>.tsx`.
+- API call: add to `apps/native/src/api/endpoints/<resource>.ts`, path in `apps/native/src/constants/routes.ts`, key in `apps/native/src/api/keys.ts`. Import response types from `@repo/common`.
 
-**New Native Screen:**
+**New native tab:** `apps/native/app/(main)/(tabs)/<name>.tsx` and a `Tabs.Screen` entry in `apps/native/app/(main)/(tabs)/_layout.tsx`.
 
-- Place under `apps/native/app/(main)/` for authenticated screens or `apps/native/app/(auth)/` for unauthenticated screens
-- App-specific components go in `apps/native/src/components/`
+**New camera or pose module (planned):** `apps/native/src/` under a new `camera/` or `pose/` folder. Native modules require the custom dev build (`expo-dev-client`), run Expo commands from `apps/native`.
 
-**New Context/State:**
+**Shared UI primitive:** `packages/ui/src/<Name>.tsx`, exported from `packages/ui/src/index.tsx`. Shared runtime libs (`react`, `react-native`, `@expo/vector-icons`) are peer and dev dependencies.
 
-- `apps/native/src/context/` — follow `ThemeContext.tsx` pattern (createContext + Provider + custom hook)
-
-**Utilities:**
-
-- API shared helpers: `apps/api/src/utils/`
-- Shared constants/messages: `packages/common/src/constants/`
+**Shared Prisma helper:** Never create a second `PrismaClient`. Use `getPrismaClient` from `@repo/db`.
 
 ## Special Directories
 
-**`packages/database/generated/prisma/`:**
+**`packages/database/generated/`:**
+- Purpose: Prisma client output.
+- Generated: Yes.
+- Committed: No.
 
-- Purpose: Prisma-generated TypeScript client
-- Generated: Yes (by `prisma generate` / `db:generate` turbo task)
-- Committed: Yes (checked in to avoid generation step on every clone)
+**`packages/database/prisma/migrations/`:**
+- Purpose: SQL migration history.
+- Generated: Partly (by `prisma migrate dev`).
+- Committed: Yes.
 
-**`apps/api/dist/`**, **`packages/*/dist/`**, **`apps/web/.next/`:**
+**`apps/api/dist/`:**
+- Purpose: `tsup` build output.
+- Generated: Yes.
+- Committed: No (`apps/api/.gitignore`).
 
-- Purpose: Build output
-- Generated: Yes
-- Committed: No (gitignored)
+**`apps/native/.expo-shared/`:**
+- Purpose: Expo shared asset metadata.
+- Generated: Yes.
+- Committed: Yes (listed in git).
 
-**`.turbo/`:**
+**`.claude/`:**
+- Purpose: Claude Code commands and skills for this repo, including Expo and React Native guidance.
+- Generated: No.
+- Committed: Yes.
 
-- Purpose: Turborepo task cache
-- Generated: Yes
-- Committed: No
-
-**`apps/native/.expo/`:**
-
-- Purpose: Expo build cache
-- Generated: Yes
-- Committed: No
+**`.planning/`:**
+- Purpose: GSD planning state. `codebase/` holds these mapping documents. `STATE.md`, `ROADMAP.md` and `REQUIREMENTS.md` are updated only by GSD commands or in the same branch as the work they track.
+- Generated: Partly.
+- Committed: Yes.
 
 ---
 
-_Structure analysis: 2026-03-21_
+*Structure analysis: 2026-10-21*
