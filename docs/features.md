@@ -8,17 +8,22 @@ This document describes the functional capabilities of the system.
 
 The primary feature of CaliAI.
 
-## 1.1 Video Upload
+## 1.1 Live Capture
 
-- User records or uploads exercise video.
+- User films a set with the camera inside the app. The phone extracts body
+  keypoints while filming; the video is not saved or uploaded.
+- Importing a video from the gallery is not supported in the MVP.
 - Supported exercises (MVP):
   - Push-ups
   - Pull-ups
+  - Dips
   - Squats
-  - Static holds (e.g. plank)
+- Advanced skills and static holds (front lever, planche, plank and others)
+  are added later as researched exercise definitions.
 
 ## 1.2 AI Analysis
 
+Keypoints are turned into per-rep metrics, and an AI model evaluates them.
 The system analyzes:
 
 - Body posture
@@ -31,11 +36,18 @@ The system analyzes:
 
 After analysis, the user receives:
 
-- Form score (0–100)
-- Identified mistakes
-- Suggested corrections
+- Form band (5 levels) per set. A 0–100 score is stored with each result for trend charts and training, but is not shown per set
+- At most 2 suggested corrections, after a positive observation
+- Camera advice instead of feedback when the body cannot be tracked reliably
 - Visual indicators (future enhancement)
 - Historical comparison
+
+## 1.4 Training Data (opt-in)
+
+- Users are asked for permission to keep their anonymized pose data to
+  improve the product.
+- Without permission, only the result is kept.
+- Users can withdraw consent at any time.
 
 ---
 
@@ -63,7 +75,7 @@ After analysis, the user receives:
 User can:
 
 - Select exercise
-- Upload video for analysis
+- Film the set for analysis
 - Add notes
 
 ## 3.2 Session History
@@ -79,17 +91,18 @@ User can:
 # 4. Progress Tracking
 
 - Exercise-specific performance history
-- Average form score over time
+- Average form score over time (smoothed over several sets)
 - Milestone tracking
 
 ---
 
 # 5. Future Features (Planned)
 
-- Real-time feedback mode
+- Real-time feedback mode (deferred; not in v1)
+- AI-generated workout plans (roadmap Phase 4)
 - Personalized training programs
-- AI-generated workout plans
 - Skill progression tracking
+- A trained in-house form model to replace the AI API score
 - Leaderboard / Community
 - Injury risk alerts
 - Admin dashboards analyses

@@ -1,5 +1,11 @@
 # Architecture Research
 
+> **Superseded in part (2026-10-21).** The post-set path in this document
+> (video upload, ffmpeg frame extraction, multi-image Claude call, R2/local
+> video storage) was replaced: pose runs on-device and the server receives
+> keypoints only. See `docs/architecture.md` for the current design. The
+> real-time path, BullMQ/SSE pattern and the anti-patterns still apply.
+
 **Domain:** AI-powered calisthenics form analysis — mobile video capture + pose estimation + LLM feedback
 **Researched:** 2026-03-21
 **Confidence:** MEDIUM-HIGH

@@ -63,7 +63,7 @@ Unlike generic fitness apps, CaliAI focuses specifically on:
 3. Video Upload
 4. AI Form Analysis
 5. Feedback Report:
-   - Form score
+   - Form band (5 levels)
    - Identified mistakes
    - Suggested corrections
    - Progress comparison

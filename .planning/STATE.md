@@ -26,8 +26,10 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 Phase: 1
 Plan: Not started
 
-Already built: `processingStatus` enum on WorkoutSession, BullMQ `videoAnalysisQueue`, Redis connection, R2 client, EAS dev build (Android, with vision-camera + fast-tflite plugins).
-Remaining: `POST /api/sessions/:id/recording` (202 + job ID), video analysis worker, SSE `GET /api/sessions/:id/status`, 10-minute stuck-PROCESSING reaper, and the dev-build gate (vision-camera + fast-tflite running on both iOS and Android simulators).
+Already built: `processingStatus` enum on WorkoutSession, BullMQ `videoAnalysisQueue`, Redis connection, R2 client (avatars), EAS dev build (Android, with vision-camera + fast-tflite plugins).
+Remaining: `POST /api/sessions/:id/capture` (keypoints in, 202 + job ID; replaces the earlier `/recording` video endpoint), analysis worker, SSE `GET /api/sessions/:id/status`, 10-minute stuck-PROCESSING reaper, and the dev-build gate (vision-camera + fast-tflite running on both iOS and Android simulators, plus a pose-accuracy check on real clips).
+
+Architecture changed 2026-10-21: pose runs on-device, the server receives keypoints (no video, no R2 video, no frame extraction), the LLM scores at launch, and an own model is trained later from consented, labeled data. See docs/architecture.md. The `videoR2Key`/`video*` columns on WorkoutSession and the `r2Key` field in `VideoAnalysisJobData` are now obsolete and need a migration. Phase 5.1 (training data and labeling) was inserted.
 
 ## Performance Metrics
 
@@ -60,9 +62,9 @@ _Updated after each plan completion_
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Phase 1: Custom Expo dev build (react-native-vision-camera + react-native-fast-tflite) is a hard gate — validate on both simulators before writing any ML code. If it fails, real-time path must fall back to server-side inference.
+- Phase 1: Custom Expo dev build (react-native-vision-camera + react-native-fast-tflite) is a hard gate — validate on both simulators before writing any ML code. If it fails, on-device pose (Phase 5) is blocked and a new decision is needed.
 - Phase 1: processingStatus state machine must implement full PENDING → PROCESSING → COMPLETED / FAILED with a 10-minute server-side timeout cleanup job. It currently never advances beyond PENDING.
-- Phase 5 before Phase 6: Post-set analysis validates the angle-detection approach and locks the feedback format that the real-time rule engine keys off.
+- Phase 6 (real-time cues) is deferred (2026-10-21). When it returns, it follows Phase 5: post-set analysis validates the angle-detection approach and locks the feedback format that the real-time rule engine keys off.
 - Phase 2 before Phase 4: AI workout generation prompt requires fitness level and goal from user profile for calibration.
 - [Phase 02-user-profile]: Catch P2002 without meta.target check — Prisma 7 with pg driver adapter omits target field; code check alone is sufficient
 - [Phase 02-user-profile]: Mock getSignedUrl in avatar upload tests — appropriate exception to no-mock rule for external AWS SDK I/O
@@ -78,7 +80,8 @@ None yet.
 
 ### Blockers/Concerns
 
-- INFRA-05: EAS Android dev builds succeed (2026-09-24). iOS is unverified — the `development` profile in `apps/native/eas.json` has no `ios.simulator: true`, so an iOS simulator build needs its own profile. If the gate fails on either platform, Phase 6 (real-time) must be redesigned around server-side inference only.
+- INFRA-05: EAS Android dev builds succeed (2026-09-24). iOS is unverified — the `development` profile in `apps/native/eas.json` has no `ios.simulator: true`, so an iOS simulator build needs its own profile. If the gate fails on either platform, on-device pose (and therefore Phase 5) is blocked. The video-upload fallback was ruled out, so a failure would need a new decision. Real-time cues (Phase 6) are deferred, so the gate no longer protects them.
+- Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
