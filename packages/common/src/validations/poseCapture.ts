@@ -83,3 +83,5 @@ export const captureAcceptedResponseSchema = z.object({
   jobId: z.string(),
   status: z.literal("QUEUED"),
 });
+
+export type CaptureAccepted = z.infer<typeof captureAcceptedResponseSchema>;

@@ -1,3 +1,9 @@
 export { ApiError } from "./errors";
-export { authApi, userApi, workoutApi, exerciseApi } from "./endpoints";
+export {
+  authApi,
+  userApi,
+  workoutApi,
+  exerciseApi,
+  sessionsApi,
+} from "./endpoints";
 export { userKeys, workoutKeys, exerciseKeys } from "./keys";

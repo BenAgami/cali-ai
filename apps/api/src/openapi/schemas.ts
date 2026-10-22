@@ -15,7 +15,6 @@ import {
   createWorkoutSessionSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
-  EXERCISE_TYPES,
   exerciseDetailSchema,
   workoutWithExercisesSchema,
   workoutLogResponseSchema,
@@ -23,9 +22,10 @@ import {
   poseCapturePayloadSchema,
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
+  workoutSessionResponseSchema,
 } from "@repo/common";
 
-import { Role, GoalStatus, SessionStatus, AnalysisStage } from "@repo/db";
+import { Role, GoalStatus } from "@repo/db";
 
 // ── Primitive helpers ─────────────────────────────────────────────────────────
 
@@ -47,9 +47,6 @@ const RoleEnum = z.enum(enumValues(Role));
 const ExperienceLevelEnum = z.enum(EXPERIENCE_LEVELS);
 const GoalTypeEnum = z.enum(GOAL_TYPES);
 const GoalStatusEnum = z.enum(enumValues(GoalStatus));
-const ExerciseTypeEnum = z.enum(EXERCISE_TYPES);
-const SessionStatusEnum = z.enum(enumValues(SessionStatus));
-const AnalysisStageEnum = z.enum(enumValues(AnalysisStage));
 
 // ── Request bodies (reuse the shared @repo/common schemas) ────────────────────
 
@@ -279,12 +276,6 @@ export const WorkoutLogResponse = registry.register(
 
 // ── Workout session responses ─────────────────────────────────────────────────
 
-const SessionExerciseRef = z.object({
-  code: z.string(),
-  displayName: z.string(),
-  exerciseType: ExerciseTypeEnum,
-});
-
 const AnalysisResultSummary = z.object({
   formScore: z.number().int(),
   analyzedAt: isoDateTime(),
@@ -293,23 +284,7 @@ const AnalysisResultSummary = z.object({
 
 export const WorkoutSessionResponse = registry.register(
   "WorkoutSession",
-  z.object({
-    id: z.number().int(),
-    userId: z.number().int(),
-    exerciseId: z.number().int(),
-    processingStatus: SessionStatusEnum,
-    notes: z.string().nullable(),
-    performedAt: isoDateTime(),
-    processingStartedAt: isoDateTime().nullable(),
-    processingFinishedAt: isoDateTime().nullable(),
-    failureReason: z.string().nullable(),
-    analysisStage: AnalysisStageEnum.nullable(),
-    analysisStageProgress: z.number().nullable(),
-    bullmqJobId: z.string().nullable(),
-    createdAt: isoDateTime(),
-    updatedAt: isoDateTime(),
-    exercise: SessionExerciseRef,
-  }),
+  workoutSessionResponseSchema,
 );
 
 export const WorkoutSessionListItem = registry.register(

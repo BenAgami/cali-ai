@@ -1,10 +1,13 @@
 import StatusCode from "http-status-codes";
+import { gzipSync, strToU8 } from "fflate";
 
 import { tokenStore } from "./tokenStore";
 import { ApiError } from "./errors";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_BASE_URL as string | undefined;
 if (!API_BASE) throw new Error("EXPO_PUBLIC_API_BASE_URL is not set in .env");
+
+export const buildApiUrl = (path: string): string => `${API_BASE}${path}`;
 
 const TIMEOUT_MS = 10_000;
 
@@ -146,6 +149,18 @@ export const apiClient = {
 
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "POST", body: JSON.stringify(body) }),
+
+  // Body stays a Uint8Array: RN re-gzips string bodies when Content-Encoding
+  // is gzip, but sends binary bodies untouched.
+  postGzipJson: <T>(path: string, body: unknown) =>
+    request<T>(path, {
+      method: "POST",
+      body: gzipSync(strToU8(JSON.stringify(body))),
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Encoding": "gzip",
+      },
+    }),
 
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "PATCH", body: JSON.stringify(body) }),

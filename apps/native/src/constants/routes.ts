@@ -20,3 +20,10 @@ export const WORKOUT_ROUTES = {
   detail: (id: number) => `/api/workouts/${id}`,
   logs: (id: number) => `/api/workouts/${id}/logs`,
 } as const;
+
+export const SESSION_ROUTES = {
+  create: "/api/workout-sessions",
+  capture: (id: number) => `/api/sessions/${id}/capture`,
+  status: (id: number) => `/api/sessions/${id}/status`,
+  retry: (id: number) => `/api/sessions/${id}/analysis/retry`,
+} as const;
