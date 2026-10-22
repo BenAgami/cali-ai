@@ -37,6 +37,10 @@ const MainLayout: React.FC = () => {
         name="workout-builder"
         options={{ headerShown: true, title: "Build workout" }}
       />
+      <Stack.Screen
+        name="dev-pose-check"
+        options={{ headerShown: true, title: "Pose check" }}
+      />
     </Stack>
   );
 };
