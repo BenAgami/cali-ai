@@ -1,0 +1,21 @@
+model PoseCapture {
+  id Int @id @default(autoincrement())
+
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId Int            @unique @map("session_id")
+
+  keypoints        Bytes?
+  keypointsFormat  String  @map("keypoints_format") @db.VarChar(40)
+  poseModelName    String  @map("pose_model_name") @db.VarChar(80)
+  poseModelVersion String  @map("pose_model_version") @db.VarChar(40)
+  fps              Decimal @db.Decimal(6, 2)
+  frameCount       Int     @map("frame_count")
+  durationSec      Decimal @map("duration_sec") @db.Decimal(6, 2)
+  cameraView       String? @map("camera_view") @db.VarChar(20)
+  deviceModel      String? @map("device_model") @db.VarChar(80)
+  appVersion       String? @map("app_version") @db.VarChar(40)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("pose_captures")
+}

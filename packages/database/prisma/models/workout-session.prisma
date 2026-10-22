@@ -11,22 +11,18 @@ model WorkoutSession {
   notes            String?
   performedAt      DateTime      @default(now()) @map("performed_at")
 
-  videoDurationSec Decimal? @map("video_duration_sec") @db.Decimal(6, 2)
-  videoFps         Decimal? @map("video_fps") @db.Decimal(6, 2)
-  videoWidth       Int?     @map("video_width")
-  videoHeight      Int?     @map("video_height")
-  videoSizeBytes   BigInt?  @map("video_size_bytes")
-
-  processingStartedAt  DateTime? @map("processing_started_at")
-  processingFinishedAt DateTime? @map("processing_finished_at")
-  failureReason        String?   @map("failure_reason")
-  videoR2Key           String?   @map("video_r2_key")
-  bullmqJobId          String?   @map("bullmq_job_id")
+  processingStartedAt   DateTime?      @map("processing_started_at")
+  processingFinishedAt  DateTime?      @map("processing_finished_at")
+  failureReason         String?        @map("failure_reason")
+  analysisStage         AnalysisStage? @map("analysis_stage")
+  analysisStageProgress Float?         @map("analysis_stage_progress") @db.Real
+  bullmqJobId           String?        @map("bullmq_job_id")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   analysisResult AnalysisResult?
+  poseCapture    PoseCapture?
   userMilestones UserMilestone[]
 
   @@index([userId, performedAt(sort: Desc)], map: "idx_sessions_user_performed_at_desc")

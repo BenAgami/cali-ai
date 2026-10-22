@@ -57,11 +57,12 @@ erDiagram
         string processing_status
         text notes
         timestamp performed_at
-        decimal capture_duration_sec
-        decimal capture_fps
         timestamp processing_started_at
         timestamp processing_finished_at
         text failure_reason
+        string analysis_stage
+        float analysis_stage_progress
+        text bullmq_job_id
         timestamp created_at
         timestamp updated_at
     }
@@ -160,6 +161,13 @@ erDiagram
 - `PROCESSING`
 - `COMPLETED`
 - `FAILED`
+
+`AnalysisStage`
+
+- `QUEUED`
+- `ANALYZING_REPS`
+- `WRITING_FEEDBACK`
+- `COMPLETED`
 
 `FindingType`
 
@@ -270,18 +278,14 @@ Fields:
 - `processing_status` `SessionStatus` DEFAULT `PENDING`.
 - `notes` TEXT NULL.
 - `performed_at` TIMESTAMPTZ DEFAULT `now()`.
-- `capture_duration_sec` NUMERIC(6,2) NULL.
-- `capture_fps` NUMERIC(6,2) NULL.
 - `processing_started_at` TIMESTAMPTZ NULL.
 - `processing_finished_at` TIMESTAMPTZ NULL.
 - `failure_reason` TEXT NULL.
+- `analysis_stage` `AnalysisStage` NULL (current pipeline stage of the latest run).
+- `analysis_stage_progress` REAL NULL (0-1 sub-progress within the stage).
+- `bullmq_job_id` TEXT NULL (job id of the current run; workers ignore jobs whose id differs).
 - `created_at` TIMESTAMPTZ DEFAULT `now()`.
 - `updated_at` TIMESTAMPTZ.
-
-Constraints:
-
-- capture_duration_sec > 0.
-- capture_fps > 0.
 
 Indexes:
 
@@ -291,8 +295,7 @@ Indexes:
 
 Notes:
 
-- No video or frames are persisted. Capture metadata is persisted for
-  analytics/debugging only.
+- No video or frames are persisted. Capture metadata lives on `pose_captures`.
 - The keypoints live in `pose_captures`, not here, so session lists stay light.
 
 ### 4.6 `analysis_results`
@@ -334,7 +337,7 @@ Fields:
 - `keypoints` BYTEA NULL (gzipped series; NULL after deletion).
 - `keypoints_format` VARCHAR(40) (payload format version).
 - `pose_model_name` VARCHAR(80), `pose_model_version` VARCHAR(40).
-- `fps` NUMERIC(6,2), `frame_count` INT.
+- `fps` NUMERIC(6,2), `frame_count` INT, `duration_sec` NUMERIC(6,2).
 - `camera_view` VARCHAR(20) NULL (example: `side`, `front`).
 - `device_model` VARCHAR(80) NULL, `app_version` VARCHAR(40) NULL.
 - `context` JSONB NULL (snapshot at capture time of body and profile values, exercise variation and equipment, set position and targets, capture quality, and outcome signals; NULL for non-consented sets).
@@ -345,6 +348,7 @@ Fields:
 
 Notes:
 
+- `context`, `context_version`, `training_consent` and `retain_until` are added in Phase 5.1.
 - When `training_consent` is false, the worker sets `keypoints` to NULL after
   analysis finishes.
 - Payload size is roughly 25-60 KB per set.
