@@ -5,6 +5,8 @@ import type { PoseCapturePayload } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import captureService from "../services/captureService";
+import { analysisStreamService } from "../services/analysisStreamService";
+import { openSseStream } from "../lib/sse";
 
 /**
  * Accept an on-device pose capture and queue it for analysis
@@ -44,5 +46,26 @@ export const retryAnalysis = async (req: Request, res: Response) => {
     success: true,
     message: "Analysis re-queued",
     data,
+  });
+};
+
+/**
+ * Stream analysis status events (SSE) for a session
+ * @route GET /api/sessions/:id/status
+ */
+export const streamAnalysisStatus = async (req: Request, res: Response) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const sessionId = Number(req.params.id);
+
+  // 404/409 are thrown here, before any header is sent.
+  await analysisStreamService.assertStreamable(userUuid, sessionId);
+
+  const stream = openSseStream(req, res);
+  await analysisStreamService.attach(sessionId, {
+    send: (event) => stream.send("status", event),
+    close: stream.close,
+    onClose: stream.onClose,
   });
 };

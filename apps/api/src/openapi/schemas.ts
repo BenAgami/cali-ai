@@ -22,6 +22,7 @@ import {
   pageMetaSchema,
   poseCapturePayloadSchema,
   captureAcceptedResponseSchema,
+  analysisStatusEventSchema,
 } from "@repo/common";
 
 import { Role, GoalStatus, SessionStatus, AnalysisStage } from "@repo/db";
@@ -322,3 +323,6 @@ export const CaptureAccepted = registry.register(
   "CaptureAccepted",
   captureAcceptedResponseSchema,
 );
+
+// Registered for the components section; referenced by the SSE path description.
+registry.register("AnalysisStatusEvent", analysisStatusEventSchema);

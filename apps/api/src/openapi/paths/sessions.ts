@@ -57,3 +57,31 @@ registry.registerPath({
     500: errorResponse("Internal server error"),
   },
 });
+
+registry.registerPath({
+  method: "get",
+  path: "/sessions/{id}/status",
+  tags: ["Session Analysis"],
+  summary: "Stream analysis progress (Server-Sent Events)",
+  description:
+    "The current state is sent first, then live transitions. Each `event: status` message carries JSON matching the AnalysisStatusEvent schema.",
+  security: [bearerAuth],
+  request: { params: sessionIdParams },
+  responses: {
+    200: {
+      description: "Event stream",
+      content: {
+        "text/event-stream": {
+          schema: z.string().openapi({
+            description:
+              "Stream of `event: status` messages; each `data:` line is JSON matching AnalysisStatusEvent. The stream closes after a COMPLETED or FAILED event. Heartbeat comments every 15 s.",
+          }),
+        },
+      },
+    },
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Session not found"),
+    409: errorResponse("No analysis started"),
+    500: errorResponse("Internal server error"),
+  },
+});

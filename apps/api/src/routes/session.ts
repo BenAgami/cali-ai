@@ -7,7 +7,11 @@ import validateSchema from "../middlewares/validateSchema";
 import rejectOversizedBody from "../middlewares/rejectOversizedBody";
 import { authenticateToken } from "../middlewares/auth";
 
-import { retryAnalysis, submitCapture } from "../controllers/session";
+import {
+  retryAnalysis,
+  streamAnalysisStatus,
+  submitCapture,
+} from "../controllers/session";
 
 const router: Router = Router();
 
@@ -38,6 +42,17 @@ router.post(
   authenticateToken,
   validateSchema(z.object({ params: sessionIdParamsSchema })),
   retryAnalysis,
+);
+
+/**
+ * GET /:id/status
+ * Server-Sent Events stream of analysis progress for a session
+ */
+router.get(
+  "/:id/status",
+  authenticateToken,
+  validateSchema(z.object({ params: sessionIdParamsSchema })),
+  streamAnalysisStatus,
 );
 
 export default router;
