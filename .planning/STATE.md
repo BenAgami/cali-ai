@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-10-22T12:38:40.376Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-10-22T12:40:54.475Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 01 (infrastructure) — EXECUTING
-Plan: 5 of 10
+Plan: 6 of 10
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ _Updated after each plan completion_
 | Phase 01 P02 | 25min | 3 tasks | 11 files |
 | Phase 01 P01 | 40min | 3 tasks | 20 files |
 | Phase 01 P06 | 15min | 2 tasks | 6 files |
+| Phase 01 P05 | 25min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Analysis env refuses boot unless stuck timeout > retry budget and stuck + reaper interval <= 180000 ms
 - [Phase 01]: Analysis stage and sub-progress persisted as WorkoutSession columns (not an AnalysisJob table); queue form-analysis with { sessionId, captureId }
 - [Phase 01]: Capture storage format gzip-json-v1; payload caps 1 MiB/3600 frames/180 s/5-60 fps/17-33 keypoints in @repo/common
+- [Phase 01]: Session becomes PROCESSING at capture accept (QUEUED is a persisted stage); status events published fire-and-forget
 
 ### Pending Todos
 
@@ -88,6 +90,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-22T12:38:40.371Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-10-22T12:40:54.470Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
