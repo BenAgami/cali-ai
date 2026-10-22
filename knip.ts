@@ -4,7 +4,7 @@ process.env.DATABASE_URL ??= "postgresql://knip:knip@localhost:5432/knip";
 
 const config: KnipConfig = {
   ignoreDependencies: ["expo-updates"],
-  ignore: [".claude/**"],
+  ignore: [".claude/**", "scripts/pose-eval/**"],
   ignoreExportsUsedInFile: { interface: true, type: true },
   workspaces: {
     "apps/api": {
