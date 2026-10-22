@@ -174,6 +174,10 @@ describe("CaptureService", () => {
           () => null,
           (error: unknown) => error,
         );
+        // encodeCapture uses real zlib, so wait until the enqueue has started.
+        await vi.waitFor(() =>
+          expect(formAnalysisQueue.add).toHaveBeenCalled(),
+        );
         await vi.advanceTimersByTimeAsync(5000);
 
         expect(await outcome).toBeInstanceOf(ServiceUnavailableError);
