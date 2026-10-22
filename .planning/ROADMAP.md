@@ -41,7 +41,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 Plans:
 
-- [ ] 01-01-PLAN.md — Prisma migration (PoseCapture, AnalysisStage columns, drop video columns), video-field removal, queue renamed to form-analysis
+- [x] 01-01-PLAN.md — Prisma migration (PoseCapture, AnalysisStage columns, drop video columns), video-field removal, queue renamed to form-analysis
 - [x] 01-02-PLAN.md — Status-event contract + stage-to-percent mapping, analysis env config with retry-budget and 3-minute-ceiling checks (150 s stuck timeout, 15 s reaper tick), Redis pub/sub progress bus
 - [ ] 01-03-PLAN.md — Dev-build gate: worklets-core + MoveNet pose-check screen, Android + iOS-simulator EAS builds, device verification
 - [ ] 01-04-PLAN.md — Pose-model gate: offline evaluator, shot list, filmed clips, MoveNet vs 33-point decision
