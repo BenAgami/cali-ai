@@ -25,7 +25,9 @@ export const submitCapture = async (
         .set("Content-Type", "application/json")
         .set("Content-Encoding", "gzip")
         // superagent would JSON.stringify a Buffer body; send the bytes as-is.
-        .serialize((body: Buffer) => body)
+        .serialize(
+          ((body: Buffer) => body) as unknown as (obj: unknown) => string,
+        )
         .send(gzipSync(Buffer.from(JSON.stringify(payload))))
     );
   }
