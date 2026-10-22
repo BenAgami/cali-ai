@@ -153,6 +153,10 @@ describe("processAnalysisJob", () => {
         error.code === "LLM_TIMEOUT" &&
         !(error instanceof UnrecoverableError),
     );
+    // Decoding gunzips on the real thread pool; wait until the timeout is armed.
+    await vi.waitFor(() =>
+      expect(mockFeedback.generateFeedback).toHaveBeenCalled(),
+    );
     await vi.advanceTimersByTimeAsync(40_000);
 
     await assertion;
