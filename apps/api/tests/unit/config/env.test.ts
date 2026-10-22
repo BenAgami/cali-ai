@@ -99,6 +99,11 @@ describe("envSchema", () => {
       expect(parsed.REFRESH_TOKEN_EXPIRES_IN).toBe("7d");
       expect(parsed.REDIS_URL).toBe("redis://localhost:6379");
       expect(parsed.CORS_ALLOWED_ORIGINS).toBe("http://localhost:8081");
+      expect(parsed.ANALYSIS_MAX_ATTEMPTS).toBe(3);
+      expect(parsed.ANALYSIS_BACKOFF_DELAY_MS).toBe(2000);
+      expect(parsed.ANALYSIS_LLM_TIMEOUT_MS).toBe(40000);
+      expect(parsed.ANALYSIS_STUCK_TIMEOUT_MS).toBe(150000);
+      expect(parsed.ANALYSIS_REAPER_INTERVAL_MS).toBe(15000);
     });
 
     it("rejects an unknown NODE_ENV", () => {
@@ -107,6 +112,49 @@ describe("envSchema", () => {
 
     it("rejects a DATABASE_URL that is not a URL", () => {
       expectIssueOn("DATABASE_URL", { DATABASE_URL: "not-a-url" });
+    });
+  });
+
+  describe("analysis retry budget", () => {
+    it("accepts the defaults", () => {
+      expect(() => parse()).not.toThrow();
+    });
+
+    it("rejects a stuck timeout below the retry budget (141000 ms)", () => {
+      expectIssueOn("ANALYSIS_STUCK_TIMEOUT_MS", {
+        ANALYSIS_STUCK_TIMEOUT_MS: "120000",
+      });
+    });
+
+    it("rejects more attempts than the stuck timeout can cover", () => {
+      expectIssueOn("ANALYSIS_STUCK_TIMEOUT_MS", {
+        ANALYSIS_MAX_ATTEMPTS: "5",
+      });
+    });
+
+    it("accepts a shorter LLM timeout with a longer stuck timeout", () => {
+      expect(() =>
+        parse({
+          ANALYSIS_LLM_TIMEOUT_MS: "30000",
+          ANALYSIS_STUCK_TIMEOUT_MS: "160000",
+        }),
+      ).not.toThrow();
+    });
+
+    it("rejects a reaper interval that pushes past the 3-minute ceiling", () => {
+      expectIssueOn("ANALYSIS_REAPER_INTERVAL_MS", {
+        ANALYSIS_REAPER_INTERVAL_MS: "60000",
+      });
+    });
+
+    it("rejects a stuck timeout plus reaper interval above 180000 ms", () => {
+      expectIssueOn("ANALYSIS_REAPER_INTERVAL_MS", {
+        ANALYSIS_STUCK_TIMEOUT_MS: "170000",
+      });
+    });
+
+    it("rejects zero attempts", () => {
+      expectIssueOn("ANALYSIS_MAX_ATTEMPTS", { ANALYSIS_MAX_ATTEMPTS: "0" });
     });
   });
 });
