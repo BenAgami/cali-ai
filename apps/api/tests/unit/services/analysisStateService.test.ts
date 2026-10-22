@@ -117,9 +117,9 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     prisma.poseCapture.create.mockResolvedValue({ id: 9 });
     prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
 
-    await expect(
-      service.startRunWithCapture(5, capture, JOB),
-    ).resolves.toEqual({ captureId: 9 });
+    await expect(service.startRunWithCapture(5, capture, JOB)).resolves.toEqual(
+      { captureId: 9 },
+    );
 
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: { id: 5, processingStatus: SessionStatus.PENDING },
@@ -137,9 +137,7 @@ describe("AnalysisStateService.startRunWithCapture", () => {
   it("throws ConflictError and does not create a capture when the PENDING guard matches nothing", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
 
-    await expect(
-      service.startRunWithCapture(5, capture, JOB),
-    ).rejects.toThrow(
+    await expect(service.startRunWithCapture(5, capture, JOB)).rejects.toThrow(
       new ConflictError("Analysis already started for this session"),
     );
     expect(prisma.poseCapture.create).not.toHaveBeenCalled();
@@ -207,9 +205,9 @@ describe("AnalysisStateService.advanceStage", () => {
   it("returns false for a stale job or non-PROCESSING session", async () => {
     prisma.workoutSession.findFirst.mockResolvedValue(null);
 
-    await expect(service.advanceStage(5, "old", "ANALYZING_REPS")).resolves.toBe(
-      false,
-    );
+    await expect(
+      service.advanceStage(5, "old", "ANALYZING_REPS"),
+    ).resolves.toBe(false);
     expect(prisma.workoutSession.findFirst).toHaveBeenCalledWith({
       where: {
         id: 5,
@@ -264,9 +262,9 @@ describe("AnalysisStateService.advanceStage", () => {
     });
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
 
-    await expect(service.advanceStage(5, JOB, "WRITING_FEEDBACK")).resolves.toBe(
-      false,
-    );
+    await expect(
+      service.advanceStage(5, JOB, "WRITING_FEEDBACK"),
+    ).resolves.toBe(false);
     expect(prisma.workoutSession.updateMany.mock.calls[0][0].data).toEqual({
       analysisStage: "WRITING_FEEDBACK",
       analysisStageProgress: null,
