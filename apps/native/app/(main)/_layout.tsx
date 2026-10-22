@@ -41,6 +41,10 @@ const MainLayout: React.FC = () => {
         name="dev-pose-check"
         options={{ headerShown: true, title: "Pose check" }}
       />
+      <Stack.Screen
+        name="dev-pipeline-check"
+        options={{ headerShown: true, title: "Pipeline check" }}
+      />
     </Stack>
   );
 };
