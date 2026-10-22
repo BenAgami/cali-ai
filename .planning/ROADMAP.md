@@ -47,7 +47,7 @@ Plans:
 - [ ] 01-04-PLAN.md — Pose-model gate: offline evaluator, shot list, filmed clips, MoveNet vs 33-point decision
 - [x] 01-05-PLAN.md — Session state machine service (guarded transitions, reaper query) with unit + real-DB tests
 - [x] 01-06-PLAN.md — Capture payload schema + caps, gzip storage codec, withTimeout utility
-- [ ] 01-07-PLAN.md — POST /api/sessions/:id/capture and /analysis/retry (202 + job id, 409/413 rules) with integration tests
+- [x] 01-07-PLAN.md — POST /api/sessions/:id/capture and /analysis/retry (202 + job id, 409/413 rules) with integration tests
 - [x] 01-08-PLAN.md — BullMQ analysis worker, retries/backoff, LLM-timeout seam, reaper job scheduler (every 15 s), startup/shutdown wiring
 - [ ] 01-09-PLAN.md — GET /api/sessions/:id/status SSE stream via analysisStreamService (current state first, live pub/sub events, terminal close), thin controller
 - [ ] 01-10-PLAN.md — Native sessions API (gzip upload), react-native-sse status hook, dev pipeline-check screen, end-to-end device check
@@ -163,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
-| 1. Infrastructure            | 0/10           | In progress | -          |
+| 1. Infrastructure            | 7/10           | In progress | -          |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 0/TBD          | Not started | -          |
