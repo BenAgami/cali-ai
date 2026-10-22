@@ -109,9 +109,7 @@ describe("analysis state machine (real DB)", () => {
     const rejected = results.filter((r) => r.status === "rejected");
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
-    expect((rejected[0] as PromiseRejectedResult).reason).toBeInstanceOf(
-      ConflictError,
-    );
+    expect(rejected[0].reason).toBeInstanceOf(ConflictError);
     expect(await captureCount(session.id)).toBe(1);
   });
 
