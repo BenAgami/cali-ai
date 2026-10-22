@@ -24,3 +24,13 @@ export const analysisStatusEventSchema = z.object({
   failure_reason: z.string().nullable(),
 });
 export type AnalysisStatusEvent = z.infer<typeof analysisStatusEventSchema>;
+
+export const ANALYSIS_FAILURE_REASONS = [
+  "TIMEOUT",
+  "ENQUEUE_FAILED",
+  "CAPTURE_MISSING",
+  "CAPTURE_INVALID",
+  "LLM_TIMEOUT",
+  "ANALYSIS_ERROR",
+] as const;
+export type AnalysisFailureReason = (typeof ANALYSIS_FAILURE_REASONS)[number];
