@@ -13,7 +13,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **INFRA-02**: Set keypoints (no video) are automatically submitted for analysis when the set ends; the endpoint returns a job ID and processes asynchronously
 - [ ] **INFRA-03**: Server-Sent Events (SSE) endpoint delivers job progress and results to the client
 - [ ] **INFRA-04**: Workout session processingStatus state machine handles PENDING → PROCESSING → COMPLETED / FAILED transitions
-- [ ] **INFRA-05**: Custom Expo dev build is configured with react-native-vision-camera and react-native-fast-tflite (required for on-device pose estimation). Gate: on Android the app launches, the pose model loads and a frame processor runs a pose pass; the EAS iOS simulator build compiles. iOS runtime verification is deferred (no Mac or Apple developer account) and recorded as an accepted risk.
+- [x] **INFRA-05**: Custom Expo dev build is configured with react-native-vision-camera and react-native-fast-tflite (required for on-device pose estimation). Gate: on Android the app launches, the pose model loads and a frame processor runs a pose pass; the EAS iOS simulator build compiles. iOS runtime verification is deferred (no Mac or Apple developer account) and recorded as an accepted risk.
 
 ### User Profile
 
@@ -124,7 +124,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INFRA-02    | Phase 1 | Pending  |
 | INFRA-03    | Phase 1 | Pending  |
 | INFRA-04    | Phase 1 | Pending  |
-| INFRA-05    | Phase 1 | Pending  |
+| INFRA-05    | Phase 1 | Complete |
 | PROF-01     | Phase 2 | Complete |
 | PROF-02     | Phase 2 | Complete |
 | PROF-03     | Phase 2 | Complete |

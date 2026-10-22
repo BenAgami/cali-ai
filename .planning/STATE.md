@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-10-22T08:02:21.994Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-10-22T08:44:25.195Z"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 10
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 01 (infrastructure) — EXECUTING
-Plan: 3 of 10
+Plan: 4 of 10
 
 ## Performance Metrics
 
@@ -79,13 +79,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- INFRA-05: EAS Android dev builds succeed (2026-09-24). iOS is unverified — the `development` profile in `apps/native/eas.json` has no `ios.simulator: true`, so an iOS simulator build needs its own profile. If the gate fails on either platform, on-device pose (and therefore Phase 5) is blocked. The video-upload fallback was ruled out, so a failure would need a new decision. Real-time cues (Phase 6) are deferred, so the gate no longer protects them.
+- INFRA-05 (gate passed 2026-10-22, plan 01-03): the Android dev build runs the MoveNet pose pass in a vision-camera frame processor (user-verified; device, keypoint count and mean score not reported), and the EAS iOS `development-simulator` build compiles. iOS runtime verification remains an accepted, deferred risk (no Mac or Apple developer account).
 - Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
 ## Session Continuity
 
-Last session: 2026-10-22T08:02:21.989Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-10-22T08:44:25.189Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None

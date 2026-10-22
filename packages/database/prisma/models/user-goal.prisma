@@ -7,8 +7,8 @@ model UserGoal {
   goalType GoalType @map("goal_type")
   title    String   @db.VarChar(120)
 
-  targetValue Decimal? @map("target_value") @db.Decimal(10, 2)
-  targetUnit  String?  @map("target_unit") @db.VarChar(30)
+  targetValue Decimal?  @map("target_value") @db.Decimal(10, 2)
+  targetUnit  String?   @map("target_unit") @db.VarChar(30)
   targetDate  DateTime? @map("target_date") @db.Date
 
   status      GoalStatus @default(ACTIVE)
