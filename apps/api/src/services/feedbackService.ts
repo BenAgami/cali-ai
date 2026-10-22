@@ -11,7 +11,7 @@ export type FeedbackDraft = { summary: string };
  * rubric -> structured feedback). It is async and wrapped in withTimeout by the
  * worker so retry/timeout behaviour is already real.
  */
-export class FeedbackService {
+class FeedbackService {
   generateFeedback(input: FeedbackInput): Promise<FeedbackDraft> {
     return Promise.resolve({
       summary: `Analysis pipeline check: ${input.frameCount} frames, mean keypoint confidence ${input.meanConfidence.toFixed(2)}`,
