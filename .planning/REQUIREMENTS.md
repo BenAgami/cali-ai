@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Infrastructure
 
-- [x] **INFRA-01**: Redis + BullMQ async job queue is set up for form-analysis processing (keypoints in, LLM feedback out)
-- [x] **INFRA-02**: Set keypoints (no video) are automatically submitted for analysis when the set ends; the endpoint returns a job ID and processes asynchronously
+- [ ] **INFRA-01**: Redis + BullMQ async job queue is set up for form-analysis processing (keypoints in, LLM feedback out)
+- [ ] **INFRA-02**: Set keypoints (no video) are automatically submitted for analysis when the set ends; the endpoint returns a job ID and processes asynchronously
 - [ ] **INFRA-03**: Server-Sent Events (SSE) endpoint delivers job progress and results to the client
-- [x] **INFRA-04**: Workout session processingStatus state machine handles PENDING → PROCESSING → COMPLETED / FAILED transitions
+- [ ] **INFRA-04**: Workout session processingStatus state machine handles PENDING → PROCESSING → COMPLETED / FAILED transitions
 - [ ] **INFRA-05**: Custom Expo dev build is configured with react-native-vision-camera and react-native-fast-tflite (required for on-device pose estimation). Gate: on Android the app launches, the pose model loads and a frame processor runs a pose pass; the EAS iOS simulator build compiles. iOS runtime verification is deferred (no Mac or Apple developer account) and recorded as an accepted risk.
 
 ### User Profile
@@ -120,10 +120,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase   | Status   |
 | ----------- | ------- | -------- |
-| INFRA-01    | Phase 1 | Complete |
-| INFRA-02    | Phase 1 | Complete |
+| INFRA-01    | Phase 1 | Pending  |
+| INFRA-02    | Phase 1 | Pending  |
 | INFRA-03    | Phase 1 | Pending  |
-| INFRA-04    | Phase 1 | Complete |
+| INFRA-04    | Phase 1 | Pending  |
 | INFRA-05    | Phase 1 | Pending  |
 | PROF-01     | Phase 2 | Complete |
 | PROF-02     | Phase 2 | Complete |
