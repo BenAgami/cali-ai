@@ -45,9 +45,7 @@ describe("openSseStream", () => {
 
     stream.send("status", { a: 1 });
 
-    expect(res.write).toHaveBeenCalledWith(
-      'event: status\ndata: {"a":1}\n\n',
-    );
+    expect(res.write).toHaveBeenCalledWith('event: status\ndata: {"a":1}\n\n');
   });
 
   it("writes a heartbeat every 15 seconds and stops after close", () => {

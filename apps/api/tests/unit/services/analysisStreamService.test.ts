@@ -109,9 +109,7 @@ describe("analysisStreamService", () => {
 
   describe("attach", () => {
     it("subscribes before reading the snapshot", async () => {
-      vi.mocked(analysisStateService.getStatusEvent).mockResolvedValue(
-        event(),
-      );
+      vi.mocked(analysisStateService.getStatusEvent).mockResolvedValue(event());
 
       await analysisStreamService.attach(7, createSink());
 
@@ -176,9 +174,7 @@ describe("analysisStreamService", () => {
 
     it("logs and closes when the snapshot read rejects", async () => {
       const failure = new Error("db down");
-      vi.mocked(analysisStateService.getStatusEvent).mockRejectedValue(
-        failure,
-      );
+      vi.mocked(analysisStateService.getStatusEvent).mockRejectedValue(failure);
       const sink = createSink();
 
       await expect(
