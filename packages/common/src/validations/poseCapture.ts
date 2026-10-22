@@ -76,3 +76,10 @@ export const poseCapturePayloadSchema = z
   });
 
 export type PoseCapturePayload = z.infer<typeof poseCapturePayloadSchema>;
+
+export const captureAcceptedResponseSchema = z.object({
+  sessionId: z.number().int(),
+  captureId: z.number().int(),
+  jobId: z.string(),
+  status: z.literal("QUEUED"),
+});
