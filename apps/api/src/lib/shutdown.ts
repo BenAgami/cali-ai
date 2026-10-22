@@ -2,7 +2,7 @@ import type { Server } from "node:http";
 
 import { disconnectPrisma } from "@repo/db";
 
-import { videoAnalysisQueue } from "./queue";
+import { formAnalysisQueue } from "./queue";
 import { redisConnection } from "./redis";
 import { logger } from "./logger";
 import { toError } from "../utils/toError";
@@ -37,7 +37,7 @@ const shutdown = async (
       });
     }
 
-    await videoAnalysisQueue.close();
+    await formAnalysisQueue.close();
     await redisConnection.quit();
     await disconnectPrisma();
 

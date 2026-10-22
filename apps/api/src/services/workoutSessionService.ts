@@ -52,11 +52,6 @@ export class WorkoutSessionService {
         notes: data.notes,
         performedAt,
         processingStatus: SessionStatus.PENDING,
-        videoDurationSec: data.videoMeta?.durationSec ?? null,
-        videoFps: data.videoMeta?.fps ?? null,
-        videoWidth: data.videoMeta?.width ?? null,
-        videoHeight: data.videoMeta?.height ?? null,
-        videoSizeBytes: data.videoMeta?.sizeBytes ?? null,
       },
       include: {
         exercise: {

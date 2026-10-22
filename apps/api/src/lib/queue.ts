@@ -2,12 +2,15 @@ import { Queue } from "bullmq";
 
 import { redisConnection } from "./redis";
 
-export type VideoAnalysisJobData = {
+export const FORM_ANALYSIS_QUEUE_NAME = "form-analysis";
+export const ANALYSIS_JOB_NAME = "analyze-capture";
+
+export type AnalysisJobData = {
   sessionId: number;
-  r2Key: string;
+  captureId: number;
 };
 
-export const videoAnalysisQueue = new Queue<VideoAnalysisJobData>(
-  "video-analysis",
+export const formAnalysisQueue = new Queue<AnalysisJobData>(
+  FORM_ANALYSIS_QUEUE_NAME,
   { connection: redisConnection },
 );

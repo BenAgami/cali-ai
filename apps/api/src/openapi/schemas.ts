@@ -22,7 +22,7 @@ import {
   pageMetaSchema,
 } from "@repo/common";
 
-import { Role, GoalStatus, SessionStatus } from "@repo/db";
+import { Role, GoalStatus, SessionStatus, AnalysisStage } from "@repo/db";
 
 // ── Primitive helpers ─────────────────────────────────────────────────────────
 
@@ -46,6 +46,7 @@ const GoalTypeEnum = z.enum(GOAL_TYPES);
 const GoalStatusEnum = z.enum(enumValues(GoalStatus));
 const ExerciseTypeEnum = z.enum(EXERCISE_TYPES);
 const SessionStatusEnum = z.enum(enumValues(SessionStatus));
+const AnalysisStageEnum = z.enum(enumValues(AnalysisStage));
 
 // ── Request bodies (reuse the shared @repo/common schemas) ────────────────────
 
@@ -292,15 +293,11 @@ export const WorkoutSessionResponse = registry.register(
     processingStatus: SessionStatusEnum,
     notes: z.string().nullable(),
     performedAt: isoDateTime(),
-    videoDurationSec: decimalString().nullable(),
-    videoFps: decimalString().nullable(),
-    videoWidth: z.number().int().nullable(),
-    videoHeight: z.number().int().nullable(),
-    videoSizeBytes: z.number().nullable(),
     processingStartedAt: isoDateTime().nullable(),
     processingFinishedAt: isoDateTime().nullable(),
     failureReason: z.string().nullable(),
-    videoR2Key: z.string().nullable(),
+    analysisStage: AnalysisStageEnum.nullable(),
+    analysisStageProgress: z.number().nullable(),
     bullmqJobId: z.string().nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
