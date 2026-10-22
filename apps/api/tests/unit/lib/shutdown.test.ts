@@ -14,7 +14,7 @@ const mockDisconnectPrisma = vi.fn();
 
 vi.mock("../../../src/lib/logger", () => ({ logger: mockLogger }));
 vi.mock("../../../src/lib/queue", () => ({
-  videoAnalysisQueue: { close: mockQueueClose },
+  formAnalysisQueue: { close: mockQueueClose },
 }));
 vi.mock("../../../src/lib/redis", () => ({
   redisConnection: { quit: mockRedisQuit },

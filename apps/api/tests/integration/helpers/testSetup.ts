@@ -15,6 +15,7 @@ const cleanupDatabase = async (prisma: ReturnType<typeof getPrismaClient>) => {
   await prisma.userMilestone.deleteMany();
   await prisma.userGoal.deleteMany();
   await prisma.bodyMetric.deleteMany();
+  await prisma.poseCapture.deleteMany();
   await prisma.workoutSession.deleteMany();
   await prisma.workoutLog.deleteMany();
   await prisma.workoutExercise.deleteMany();

@@ -52,36 +52,20 @@ describe("createWorkoutSession", () => {
     expect(workoutSessionService.createSession).not.toHaveBeenCalled();
   });
 
-  it("converts a bigint videoSizeBytes into a JSON-serializable number", async () => {
-    vi.mocked(workoutSessionService.createSession).mockResolvedValue({
-      id: 1,
-      videoSizeBytes: 1234n,
-    } as never);
-
-    const { body } = await runCreateWorkoutSession(USER);
-
-    expect(body.data?.videoSizeBytes).toBe(1234);
-    expect(typeof body.data?.videoSizeBytes).toBe("number");
-    expect(() => JSON.stringify(body)).not.toThrow();
-  });
-
-  it.for([
-    ["null", { id: 1, videoSizeBytes: null }],
-    ["absent", { id: 1 }],
-  ])("normalizes a %s videoSizeBytes to null", async ([_label, session]) => {
+  it("passes the service result through untouched", async () => {
+    const serviceResult = { id: 1, processingStatus: "PENDING" };
     vi.mocked(workoutSessionService.createSession).mockResolvedValue(
-      session as never,
+      serviceResult as never,
     );
 
     const { body } = await runCreateWorkoutSession(USER);
 
-    expect(body.data?.videoSizeBytes).toBeNull();
+    expect(body.data).toEqual(serviceResult);
   });
 
   it("responds 201 with the standard success envelope", async () => {
     vi.mocked(workoutSessionService.createSession).mockResolvedValue({
       id: 1,
-      videoSizeBytes: null,
     } as never);
 
     const { res, body } = await runCreateWorkoutSession(USER);
@@ -96,28 +80,24 @@ describe("createWorkoutSession", () => {
 
 describe("listWorkoutSessions", () => {
   const page = { limit: 20, offset: 0, hasMore: false, nextOffset: null };
+  const listResult = {
+    items: [
+      { id: 1, processingStatus: "PENDING" },
+      { id: 2, processingStatus: "COMPLETED" },
+    ],
+    page,
+  };
 
   beforeEach(() => {
-    vi.mocked(workoutSessionService.listSessions).mockResolvedValue({
-      items: [
-        { id: 1, videoSizeBytes: 5000n },
-        { id: 2, videoSizeBytes: null },
-        { id: 3 },
-      ],
-      page,
-    } as never);
+    vi.mocked(workoutSessionService.listSessions).mockResolvedValue(
+      listResult as never,
+    );
   });
 
-  it("serializes every item and passes the page metadata through untouched", async () => {
+  it("passes the service result through untouched", async () => {
     const { body } = await runListWorkoutSessions();
 
-    expect(body.data.items).toEqual([
-      { id: 1, videoSizeBytes: 5000 },
-      { id: 2, videoSizeBytes: null },
-      { id: 3, videoSizeBytes: null },
-    ]);
-    expect(body.data).toMatchObject({ page });
-    expect(() => JSON.stringify(body)).not.toThrow();
+    expect(body.data).toEqual(listResult);
   });
 
   it("defaults limit to 20 and offset to 0", async () => {
