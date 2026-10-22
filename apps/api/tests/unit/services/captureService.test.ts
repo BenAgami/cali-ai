@@ -85,7 +85,7 @@ describe("CaptureService", () => {
 
       const [, insert, jobId] = vi.mocked(
         analysisStateService.startRunWithCapture,
-      ).mock.calls[0]!;
+      ).mock.calls[0];
       expect(jobId).toMatch(JOB_ID_PATTERN);
       expect(result).toEqual({
         sessionId: SESSION_ID,
@@ -150,7 +150,7 @@ describe("CaptureService", () => {
       ).rejects.toBeInstanceOf(ServiceUnavailableError);
 
       const jobId = vi.mocked(analysisStateService.startRunWithCapture).mock
-        .calls[0]![2];
+        .calls[0][2];
       expect(analysisStateService.failRun).toHaveBeenCalledWith(
         SESSION_ID,
         jobId,
@@ -204,8 +204,7 @@ describe("CaptureService", () => {
 
       const result = await service.retryAnalysis(USER, SESSION_ID);
 
-      const jobId = vi.mocked(analysisStateService.restartRun).mock
-        .calls[0]![1];
+      const jobId = vi.mocked(analysisStateService.restartRun).mock.calls[0][1];
       expect(jobId).toMatch(JOB_ID_PATTERN);
       expect(result).toEqual({
         sessionId: SESSION_ID,
