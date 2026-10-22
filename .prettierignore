@@ -15,3 +15,8 @@ packages/database/generated
 .planning
 
 yarn.lock
+
+# Python eval tooling: virtualenv and local-only assets
+scripts/pose-eval/.venv
+scripts/pose-eval/models
+scripts/pose-eval/clips
