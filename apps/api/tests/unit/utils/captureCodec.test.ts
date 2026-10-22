@@ -25,7 +25,10 @@ const buildPayload = ({
   durationSec: frames / fps,
   frames: Array.from({ length: frames }, (_, i) => ({
     t: i / fps,
-    kp: Array.from({ length: keypoints }, () => [0.5, 0.5, 0.9] as [number, number, number]),
+    kp: Array.from(
+      { length: keypoints },
+      () => [0.5, 0.5, 0.9] as [number, number, number],
+    ),
   })),
 });
 
@@ -57,7 +60,10 @@ describe("poseCapturePayloadSchema", () => {
     ["fps 61", { ...buildPayload({ frames: 5 }), fps: 61 }],
     ["16 keypoints", buildPayload({ frames: 5, keypoints: 16 })],
     ["34 keypoints", buildPayload({ frames: 5, keypoints: 34 })],
-    ["empty poseModelName", { ...buildPayload({ frames: 5 }), poseModelName: "" }],
+    [
+      "empty poseModelName",
+      { ...buildPayload({ frames: 5 }), poseModelName: "" },
+    ],
   ])("rejects %s", (_name, payload) => {
     expect(poseCapturePayloadSchema.safeParse(payload).success).toBe(false);
   });
