@@ -20,6 +20,8 @@ import {
   workoutWithExercisesSchema,
   workoutLogResponseSchema,
   pageMetaSchema,
+  poseCapturePayloadSchema,
+  captureAcceptedResponseSchema,
 } from "@repo/common";
 
 import { Role, GoalStatus, SessionStatus, AnalysisStage } from "@repo/db";
@@ -80,6 +82,10 @@ export const WorkoutLogBody = registry.register(
 export const CreateWorkoutSessionBody = registry.register(
   "CreateWorkoutSessionBody",
   createWorkoutSessionSchema,
+);
+export const PoseCaptureBody = registry.register(
+  "PoseCaptureBody",
+  poseCapturePayloadSchema,
 );
 
 // ── Response envelope ─────────────────────────────────────────────────────────
@@ -310,4 +316,9 @@ export const WorkoutSessionListItem = registry.register(
   WorkoutSessionResponse.extend({
     analysisResult: AnalysisResultSummary.nullable(),
   }),
+);
+
+export const CaptureAccepted = registry.register(
+  "CaptureAccepted",
+  captureAcceptedResponseSchema,
 );
