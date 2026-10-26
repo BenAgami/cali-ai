@@ -78,3 +78,7 @@ Controllers use a plain `Request` with `Number(req.params.id)` (the plan's allow
 None.
 
 ## Self-Check: PASSED
+
+## Post-completion amendment (2026-10-26)
+
+The upload contract described above (gzip body sent as `application/json`, inflated by the global `express.json()`) was changed after the 01-10 device run: the `Content-Encoding: gzip` header never reached the API from the Android dev build, so the body was rejected with 400. The phone now sends the gzip bytes as `Content-Type: application/gzip`; the capture route reads them with `express.raw()` and `gunzipCaptureBody` inflates them with a 10 MiB cap. Plain JSON is still accepted, and `rejectOversizedBody` now drains the body before answering 413. See commit `db19dcf`, the D-01 amendment in `01-CONTEXT.md` and `01-10-SUMMARY.md`.
