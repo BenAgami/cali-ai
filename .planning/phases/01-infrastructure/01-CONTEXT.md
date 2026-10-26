@@ -16,7 +16,7 @@ Already built (see STATE.md): `processingStatus` enum, BullMQ `videoAnalysisQueu
 ## Implementation Decisions
 
 ### Capture payload and storage
-- **D-01:** The phone sends keypoints as gzip-compressed JSON. The payload carries a `version` field so a binary format can replace it later without breaking clients.
+- **D-01:** The phone sends keypoints as gzip-compressed JSON. *(Amended 2026-10-26: sent as a gzip file with `Content-Type: application/gzip`, because `Content-Encoding: gzip` never reached the server from the Android dev build (okhttp); the server decodes it in `gunzipCaptureBody`, with a 10 MiB decompressed cap. Plain JSON is still accepted.)* The payload carries a `version` field so a binary format can replace it later without breaking clients.
 - **D-02:** The server stores one `PoseCapture` row per capture, holding the whole set as a single compressed blob plus metadata (pose model name/version, fps, frame count, etc., per `docs/data-model.md`). No per-frame rows.
 - **D-03:** Drop the obsolete video fields in a Phase 1 migration: `videoR2Key` and the other `video*` columns on `WorkoutSession`, and `r2Key` in `VideoAnalysisJobData`. Job data becomes `sessionId` + `captureId`. Update `apps/api/src/openapi/schemas.ts`, `queue.ts`, and affected tests together. Rename `videoAnalysisQueue` to match the new purpose (planner decides the name).
 - **D-04:** `POST /api/sessions/:id/capture` enforces hard caps: a maximum compressed body size (about 1 MB) and plausible frame count/duration limits, validated by Zod in `packages/common`. Exact numbers are the planner's call. Success target remains 202 with a job ID in under 500 ms.

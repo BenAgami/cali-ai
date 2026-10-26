@@ -1,10 +1,11 @@
-import { Router } from "express";
+import express, { Router } from "express";
 import z from "zod";
 
 import { CAPTURE_LIMITS, poseCapturePayloadSchema } from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
 import rejectOversizedBody from "../middlewares/rejectOversizedBody";
+import gunzipCaptureBody from "../middlewares/gunzipCaptureBody";
 import { authenticateToken } from "../middlewares/auth";
 
 import {
@@ -21,12 +22,18 @@ const sessionIdParamsSchema = z.object({
 
 /**
  * POST /:id/capture
- * Submit gzipped pose keypoints for a session; returns 202 + job id
+ * Submit pose keypoints for a session; returns 202 + job id.
+ * Sent as a gzip file (`Content-Type: application/gzip`); plain JSON also works.
  */
 router.post(
   "/:id/capture",
   rejectOversizedBody(CAPTURE_LIMITS.maxCompressedBytes),
   authenticateToken,
+  express.raw({
+    type: "application/gzip",
+    limit: CAPTURE_LIMITS.maxCompressedBytes,
+  }),
+  gunzipCaptureBody(CAPTURE_LIMITS.maxInflatedBytes),
   validateSchema(
     z.object({ params: sessionIdParamsSchema, body: poseCapturePayloadSchema }),
   ),

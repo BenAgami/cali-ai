@@ -25,8 +25,16 @@ registry.registerPath({
     body: {
       required: true,
       description:
-        "Pose keypoints for one set. May be sent with `Content-Encoding: gzip`; the compressed size cap is 1 MiB.",
-      content: { "application/json": { schema: PoseCaptureBody } },
+        "Pose keypoints for one set. Send the JSON body gzip-compressed with `Content-Type: application/gzip` (the compressed size cap is 1 MiB, the decompressed cap 10 MiB). Plain `application/json` is also accepted.",
+      content: {
+        "application/gzip": {
+          schema: z.string().openapi({
+            format: "binary",
+            description: "Gzip-compressed JSON matching PoseCaptureBody.",
+          }),
+        },
+        "application/json": { schema: PoseCaptureBody },
+      },
     },
   },
   responses: {

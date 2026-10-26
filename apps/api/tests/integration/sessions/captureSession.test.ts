@@ -15,7 +15,10 @@ import {
 import { closeQueueConnections, resetAnalysisQueue } from "../helpers/queue";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createWorkoutSession } from "../helpers/requestSender/workoutSessionsRequests";
-import { submitCapture } from "../helpers/requestSender/sessionsRequests";
+import {
+  submitCapture,
+  submitRawCapture,
+} from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
@@ -183,6 +186,42 @@ describe("POST /api/sessions/:id/capture", () => {
     );
 
     const response = await submitCapture(app, token, sessionId, payload);
+
+    expect(response.status).toBe(StatusCodes.REQUEST_TOO_LONG);
+  });
+
+  it("returns 400 when an application/gzip body is not valid gzip", async () => {
+    const sessionId = await newSession();
+
+    const response = await submitRawCapture(
+      app,
+      token,
+      sessionId,
+      Buffer.from("this is not gzip"),
+    );
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+  });
+
+  it("returns 400 when the gzip body does not contain JSON", async () => {
+    const sessionId = await newSession();
+
+    const response = await submitRawCapture(
+      app,
+      token,
+      sessionId,
+      gzipSync(Buffer.from("not json")),
+    );
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+  });
+
+  it("returns 413 when a small gzip body inflates past the decompressed cap", async () => {
+    const sessionId = await newSession();
+    const bomb = gzipSync(Buffer.alloc(CAPTURE_LIMITS.maxInflatedBytes + 1));
+    expect(bomb.length).toBeLessThan(CAPTURE_LIMITS.maxCompressedBytes);
+
+    const response = await submitRawCapture(app, token, sessionId, bomb);
 
     expect(response.status).toBe(StatusCodes.REQUEST_TOO_LONG);
   });

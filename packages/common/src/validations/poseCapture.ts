@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const CAPTURE_LIMITS = {
   maxCompressedBytes: 1_048_576,
+  maxInflatedBytes: 10_485_760,
   maxFrames: 3_600,
   maxDurationSec: 180,
   minFps: 5,

@@ -22,8 +22,7 @@ export const submitCapture = async (
   if (gzip) {
     return (
       request
-        .set("Content-Type", "application/json")
-        .set("Content-Encoding", "gzip")
+        .set("Content-Type", "application/gzip")
         // superagent would JSON.stringify a Buffer body; send the bytes as-is.
         .serialize(
           ((body: Buffer) => body) as unknown as (obj: unknown) => string,
@@ -34,6 +33,22 @@ export const submitCapture = async (
 
   return request.send(payload);
 };
+
+export const submitRawCapture = async (
+  app: Application,
+  token: string,
+  sessionId: number | string,
+  bytes: Buffer,
+  contentType = "application/gzip",
+) =>
+  supertest
+    .agent(app)
+    .post(`/api/sessions/${sessionId}/capture`)
+    .set("Authorization", `Bearer ${token}`)
+    .set("Content-Type", contentType)
+    // superagent would JSON.stringify a Buffer body; send the bytes as-is.
+    .serialize(((body: Buffer) => body) as unknown as (obj: unknown) => string)
+    .send(bytes);
 
 export const retryAnalysis = async (
   app: Application,
