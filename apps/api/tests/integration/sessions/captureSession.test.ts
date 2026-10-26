@@ -190,6 +190,29 @@ describe("POST /api/sessions/:id/capture", () => {
     expect(response.status).toBe(StatusCodes.REQUEST_TOO_LONG);
   });
 
+  it("rejects an oversized body without a token before reading it", async () => {
+    const sessionId = await newSession();
+    const payload = new PoseCaptureBuilder()
+      .setFrames(3600, 33)
+      .setRandomCoordinates()
+      .build();
+
+    // Auth runs before the size check, so the unauthenticated upload is never
+    // drained: the server answers 401 mid-upload, and the client may see the
+    // connection reset instead of the response. Either way it is not a 413.
+    const outcome = await submitCapture(
+      app,
+      undefined,
+      sessionId,
+      payload,
+    ).then(
+      (response) => response.status,
+      (error: NodeJS.ErrnoException) => error.code,
+    );
+
+    expect([StatusCodes.UNAUTHORIZED, "ECONNRESET"]).toContain(outcome);
+  });
+
   it("returns 400 when an application/gzip body is not valid gzip", async () => {
     const sessionId = await newSession();
 

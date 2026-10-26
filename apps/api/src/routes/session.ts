@@ -27,8 +27,8 @@ const sessionIdParamsSchema = z.object({
  */
 router.post(
   "/:id/capture",
-  rejectOversizedBody(CAPTURE_LIMITS.maxCompressedBytes),
   authenticateToken,
+  rejectOversizedBody(CAPTURE_LIMITS.maxCompressedBytes),
   express.raw({
     type: "application/gzip",
     limit: CAPTURE_LIMITS.maxCompressedBytes,
