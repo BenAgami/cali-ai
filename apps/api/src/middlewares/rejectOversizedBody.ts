@@ -4,22 +4,18 @@ import { finished } from "node:stream";
 import { PayloadTooLargeError } from "../errors";
 
 /**
- * Rejects requests whose declared Content-Length exceeds `maxBytes`.
- *
- * This checks the COMPRESSED size (D-04) without parsing the body. The inflated
- * size is bounded separately: by the global `express.json({ limit: "10mb" })`
+ * Rejects requests whose declared Content-Length exceeds `maxBytes`. This caps
+ * the compressed size only; inflated size is bounded by the global JSON limit
  * for JSON bodies and by `gunzipCaptureBody` for gzip bodies.
  *
- * The unread body is drained before the error goes out. Raw `application/gzip`
- * bodies are not consumed by the global JSON parser, and answering while the
- * client is still uploading resets the connection instead of delivering the
- * 413 (body-parser waits for the request to end for the same reason).
+ * The unread body is drained before responding, otherwise answering mid-upload
+ * resets the connection and the client never sees the 413.
  */
 const rejectOversizedBody =
   (maxBytes: number) =>
   (req: Request, _res: Response, next: NextFunction): void => {
-    const declared = Number(req.headers["content-length"]);
-    if (Number.isFinite(declared) && declared > maxBytes) {
+    const declaredBytes = Number(req.headers["content-length"]);
+    if (Number.isFinite(declaredBytes) && declaredBytes > maxBytes) {
       finished(req, () =>
         next(
           new PayloadTooLargeError(`Request body exceeds ${maxBytes} bytes`),

@@ -13,7 +13,9 @@ const MAX_INFLATED = 1_024;
 const run = async (body: unknown) => {
   const req = createMockRequest({ body });
   const next = createMockNext();
+
   await gunzipCaptureBody(MAX_INFLATED)(req, createMockResponse(), next);
+
   return { req, next };
 };
 
@@ -41,7 +43,10 @@ describe("gunzipCaptureBody", () => {
     const { next } = await run(Buffer.from("not gzip"));
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: StatusCodes.BAD_REQUEST }),
+      expect.objectContaining({
+        status: StatusCodes.BAD_REQUEST,
+        message: "Request body is not valid gzip",
+      }),
     );
   });
 
@@ -49,7 +54,10 @@ describe("gunzipCaptureBody", () => {
     const { next } = await run(gzipSync(Buffer.from("not json")));
 
     expect(next).toHaveBeenCalledWith(
-      expect.objectContaining({ status: StatusCodes.BAD_REQUEST }),
+      expect.objectContaining({
+        status: StatusCodes.BAD_REQUEST,
+        message: "Decompressed body is not valid JSON",
+      }),
     );
   });
 

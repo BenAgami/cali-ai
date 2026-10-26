@@ -7,16 +7,12 @@ import { BadRequestError, PayloadTooLargeError } from "../errors";
 const gunzipAsync = promisify(gunzip);
 
 /**
- * Turns a raw `application/gzip` body into the parsed JSON object that
- * `validateSchema` expects.
+ * Turns a raw `application/gzip` body into the parsed JSON that
+ * `validateSchema` expects. Bodies the global JSON parser already parsed pass
+ * through untouched.
  *
- * The phone sends the capture as a gzip file instead of relying on
- * `Content-Encoding: gzip`, which never reached the server from the Android
- * dev build (the global `express.json()` then saw gzip bytes and failed).
- * Bodies the global JSON parser already parsed pass through untouched.
- *
- * The inflated size is capped here because the 10 MB `express.json()` limit
- * does not apply to raw bodies (gzip-bomb protection).
+ * The inflated size is capped here (gzip-bomb protection) since the global
+ * JSON limit doesn't apply to raw bodies.
  */
 const gunzipCaptureBody =
   (maxInflatedBytes: number) =>
