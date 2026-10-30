@@ -49,8 +49,6 @@ describe("GET /api/sessions/:id/status", () => {
     return res.body.data.id as number;
   };
 
-  // PROCESSING / QUEUED session with a known job id; no worker runs here, so
-  // the test drives every transition itself.
   const queuedSession = async () => {
     const sessionId = await pendingSession();
     const accepted = await submitCapture(

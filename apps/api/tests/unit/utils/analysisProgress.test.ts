@@ -16,13 +16,13 @@ const snapshot = (overrides: Partial<AnalysisSnapshot>): AnalysisSnapshot => ({
   ...overrides,
 });
 
-describe("analysis progress: progressPercent", () => {
+describe.only("progressPercent", () => {
   it.for([
     ["QUEUED", 0],
     ["ANALYZING_REPS", 10],
     ["WRITING_FEEDBACK", 60],
     ["COMPLETED", 100],
-  ] as const)("%s with no sub-progress is %i", ([stage, expected]) => {
+  ] as const)("%s with no sub-progress is %i percent", ([stage, expected]) => {
     expect(progressPercent(stage)).toBe(expected);
   });
 
@@ -34,7 +34,7 @@ describe("analysis progress: progressPercent", () => {
     ["ANALYZING_REPS", null, 10],
     ["ANALYZING_REPS", undefined, 10],
     ["ANALYZING_REPS", Number.NaN, 10],
-  ] as const)("%s with sub %s is %i", ([stage, sub, expected]) => {
+  ] as const)("%s with sub %s is %i percent", ([stage, sub, expected]) => {
     expect(progressPercent(stage, sub)).toBe(expected);
   });
 
@@ -57,7 +57,7 @@ describe("analysis progress: progressPercent", () => {
   });
 });
 
-describe("analysis progress: toStatusEvent", () => {
+describe("toStatusEvent", () => {
   it("returns null for a PENDING session", () => {
     expect(
       toStatusEvent(snapshot({ processingStatus: SessionStatus.PENDING })),

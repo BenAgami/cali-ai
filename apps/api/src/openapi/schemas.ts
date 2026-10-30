@@ -299,5 +299,4 @@ export const CaptureAccepted = registry.register(
   captureAcceptedResponseSchema,
 );
 
-// Registered for the components section; referenced by the SSE path description.
 registry.register("AnalysisStatusEvent", analysisStatusEventSchema);

@@ -33,7 +33,6 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
     return res.body.data.token as string;
   };
 
-  // A session whose first capture was accepted and whose run then FAILED.
   const failedSession = async () => {
     const created = await createWorkoutSession(
       app,

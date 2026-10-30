@@ -11,7 +11,6 @@ const durationString = () =>
   );
 
 const ANALYSIS_COMPUTE_MARGIN_MS = 15_000;
-// D-13 / ROADMAP criterion 4: a stuck run must be failed within 3 minutes.
 const ANALYSIS_MAX_PROCESSING_MS = 180_000;
 
 export const envSchema = z

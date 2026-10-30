@@ -6,7 +6,4 @@ import { env } from "../config/env";
 export const createRedisConnection = (): IORedis =>
   new IORedis(env.redis.url, { maxRetriesPerRequest: null });
 
-// Shared connection for normal commands (publish, BullMQ queue). Subscribers
-// and workers must create their own via createRedisConnection(): a connection
-// in subscriber mode cannot run regular commands.
 export const redisConnection = createRedisConnection();

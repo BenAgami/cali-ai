@@ -43,6 +43,7 @@ export const workoutSessionResponseSchema = z.object({
     exerciseType: z.enum(EXERCISE_TYPES),
   }),
 });
+
 export type WorkoutSessionResponse = z.infer<
   typeof workoutSessionResponseSchema
 >;

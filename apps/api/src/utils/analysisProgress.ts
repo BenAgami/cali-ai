@@ -1,8 +1,6 @@
 import type { AnalysisStage, AnalysisStatusEvent } from "@repo/common";
 import { SessionStatus } from "@repo/db";
 
-// The single stage-to-percent table (D-07). Ranges are contiguous so the
-// percent never jumps backward between stages. Percent is never persisted.
 const STAGE_PERCENT_RANGES: Record<AnalysisStage, readonly [number, number]> = {
   QUEUED: [0, 10],
   ANALYZING_REPS: [10, 60],

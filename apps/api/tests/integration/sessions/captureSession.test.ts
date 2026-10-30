@@ -197,9 +197,6 @@ describe("POST /api/sessions/:id/capture", () => {
       .setRandomCoordinates()
       .build();
 
-    // Auth runs before the size check, so the unauthenticated upload is never
-    // drained: the server answers 401 mid-upload, and the client may see the
-    // connection reset instead of the response. Either way it is not a 413.
     const outcome = await submitCapture(
       app,
       undefined,

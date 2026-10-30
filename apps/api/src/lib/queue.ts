@@ -13,7 +13,6 @@ export type AnalysisJobData = {
   captureId: number;
 };
 
-// D-11: BullMQ-native retries, exponential backoff (2 s, then 4 s).
 export const formAnalysisQueue = new Queue<AnalysisJobData>(
   FORM_ANALYSIS_QUEUE_NAME,
   {

@@ -23,7 +23,6 @@ export const submitCapture = async (
     return (
       request
         .set("Content-Type", "application/gzip")
-        // superagent would JSON.stringify a Buffer body; send the bytes as-is.
         .serialize(
           ((body: Buffer) => body) as unknown as (obj: unknown) => string,
         )
@@ -46,7 +45,6 @@ export const submitRawCapture = async (
     .post(`/api/sessions/${sessionId}/capture`)
     .set("Authorization", `Bearer ${token}`)
     .set("Content-Type", contentType)
-    // superagent would JSON.stringify a Buffer body; send the bytes as-is.
     .serialize(((body: Buffer) => body) as unknown as (obj: unknown) => string)
     .send(bytes);
 
