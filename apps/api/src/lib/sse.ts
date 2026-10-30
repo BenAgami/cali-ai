@@ -7,7 +7,7 @@ export type SseStream = {
   send: (event: string, data: unknown) => void;
   close: () => void;
   onClose: (cb: () => void) => void;
-  isClosed: () => boolean; 
+  isClosed: () => boolean;
 };
 
 /**

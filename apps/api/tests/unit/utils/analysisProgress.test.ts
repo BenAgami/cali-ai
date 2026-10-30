@@ -16,7 +16,7 @@ const snapshot = (overrides: Partial<AnalysisSnapshot>): AnalysisSnapshot => ({
   ...overrides,
 });
 
-describe.only("progressPercent", () => {
+describe("progressPercent", () => {
   it.for([
     ["QUEUED", 0],
     ["ANALYZING_REPS", 10],
