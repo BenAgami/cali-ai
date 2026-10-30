@@ -23,14 +23,17 @@ const handleMessage = (channel: string, message: string): void => {
   } catch (error) {
     logger.warn(
       { err: toError(error), channel },
-      "Dropped malformed analysis event",
+      "Dropped analysis event: invalid JSON",
     );
     return;
   }
 
   const parsed = analysisStatusEventSchema.safeParse(payload);
   if (!parsed.success) {
-    logger.warn({ channel }, "Dropped malformed analysis event");
+    logger.warn(
+      { channel, issues: parsed.error.issues },
+      "Dropped analysis event: schema validation failed",
+    );
     return;
   }
 

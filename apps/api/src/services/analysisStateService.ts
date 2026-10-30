@@ -1,4 +1,3 @@
-import type { Logger } from "pino";
 import { getPrismaClient, SessionStatus } from "@repo/db";
 import type {
   AnalysisFailureReason,
@@ -9,7 +8,7 @@ import type {
 import { env } from "../config/env";
 import { ConflictError, NotFoundError } from "../errors";
 import { publishAnalysisEvent } from "../lib/progressBus";
-import { logger } from "../lib/logger";
+import { logger, type Logger } from "../lib/logger";
 
 import {
   progressPercent,
@@ -59,12 +58,12 @@ export class AnalysisStateService {
     return getPrismaClient();
   }
 
-  private runResetData(jobId: string, now: Date) {
+  private runResetData(jobId: string) {
     return {
       processingStatus: SessionStatus.PROCESSING,
       analysisStage: "QUEUED" as const,
       analysisStageProgress: null,
-      processingStartedAt: now,
+      processingStartedAt: new Date(),
       processingFinishedAt: null,
       failureReason: null,
       bullmqJobId: jobId,
@@ -103,12 +102,9 @@ export class AnalysisStateService {
     jobId: string,
   ): Promise<{ captureId: number }> {
     const captureId = await this.prisma.$transaction(async (tx) => {
-      // The guarded update comes first: Postgres row-locks the session, so a
-      // concurrent second submit waits, sees it is no longer PENDING and gets
-      // count 0.
       const { count } = await tx.workoutSession.updateMany({
         where: { id: sessionId, processingStatus: SessionStatus.PENDING },
-        data: this.runResetData(jobId, new Date()),
+        data: this.runResetData(jobId),
       });
 
       if (count === 0) {
@@ -156,7 +152,7 @@ export class AnalysisStateService {
 
     const { count } = await this.prisma.workoutSession.updateMany({
       where: { id: sessionId, processingStatus: SessionStatus.FAILED },
-      data: this.runResetData(jobId, new Date()),
+      data: this.runResetData(jobId),
     });
 
     if (count === 0) {
@@ -318,10 +314,9 @@ export class AnalysisStateService {
   }
 
   /**
-   * Reads the session and publishes its derived status event after a
-   * successful write. Never throws, and never awaits the publish: ioredis
-   * queues commands indefinitely while Redis is down, so awaiting would hang
-   * the caller. Queued publishes are still sent in order.
+   * Publishes the session's status event after a successful write. Never
+   * throws and never awaits the publish: `IORedis` queues commands while Redis
+   * is down, so awaiting would hang the caller. Queued publishes stay in order.
    */
   private async publishSnapshot(
     sessionId: number,

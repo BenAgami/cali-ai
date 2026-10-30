@@ -2,7 +2,7 @@ import { EventEmitter } from "node:events";
 
 import type { AnalysisStatusEvent } from "@repo/common";
 
-const mocks = vi.hoisted(() => ({
+const mocks = vi.hoisted(() => ({ 
   publish: vi.fn(),
   createRedisConnection: vi.fn(),
   warn: vi.fn(),

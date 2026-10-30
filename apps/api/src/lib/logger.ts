@@ -25,3 +25,5 @@ export const logger = pino({
       ? { target: "pino-pretty", options: { colorize: true } }
       : undefined,
 });
+
+export type Logger = typeof logger;
