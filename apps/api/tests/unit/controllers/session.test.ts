@@ -1,13 +1,13 @@
 import type { Request } from "express";
 
 import { ConflictError, NotFoundError } from "../../../src/errors";
-import { analysisStreamService } from "../../../src/services/analysisStreamService";
+import analysisStreamService from "../../../src/services/analysisStreamService";
 import { openSseStream, type SseStream } from "../../../src/lib/sse";
 
 import { createMockRequest, createMockResponse } from "../helpers/expressMocks";
 
 vi.mock("../../../src/services/analysisStreamService", () => ({
-  analysisStreamService: { assertStreamable: vi.fn(), attach: vi.fn() },
+  default: { assertStreamable: vi.fn(), streamProgressToSink: vi.fn() },
 }));
 vi.mock("../../../src/lib/sse", () => ({ openSseStream: vi.fn() }));
 vi.mock("../../../src/services/captureService", () => ({
@@ -55,7 +55,7 @@ describe("streamAnalysisStatus", () => {
 
       expect(error).toBe(failure);
       expect(openSseStream).not.toHaveBeenCalled();
-      expect(analysisStreamService.attach).not.toHaveBeenCalled();
+      expect(analysisStreamService.streamProgressToSink).not.toHaveBeenCalled();
     },
   );
 
@@ -82,9 +82,10 @@ describe("streamAnalysisStatus", () => {
 
     await run();
 
-    expect(analysisStreamService.attach).toHaveBeenCalledOnce();
-    const [sessionId, sink] = vi.mocked(analysisStreamService.attach).mock
-      .calls[0];
+    expect(analysisStreamService.streamProgressToSink).toHaveBeenCalledOnce();
+    const [sessionId, sink] = vi.mocked(
+      analysisStreamService.streamProgressToSink,
+    ).mock.calls[0];
     expect(sessionId).toBe(42);
 
     const event = {

@@ -5,7 +5,7 @@ import type { PoseCapturePayload } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import captureService from "../services/captureService";
-import { analysisStreamService } from "../services/analysisStreamService";
+import analysisStreamService from "../services/analysisStreamService";
 import { openSseStream } from "../lib/sse";
 
 /**
@@ -59,11 +59,10 @@ export const streamAnalysisStatus = async (req: Request, res: Response) => {
 
   const sessionId = Number(req.params.id);
 
-  // 404/409 are thrown here, before any header is sent.
   await analysisStreamService.assertStreamable(userUuid, sessionId);
 
   const stream = openSseStream(req, res);
-  await analysisStreamService.attach(sessionId, {
+  await analysisStreamService.streamProgressToSink(sessionId, {
     send: (event) => stream.send("status", event),
     close: stream.close,
     onClose: stream.onClose,

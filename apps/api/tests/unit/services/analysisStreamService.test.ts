@@ -5,7 +5,7 @@ import { ConflictError, NotFoundError } from "../../../src/errors";
 import analysisStateService from "../../../src/services/analysisStateService";
 import { subscribeToAnalysisEvents } from "../../../src/lib/progressBus";
 import { logger } from "../../../src/lib/logger";
-import { analysisStreamService } from "../../../src/services/analysisStreamService";
+import analysisStreamService from "../../../src/services/analysisStreamService";
 
 vi.mock("../../../src/services/analysisStateService", () => ({
   default: { findOwnedSession: vi.fn(), getStatusEvent: vi.fn() },
@@ -31,12 +31,12 @@ const event = (
 
 const createSink = () => {
   const callbacks: (() => void)[] = [];
-  let closed = false;
+  let isClosed = false;
   const sink = {
     send: vi.fn(),
     close: vi.fn(() => {
-      if (closed) return;
-      closed = true;
+      if (isClosed) return;
+      isClosed = true;
       callbacks.forEach((cb) => cb());
     }),
     onClose: vi.fn((cb: () => void) => {
@@ -107,11 +107,11 @@ describe("analysisStreamService", () => {
     });
   });
 
-  describe("attach", () => {
+  describe("streamProgressToSink", () => {
     it("subscribes before reading the snapshot", async () => {
       vi.mocked(analysisStateService.getStatusEvent).mockResolvedValue(event());
 
-      await analysisStreamService.attach(7, createSink());
+      await analysisStreamService.streamProgressToSink(7, createSink());
 
       const subscribeOrder = vi.mocked(subscribeToAnalysisEvents).mock
         .invocationCallOrder[0];
@@ -131,7 +131,7 @@ describe("analysisStreamService", () => {
       );
       const sink = createSink();
 
-      await analysisStreamService.attach(7, sink);
+      await analysisStreamService.streamProgressToSink(7, sink);
 
       expect(sink.send).toHaveBeenCalledOnce();
       expect(sink.send).toHaveBeenCalledWith(completed);
@@ -144,7 +144,7 @@ describe("analysisStreamService", () => {
         event({ progress_percent: 50 }),
       );
       const sink = createSink();
-      await analysisStreamService.attach(7, sink);
+      await analysisStreamService.streamProgressToSink(7, sink);
 
       listener(event({ progress_percent: 20 }));
       expect(sink.send).toHaveBeenCalledTimes(1);
@@ -166,7 +166,7 @@ describe("analysisStreamService", () => {
       vi.mocked(analysisStateService.getStatusEvent).mockResolvedValue(null);
       const sink = createSink();
 
-      await analysisStreamService.attach(7, sink);
+      await analysisStreamService.streamProgressToSink(7, sink);
 
       expect(sink.send).not.toHaveBeenCalled();
       expect(sink.close).not.toHaveBeenCalled();
@@ -178,7 +178,7 @@ describe("analysisStreamService", () => {
       const sink = createSink();
 
       await expect(
-        analysisStreamService.attach(7, sink),
+        analysisStreamService.streamProgressToSink(7, sink),
       ).resolves.toBeUndefined();
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -194,7 +194,7 @@ describe("analysisStreamService", () => {
       const sink = createSink();
 
       await expect(
-        analysisStreamService.attach(7, sink),
+        analysisStreamService.streamProgressToSink(7, sink),
       ).resolves.toBeUndefined();
 
       expect(logger.error).toHaveBeenCalledWith(
@@ -212,7 +212,7 @@ describe("analysisStreamService", () => {
         event({ status: "COMPLETED", progress_percent: 100 }),
       );
 
-      await analysisStreamService.attach(7, createSink());
+      await analysisStreamService.streamProgressToSink(7, createSink());
       await Promise.resolve();
       await Promise.resolve();
 

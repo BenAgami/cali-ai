@@ -14,7 +14,6 @@ export type AnalysisStreamSink = {
 };
 
 class AnalysisStreamService {
-  /** Throws before any stream is opened, so 404/409 go through the error handler. */
   async assertStreamable(userUuid: string, sessionId: number): Promise<void> {
     const session = await analysisStateService.findOwnedSession(
       userUuid,
@@ -27,25 +26,27 @@ class AnalysisStreamService {
   }
 
   /**
-   * Pumps status events into an already-open sink. Never rejects: once headers
-   * are flushed the HTTP error handler cannot change the response, so failures
-   * are logged and the sink is closed (the one documented post-flush catch).
+   * Streams progress events to an already-open sink until a terminal event or
+   * client disconnect. Never rejects: the response is already flushed, so the
+   * error handler can't change it. Failures are logged and the sink is closed.
    */
-  async attach(sessionId: number, sink: AnalysisStreamSink): Promise<void> {
+  async streamProgressToSink(
+    sessionId: number,
+    sink: AnalysisStreamSink,
+  ): Promise<void> {
     let lastPercent = -1;
 
     const emit = (event: AnalysisStatusEvent): void => {
-      const terminal =
+      const isTerminalStatus =
         event.status === "COMPLETED" || event.status === "FAILED";
-      if (!terminal && event.progress_percent < lastPercent) return;
+      if (!isTerminalStatus && event.progress_percent < lastPercent) return;
 
       lastPercent = Math.max(lastPercent, event.progress_percent);
       sink.send(event);
-      if (terminal) sink.close();
+      if (isTerminalStatus) sink.close();
     };
 
     try {
-      // Subscribe first so events published before the snapshot read are kept.
       const unsubscribe = await subscribeToAnalysisEvents(sessionId, emit);
       sink.onClose(() => {
         unsubscribe().catch((error: unknown) => {
@@ -61,11 +62,11 @@ class AnalysisStreamService {
     } catch (error) {
       logger.error(
         { err: toError(error), sessionId },
-        "Failed to attach analysis status stream",
+        "Failed to stream analysis progress",
       );
       sink.close();
     }
   }
 }
 
-export const analysisStreamService = new AnalysisStreamService();
+export default new AnalysisStreamService();

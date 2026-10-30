@@ -7,7 +7,7 @@ export type SseStream = {
   send: (event: string, data: unknown) => void;
   close: () => void;
   onClose: (cb: () => void) => void;
-  isClosed: () => boolean;
+  isClosed: () => boolean; 
 };
 
 /**
@@ -24,7 +24,7 @@ export const openSseStream = (req: Request, res: Response): SseStream => {
   });
   res.flushHeaders();
 
-  let closed = false;
+  let isClosed = false;
   const closeCallbacks: (() => void)[] = [];
 
   const heartbeat = setInterval(() => {
@@ -32,8 +32,8 @@ export const openSseStream = (req: Request, res: Response): SseStream => {
   }, HEARTBEAT_INTERVAL_MS);
 
   const close = (): void => {
-    if (closed) return;
-    closed = true;
+    if (isClosed) return;
+    isClosed = true;
     clearInterval(heartbeat);
     res.end();
     closeCallbacks.splice(0).forEach((cb) => cb());
@@ -43,17 +43,17 @@ export const openSseStream = (req: Request, res: Response): SseStream => {
 
   return {
     send: (event, data) => {
-      if (closed) return;
+      if (isClosed) return;
       res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
     },
     close,
     onClose: (cb) => {
-      if (closed) {
+      if (isClosed) {
         cb();
         return;
       }
       closeCallbacks.push(cb);
     },
-    isClosed: () => closed,
+    isClosed: () => isClosed,
   };
 };
