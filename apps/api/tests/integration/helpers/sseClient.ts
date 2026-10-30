@@ -70,7 +70,7 @@ export const openSse = (
               `Timed out waiting for ${count} SSE events; received ${events.length}`,
             );
           }
-          await new Promise((r) => setTimeout(r, 20));
+          await new Promise((resolve) => setTimeout(resolve, 20));
         }
         return events;
       };

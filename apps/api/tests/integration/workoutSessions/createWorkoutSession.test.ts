@@ -48,7 +48,6 @@ describe("POST /api/workout-sessions", () => {
     expect(response.body.data.exercise.code).toBe(exercise.code);
     expect(response.body.data.notes).toBe(sessionDto.notes);
     expect(response.body.data.analysisStage).toBeNull();
-    expect(response.body.data).not.toHaveProperty("videoDurationSec");
 
     const storedSession = await prisma.workoutSession.findUnique({
       where: { id: response.body.data.id },

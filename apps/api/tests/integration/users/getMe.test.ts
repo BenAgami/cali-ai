@@ -39,7 +39,7 @@ describe("GET /api/me", () => {
 
     const response = await getMyUser(app, token);
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.success).toBe(true);
     expect(response.body.data.uuid).toBe(user.uuid);
     expect(response.body.data.role).toBe(user.role);

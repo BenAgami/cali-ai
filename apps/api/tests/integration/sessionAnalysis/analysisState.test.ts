@@ -31,7 +31,7 @@ const captureFixture = (): CaptureInsert => ({
   appVersion: null,
 });
 
-describe("analysis state machine (real DB)", () => {
+describe("session processing status transitions", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let service: AnalysisStateService;

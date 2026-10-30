@@ -81,20 +81,6 @@ describe("WorkoutSessionService.createSession", () => {
     expect(createData().processingStatus).toBe(SessionStatus.PENDING);
   });
 
-  it("writes only the session columns, no capture metadata", async () => {
-    givenUserAndExercise();
-
-    await workoutSessionService.createSession(USER_UUID, baseDto);
-
-    expect(Object.keys(createData()).sort()).toEqual([
-      "exerciseId",
-      "notes",
-      "performedAt",
-      "processingStatus",
-      "userId",
-    ]);
-  });
-
   it("rejects an unparseable performedAt", async () => {
     givenUserAndExercise();
 

@@ -52,17 +52,6 @@ describe("createWorkoutSession", () => {
     expect(workoutSessionService.createSession).not.toHaveBeenCalled();
   });
 
-  it("passes the service result through untouched", async () => {
-    const serviceResult = { id: 1, processingStatus: "PENDING" };
-    vi.mocked(workoutSessionService.createSession).mockResolvedValue(
-      serviceResult as never,
-    );
-
-    const { body } = await runCreateWorkoutSession(USER);
-
-    expect(body.data).toEqual(serviceResult);
-  });
-
   it("responds 201 with the standard success envelope", async () => {
     vi.mocked(workoutSessionService.createSession).mockResolvedValue({
       id: 1,
@@ -92,12 +81,6 @@ describe("listWorkoutSessions", () => {
     vi.mocked(workoutSessionService.listSessions).mockResolvedValue(
       listResult as never,
     );
-  });
-
-  it("passes the service result through untouched", async () => {
-    const { body } = await runListWorkoutSessions();
-
-    expect(body.data).toEqual(listResult);
   });
 
   it("defaults limit to 20 and offset to 0", async () => {

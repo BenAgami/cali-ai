@@ -1,3 +1,4 @@
+import { StatusCodes } from "http-status-codes";
 import { EventEmitter } from "node:events";
 import type { Request } from "express";
 
@@ -30,7 +31,7 @@ describe("openSseStream", () => {
   it("sets SSE headers and flushes them", () => {
     const { res } = setup();
 
-    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
     expect(res.set).toHaveBeenCalledWith({
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache, no-transform",
