@@ -32,8 +32,6 @@ export class PoseCaptureBuilder {
     return this;
   }
 
-  // Random floats cannot be shrunk by gzip, so this builds a body that stays
-  // large after compression (used for the 413 case).
   setRandomCoordinates() {
     this.randomCoordinates = true;
     return this;
@@ -41,8 +39,8 @@ export class PoseCaptureBuilder {
 
   build(): PoseCapturePayload {
     const frames: Frame[] = Array.from({ length: this.frameCount }, (_, i) => ({
-      t: i / DEFAULT_FPS,
-      kp: Array.from(
+      timestampSec: i / DEFAULT_FPS,
+      keypoints: Array.from(
         { length: this.keypointCount },
         (): [number, number, number] =>
           this.randomCoordinates

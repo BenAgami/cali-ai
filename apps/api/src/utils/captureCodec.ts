@@ -15,7 +15,7 @@ export class InvalidCaptureError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "InvalidCaptureError";
-  }
+  } 
 }
 
 export const encodeCapture = async (

@@ -20,7 +20,6 @@ type CaptureAcceptedData = z.infer<typeof captureAcceptedResponseSchema>;
 
 const ENQUEUE_TIMEOUT_MS = 5_000;
 
-// BullMQ rejects custom job ids containing ":".
 const newJobId = (): string => `analysis-${randomUUID()}`;
 
 /**
@@ -39,9 +38,7 @@ export class CaptureService {
     );
 
     if (session.processingStatus === SessionStatus.FAILED) {
-      throw new ConflictError(
-        "Analysis failed; use POST /api/sessions/:id/analysis/retry",
-      );
+      throw new ConflictError("Analysis failed; retry the analysis");
     }
     if (session.processingStatus !== SessionStatus.PENDING) {
       throw new ConflictError("Analysis already started for this session");
@@ -93,7 +90,7 @@ export class CaptureService {
   }
 
   /**
-   * ioredis with `maxRetriesPerRequest: null` queues commands forever while
+   * `IORedis` with `maxRetriesPerRequest: null` queues commands forever while
    * Redis is down, so the add is bounded; on failure the run is failed so the
    * session never sits in PROCESSING with no job.
    */

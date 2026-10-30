@@ -20,14 +20,14 @@ const summarizeCapture = (payload: PoseCapturePayload): FeedbackInput => {
   let total = 0;
   let count = 0;
   for (const frame of payload.frames) {
-    for (const keypoint of frame.kp) {
+    for (const keypoint of frame.keypoints) {
       total += keypoint[2];
       count += 1;
     }
   }
   return {
     frameCount: payload.frames.length,
-    keypointsPerFrame: payload.frames[0]?.kp.length ?? 0,
+    keypointsPerFrame: payload.frames[0]?.keypoints.length ?? 0,
     meanConfidence: count === 0 ? 0 : total / count,
   };
 };

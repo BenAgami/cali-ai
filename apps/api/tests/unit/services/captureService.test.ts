@@ -40,8 +40,8 @@ const payload: PoseCapturePayload = {
   durationSec: 1,
   frames: [
     {
-      t: 0,
-      kp: Array.from(
+      timestampSec: 0,
+      keypoints: Array.from(
         { length: 17 },
         () => [0.5, 0.5, 0.9] as [number, number, number],
       ),
@@ -63,6 +63,15 @@ const stubPending = () => {
     snapshot(SessionStatus.PENDING),
   );
   vi.mocked(analysisStateService.startRunWithCapture).mockResolvedValue({
+    captureId: 11,
+  });
+};
+
+const stubFailed = () => {
+  vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
+    snapshot(SessionStatus.FAILED),
+  );
+  vi.mocked(analysisStateService.restartRun).mockResolvedValue({
     captureId: 11,
   });
 };
@@ -129,66 +138,17 @@ describe("CaptureService", () => {
       },
     );
 
-    it("points a FAILED session at the retry endpoint", async () => {
+    it("rejects a FAILED session with 409 and a retry hint", async () => {
       vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
         snapshot(SessionStatus.FAILED),
       );
 
       await expect(
         service.submitCapture(USER, SESSION_ID, payload),
-      ).rejects.toThrow(/retry/);
+      ).rejects.toThrow(
+        new ConflictError("Analysis failed; retry the analysis"),
+      );
       expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
-    });
-
-    it("fails the run and returns 503 when the enqueue rejects", async () => {
-      stubPending();
-      const boom = new Error("redis down");
-      vi.mocked(formAnalysisQueue.add).mockRejectedValue(boom);
-
-      await expect(
-        service.submitCapture(USER, SESSION_ID, payload),
-      ).rejects.toBeInstanceOf(ServiceUnavailableError);
-
-      const jobId = vi.mocked(analysisStateService.startRunWithCapture).mock
-        .calls[0][2];
-      expect(analysisStateService.failRun).toHaveBeenCalledWith(
-        SESSION_ID,
-        jobId,
-        "ENQUEUE_FAILED",
-      );
-      expect(logger.error).toHaveBeenCalledWith(
-        { err: boom, sessionId: SESSION_ID, jobId },
-        expect.any(String) as string,
-      );
-    });
-
-    it("fails the run after 5000 ms when the enqueue never settles", async () => {
-      vi.useFakeTimers();
-      try {
-        stubPending();
-        vi.mocked(formAnalysisQueue.add).mockReturnValue(
-          new Promise(() => undefined),
-        );
-
-        const outcome = service.submitCapture(USER, SESSION_ID, payload).then(
-          () => null,
-          (error: unknown) => error,
-        );
-        // encodeCapture uses real zlib, so wait until the enqueue has started.
-        await vi.waitFor(() =>
-          expect(formAnalysisQueue.add).toHaveBeenCalled(),
-        );
-        await vi.advanceTimersByTimeAsync(5000);
-
-        expect(await outcome).toBeInstanceOf(ServiceUnavailableError);
-        expect(analysisStateService.failRun).toHaveBeenCalledWith(
-          SESSION_ID,
-          expect.stringMatching(JOB_ID_PATTERN) as string,
-          "ENQUEUE_FAILED",
-        );
-      } finally {
-        vi.useRealTimers();
-      }
     });
   });
 
@@ -233,24 +193,69 @@ describe("CaptureService", () => {
       );
       expect(analysisStateService.restartRun).not.toHaveBeenCalled();
     });
+  });
 
+  describe.each([
+    {
+      entryPoint: "submitCapture",
+      arrange: stubPending,
+      run: () => service.submitCapture(USER, SESSION_ID, payload),
+      jobIdOf: () =>
+        vi.mocked(analysisStateService.startRunWithCapture).mock.calls[0][2],
+    },
+    {
+      entryPoint: "retryAnalysis",
+      arrange: stubFailed,
+      run: () => service.retryAnalysis(USER, SESSION_ID),
+      jobIdOf: () =>
+        vi.mocked(analysisStateService.restartRun).mock.calls[0][1],
+    },
+  ])("enqueue failures via $entryPoint", ({ arrange, run, jobIdOf }) => {
     it("fails the run and returns 503 when the enqueue rejects", async () => {
-      vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
-        snapshot(SessionStatus.FAILED),
-      );
-      vi.mocked(analysisStateService.restartRun).mockResolvedValue({
-        captureId: 11,
-      });
-      vi.mocked(formAnalysisQueue.add).mockRejectedValue(new Error("down"));
+      arrange();
+      const boom = new Error("redis down");
+      vi.mocked(formAnalysisQueue.add).mockRejectedValue(boom);
 
-      await expect(
-        service.retryAnalysis(USER, SESSION_ID),
-      ).rejects.toBeInstanceOf(ServiceUnavailableError);
+      await expect(run()).rejects.toBeInstanceOf(ServiceUnavailableError);
+
+      const jobId = jobIdOf();
       expect(analysisStateService.failRun).toHaveBeenCalledWith(
         SESSION_ID,
-        expect.stringMatching(JOB_ID_PATTERN) as string,
+        jobId,
         "ENQUEUE_FAILED",
       );
+      expect(logger.error).toHaveBeenCalledWith(
+        { err: boom, sessionId: SESSION_ID, jobId },
+        expect.any(String) as string,
+      );
+    });
+
+    it("fails the run after 5000 ms when the enqueue never settles", async () => {
+      vi.useFakeTimers();
+      try {
+        arrange();
+        vi.mocked(formAnalysisQueue.add).mockReturnValue(
+          new Promise(() => undefined),
+        );
+
+        const outcome = run().then(
+          () => null,
+          (error: unknown) => error,
+        );
+        await vi.waitFor(() =>
+          expect(formAnalysisQueue.add).toHaveBeenCalled(),
+        );
+        await vi.advanceTimersByTimeAsync(5000);
+
+        expect(await outcome).toBeInstanceOf(ServiceUnavailableError);
+        expect(analysisStateService.failRun).toHaveBeenCalledWith(
+          SESSION_ID,
+          jobIdOf(),
+          "ENQUEUE_FAILED",
+        );
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

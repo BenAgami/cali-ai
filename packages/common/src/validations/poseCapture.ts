@@ -11,15 +11,17 @@ export const CAPTURE_LIMITS = {
   maxKeypoints: 33,
 } as const;
 
+export type Keypoint = [x: number, y: number, confidence: number];
+
 const keypointSchema = z.tuple([
   z.number(),
   z.number(),
   z.number().min(0).max(1),
-]);
+]) satisfies z.ZodType<Keypoint>;
 
 const frameSchema = z.object({
-  t: z.number().min(0),
-  kp: z
+  timestampSec: z.number().min(0),
+  keypoints: z
     .array(keypointSchema)
     .min(CAPTURE_LIMITS.minKeypoints)
     .max(CAPTURE_LIMITS.maxKeypoints),
@@ -27,7 +29,6 @@ const frameSchema = z.object({
 
 export const poseCapturePayloadSchema = z
   .object({
-    // Version literal is the hook for a future binary capture format.
     version: z.literal(1),
     poseModelName: z.string().trim().min(1).max(80),
     poseModelVersion: z.string().trim().min(1).max(40),
@@ -49,25 +50,28 @@ export const poseCapturePayloadSchema = z
       });
     }
 
-    // Single pass: uniform keypoint count and non-decreasing timestamps.
-    const expectedKeypoints = frames[0]?.kp.length;
-    let previousT = -Infinity;
-    let uniform = true;
-    let ordered = true;
+    const expectedKeypointCount = frames[0]?.keypoints.length;
+    let previousTimestampSec = -Infinity;
+    let hasConsistentKeypointCount = true;
+    let isInChronologicalOrder = true;
     for (const frame of frames) {
-      if (frame.kp.length !== expectedKeypoints) uniform = false;
-      if (frame.t < previousT) ordered = false;
-      previousT = frame.t;
-      if (!uniform && !ordered) break;
+      if (frame.keypoints.length !== expectedKeypointCount) {
+        hasConsistentKeypointCount = false;
+      }
+      if (frame.timestampSec < previousTimestampSec) {
+        isInChronologicalOrder = false;
+      }
+      previousTimestampSec = frame.timestampSec;
+      if (!hasConsistentKeypointCount && !isInChronologicalOrder) break;
     }
-    if (!uniform) {
+    if (!hasConsistentKeypointCount) {
       ctx.addIssue({
         code: "custom",
         path: ["frames"],
         message: "every frame must have the same keypoint count",
       });
     }
-    if (!ordered) {
+    if (!isInChronologicalOrder) {
       ctx.addIssue({
         code: "custom",
         path: ["frames"],

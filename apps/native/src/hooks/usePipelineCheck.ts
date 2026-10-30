@@ -22,8 +22,8 @@ const buildSyntheticCapture = (): PoseCapturePayload => ({
   frameCount: SYNTHETIC_FRAME_COUNT,
   cameraView: "side",
   frames: Array.from({ length: SYNTHETIC_FRAME_COUNT }, (_, i) => ({
-    t: i / SYNTHETIC_FPS,
-    kp: Array.from(
+    timestampSec: i / SYNTHETIC_FPS,
+    keypoints: Array.from(
       { length: SYNTHETIC_KEYPOINTS },
       (): [number, number, number] => [0.5, 0.5, 0.9],
     ),

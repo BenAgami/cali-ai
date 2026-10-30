@@ -3,6 +3,7 @@ import {
   poseCapturePayloadSchema,
   type PoseCapturePayload,
 } from "@repo/common";
+
 import {
   decodeCapture,
   encodeCapture,
@@ -24,8 +25,8 @@ const buildPayload = ({
   frameCount: frames,
   durationSec: frames / fps,
   frames: Array.from({ length: frames }, (_, i) => ({
-    t: i / fps,
-    kp: Array.from(
+    timestampSec: i / fps,
+    keypoints: Array.from(
       { length: keypoints },
       () => [0.5, 0.5, 0.9] as [number, number, number],
     ),
@@ -76,24 +77,26 @@ describe("poseCapturePayloadSchema", () => {
   it("rejects mixed 17/33 keypoint counts at path frames", () => {
     const payload = buildPayload({ frames: 5 });
     payload.frames[3] = {
-      t: payload.frames[3].t,
-      kp: buildPayload({ frames: 1, keypoints: 33 }).frames[0].kp,
+      timestampSec: payload.frames[3].timestampSec,
+      keypoints: buildPayload({ frames: 1, keypoints: 33 }).frames[0].keypoints,
     };
     expect(issuePaths(payload)).toContainEqual(["frames"]);
   });
 
   it.each([1.1, -0.1])("rejects score %s", (score) => {
     const payload = buildPayload({ frames: 5 });
-    payload.frames[0].kp[0] = [0.5, 0.5, score];
+    payload.frames[0].keypoints[0] = [0.5, 0.5, score];
     expect(poseCapturePayloadSchema.safeParse(payload).success).toBe(false);
   });
 
   it("rejects decreasing timestamps at path frames", () => {
     const payload = buildPayload({ frames: 5 });
-    payload.frames[3].t = 0;
+    payload.frames[3].timestampSec = 0;
     expect(issuePaths(payload)).toContainEqual(["frames"]);
   });
 });
+
+const GZIP_SIGNATURE = [0x1f, 0x8b]; // Every gzip stream starts with these two bytes (RFC 1952).
 
 describe("encodeCapture / decodeCapture", () => {
   it("exposes the storage format id", () => {
@@ -102,8 +105,8 @@ describe("encodeCapture / decodeCapture", () => {
 
   it("encodes to a gzip buffer", async () => {
     const bytes = await encodeCapture(buildPayload({ frames: 10 }));
-    expect(bytes[0]).toBe(0x1f);
-    expect(bytes[1]).toBe(0x8b);
+    const firstTwoBytes = [...bytes.subarray(0, GZIP_SIGNATURE.length)];
+    expect(firstTwoBytes).toEqual(GZIP_SIGNATURE);
   });
 
   it("round-trips a payload unchanged", async () => {
@@ -112,20 +115,20 @@ describe("encodeCapture / decodeCapture", () => {
   });
 
   it("rejects non-gzip bytes with InvalidCaptureError", async () => {
-    await expect(decodeCapture(Buffer.from("not gzip"))).rejects.toBeInstanceOf(
-      InvalidCaptureError,
-    );
-  });
-
-  it("rejects schema-invalid JSON with InvalidCaptureError", async () => {
-    await expect(
-      decodeCapture(gzipSync(Buffer.from('{"version":1}'))),
-    ).rejects.toBeInstanceOf(InvalidCaptureError);
+    const result = decodeCapture(Buffer.from("not gzip"));
+    await expect(result).rejects.toBeInstanceOf(InvalidCaptureError);
+    await expect(result).rejects.toThrow("Capture blob is not valid gzip");
   });
 
   it("rejects non-JSON content with InvalidCaptureError", async () => {
-    await expect(
-      decodeCapture(gzipSync(Buffer.from("not json"))),
-    ).rejects.toBeInstanceOf(InvalidCaptureError);
+    const result = decodeCapture(gzipSync(Buffer.from("not json")));
+    await expect(result).rejects.toBeInstanceOf(InvalidCaptureError);
+    await expect(result).rejects.toThrow("Capture blob is not valid JSON");
+  });
+
+  it("rejects schema-invalid JSON with InvalidCaptureError", async () => {
+    const result = decodeCapture(gzipSync(Buffer.from('{"version":1}')));
+    await expect(result).rejects.toBeInstanceOf(InvalidCaptureError);
+    await expect(result).rejects.toThrow(/poseModelName - Invalid input/);
   });
 });
