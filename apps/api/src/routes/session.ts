@@ -23,7 +23,7 @@ const sessionIdParamsSchema = z.object({
 /**
  * POST /:id/capture
  * Submit pose keypoints for a session; returns 202 + job id.
- * Sent as a gzip file (`Content-Type: application/gzip`); plain JSON also works.
+ * Sent only as a gzip file (`Content-Type: application/gzip`).
  */
 router.post(
   "/:id/capture",

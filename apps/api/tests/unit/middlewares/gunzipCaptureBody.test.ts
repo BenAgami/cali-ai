@@ -30,13 +30,15 @@ describe("gunzipCaptureBody", () => {
     expect(next).toHaveBeenCalledWith();
   });
 
-  it("leaves an already parsed JSON body untouched", async () => {
-    const parsed = { hello: "world" };
+  it("rejects a body that is not raw gzip bytes with 400", async () => {
+    const { next } = await run({ hello: "world" });
 
-    const { req, next } = await run(parsed);
-
-    expect(req.body).toBe(parsed);
-    expect(next).toHaveBeenCalledWith();
+    expect(next).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: StatusCodes.BAD_REQUEST,
+        message: "Capture body must be application/gzip",
+      }),
+    );
   });
 
   it("rejects bytes that are not gzip with 400", async () => {

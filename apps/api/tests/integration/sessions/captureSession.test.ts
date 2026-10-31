@@ -101,15 +101,19 @@ describe("POST /api/sessions/:id/capture", () => {
     expect(job?.data).toEqual({ sessionId, captureId });
   });
 
-  it("also accepts an uncompressed JSON body", async () => {
+  it("returns 400 for an uncompressed JSON body", async () => {
     const sessionId = await newSession();
     const payload = new PoseCaptureBuilder().setFrames(30).build();
 
-    const response = await submitCapture(app, token, sessionId, payload, {
-      gzip: false,
-    });
+    const response = await submitRawCapture(
+      app,
+      token,
+      sessionId,
+      Buffer.from(JSON.stringify(payload)),
+      "application/json",
+    );
 
-    expect(response.status).toBe(StatusCodes.ACCEPTED);
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
   });
 
   it("returns 401 without a token", async () => {

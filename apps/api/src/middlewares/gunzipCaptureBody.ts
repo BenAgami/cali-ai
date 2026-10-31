@@ -8,8 +8,7 @@ const gunzipAsync = promisify(gunzip);
 
 /**
  * Turns a raw `application/gzip` body into the parsed JSON that
- * `validateSchema` expects. Bodies the global JSON parser already parsed pass
- * through untouched.
+ * `validateSchema` expects.
  *
  * The inflated size is capped here (gzip-bomb protection) since the global
  * JSON limit doesn't apply to raw bodies.
@@ -18,7 +17,7 @@ const gunzipCaptureBody =
   (maxInflatedBytes: number) =>
   async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
     if (!Buffer.isBuffer(req.body)) {
-      next();
+      next(new BadRequestError("Capture body must be application/gzip"));
       return;
     }
 

@@ -81,10 +81,7 @@ export const CreateWorkoutSessionBody = registry.register(
   "CreateWorkoutSessionBody",
   createWorkoutSessionSchema,
 );
-export const PoseCaptureBody = registry.register(
-  "PoseCaptureBody",
-  poseCapturePayloadSchema,
-);
+registry.register("PoseCaptureBody", poseCapturePayloadSchema);
 
 // ── Response envelope ─────────────────────────────────────────────────────────
 

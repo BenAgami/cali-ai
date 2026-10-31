@@ -9,7 +9,6 @@ export const submitCapture = async (
   token: string | undefined,
   sessionId: number | string,
   payload: PoseCapturePayload | Record<string, unknown>,
-  { gzip = true }: { gzip?: boolean } = {},
 ) => {
   const request = supertest
     .agent(app)
@@ -19,18 +18,10 @@ export const submitCapture = async (
     request.set("Authorization", `Bearer ${token}`);
   }
 
-  if (gzip) {
-    return (
-      request
-        .set("Content-Type", "application/gzip")
-        .serialize(
-          ((body: Buffer) => body) as unknown as (obj: unknown) => string,
-        )
-        .send(gzipSync(Buffer.from(JSON.stringify(payload))))
-    );
-  }
-
-  return request.send(payload);
+  return request
+    .set("Content-Type", "application/gzip")
+    .serialize(((body: Buffer) => body) as unknown as (obj: unknown) => string)
+    .send(gzipSync(Buffer.from(JSON.stringify(payload))));
 };
 
 export const submitRawCapture = async (

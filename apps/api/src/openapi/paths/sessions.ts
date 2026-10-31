@@ -1,12 +1,7 @@
 import { z } from "zod";
 
 import { registry } from "../registry";
-import {
-  CaptureAccepted,
-  PoseCaptureBody,
-  successResponse,
-  errorResponse,
-} from "../schemas";
+import { CaptureAccepted, successResponse, errorResponse } from "../schemas";
 
 const bearerAuth = { BearerAuth: [] };
 
@@ -25,7 +20,7 @@ registry.registerPath({
     body: {
       required: true,
       description:
-        "Pose keypoints for one set. Send the JSON body gzip-compressed with `Content-Type: application/gzip` (the compressed size cap is 1 MiB, the decompressed cap 10 MiB). Plain `application/json` is also accepted.",
+        "Pose keypoints for one set. Send the JSON body gzip-compressed with `Content-Type: application/gzip` (the compressed size cap is 1 MiB, the decompressed cap 10 MiB).",
       content: {
         "application/gzip": {
           schema: z.string().openapi({
@@ -33,13 +28,14 @@ registry.registerPath({
             description: "Gzip-compressed JSON matching PoseCaptureBody.",
           }),
         },
-        "application/json": { schema: PoseCaptureBody },
       },
     },
   },
   responses: {
     202: successResponse(CaptureAccepted, "Capture accepted and queued"),
-    400: errorResponse("Validation error"),
+    400: errorResponse(
+      "Validation error, or the body is not gzip (any other content type is rejected)",
+    ),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Session not found"),
     409: errorResponse("Session is not PENDING"),
