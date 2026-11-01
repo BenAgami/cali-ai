@@ -44,9 +44,9 @@ const payload = (): PoseCapturePayload => ({
   fps: 15,
   frameCount: 2,
   durationSec: 1,
-  frames: [0, 100].map((t) => ({
-    t,
-    kp: Array.from(
+  frames: [0, 0.1].map((timestampSec) => ({
+    timestampSec,
+    keypoints: Array.from(
       { length: 17 },
       () => [0.5, 0.5, 0.8] as [number, number, number],
     ),
@@ -153,7 +153,6 @@ describe("processAnalysisJob", () => {
         error.code === "LLM_TIMEOUT" &&
         !(error instanceof UnrecoverableError),
     );
-    // Decoding gunzips on the real thread pool; wait until the timeout is armed.
     await vi.waitFor(() =>
       expect(mockFeedback.generateFeedback).toHaveBeenCalled(),
     );

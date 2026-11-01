@@ -21,7 +21,6 @@ const REAPER_SCHEDULER_ID = "reap-stuck-analyses";
 type RunningWorker = { worker: Worker; connection: IORedis };
 let running: RunningWorker[] = [];
 
-// Workers get dedicated connections (blocking commands); never the shared one.
 export const startWorkers = async (): Promise<void> => {
   if (running.length > 0) return;
 

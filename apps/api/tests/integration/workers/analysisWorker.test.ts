@@ -38,8 +38,8 @@ const buildPayload = (): PoseCapturePayload => ({
   frameCount: 60,
   durationSec: 4,
   frames: Array.from({ length: 60 }, (_, i) => ({
-    t: i * 66,
-    kp: Array.from(
+    timestampSec: i / 15,
+    keypoints: Array.from(
       { length: 17 },
       () => [0.5, 0.5, 0.9] as [number, number, number],
     ),
