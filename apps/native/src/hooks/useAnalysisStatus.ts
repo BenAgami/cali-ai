@@ -25,7 +25,7 @@ const parseStatusEvent = (data: string | null): AnalysisStatusEvent | null => {
   return parsed.success ? parsed.data : null;
 };
 
-const isTerminal = (event: AnalysisStatusEvent): boolean =>
+const isTerminalStatus = (event: AnalysisStatusEvent): boolean =>
   event.status === "COMPLETED" || event.status === "FAILED";
 
 export const useAnalysisStatus = (
@@ -59,17 +59,16 @@ export const useAnalysisStatus = (
         const next = parseStatusEvent(message.data);
         if (next === null) return;
         setEvent((current) => {
-          // Keep percent monotonic: drop stale non-terminal events.
           if (
             current !== null &&
-            !isTerminal(next) &&
+            !isTerminalStatus(next) &&
             next.progress_percent < current.progress_percent
           ) {
             return current;
           }
           return next;
         });
-        if (isTerminal(next)) source?.close();
+        if (isTerminalStatus(next)) source?.close();
       });
 
       source.addEventListener("error", (message) => {

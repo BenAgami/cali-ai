@@ -9,7 +9,6 @@ import { useTensorflowModel } from "react-native-fast-tflite";
 import { useResizePlugin } from "vision-camera-resize-plugin";
 import { Worklets } from "react-native-worklets-core";
 
-// Metro resolves bundled assets only through a static require().
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment
 const MODEL_SOURCE = require("../../assets/models/movenet_singlepose_lightning_int8.tflite");
 

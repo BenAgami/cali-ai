@@ -150,9 +150,6 @@ export const apiClient = {
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: "POST", body: JSON.stringify(body) }),
 
-  // Sent as a gzip file (Content-Type: application/gzip), not with
-  // Content-Encoding: gzip: that header never reached the server from the
-  // Android dev build, so the body was never inflated. Body stays a Uint8Array.
   postGzipJson: <T>(path: string, body: unknown) =>
     request<T>(path, {
       method: "POST",
