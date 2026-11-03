@@ -74,6 +74,10 @@ Recent decisions affecting current work:
 - [Phase 02-user-profile]: One scheduleNotificationAsync call per selected weekday — WeeklyTriggerInput only accepts one weekday, so scheduling N days requires N calls
 - [Phase 02-user-profile]: AsyncStorage stores both notification IDs (for cancellation) and config (for display) under separate keys workoutReminderIds and workoutReminderConfig
 
+### Roadmap Evolution
+
+- Phase 8 added: Designing the user UI and UX
+
 ### Pending Todos
 
 None yet.
