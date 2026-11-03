@@ -32,6 +32,17 @@ BlazePose). If none passes all four, the model with the most passes wins (ties
 go to the lighter one) and the failing exercises are a Phase 5 risk. MoveNet
 uses keypoint score; BlazePose uses landmark `visibility`.
 
+Push-up and dip are filmed side-on, so the far arm and leg are hidden. For
+those two exercises each clip is scored on its near side only: the side (left
+or right) with the higher mean confidence, chosen per clip, and the CSV lists
+side-agnostic joint names. The consequence for the app is that push-up and dip
+need a side-on camera and metrics from the near side only; left/right
+asymmetry cannot be judged from that view. Result: BlazePose passes 4/4 under
+this rule (2/4 without it). The sample is small (one person, 3 clips plus a
+hold per exercise), so treat the pass as provisional. Dip at 45° is the
+thinnest clip: near-side detection 0.912 and confidence 0.891 against 0.99+ on
+the side clips, so it clears the 0.90 bar with little margin.
+
 ## Shot list
 
 Film on a phone propped at hip height, 1080p, 30 fps, landscape for

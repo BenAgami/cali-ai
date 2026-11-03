@@ -43,6 +43,8 @@ KEY_JOINTS = {
 }
 EXERCISES = list(KEY_JOINTS)
 
+NEAR_SIDE_EXERCISES = {"push_up", "dip"}
+
 MOVENET_INDEX = {
     "nose": 0,
     "l_eye": 1,
@@ -209,9 +211,7 @@ def sample_frames(path: Path, fps: float) -> Iterator[tuple[int, np.ndarray]]:
 
 
 def list_clip_files(directory: Path) -> list[Path]:
-    return sorted(
-        f for f in directory.iterdir() if f.suffix.lower() in CLIP_SUFFIXES
-    )
+    return sorted(f for f in directory.iterdir() if f.suffix.lower() in CLIP_SUFFIXES)
 
 
 def find_clips(clips_dir: str | Path) -> dict[str, dict[str, list[Path]]]:
@@ -225,16 +225,39 @@ def find_clips(clips_dir: str | Path) -> dict[str, dict[str, list[Path]]]:
     return found
 
 
+def near_side(clip_confs: dict[str, list[float]]) -> str:
+    """The side ("l" or "r") whose joints are detected more confidently."""
+    mean = {
+        side: np.mean(
+            [v for j, vals in clip_confs.items() if j[0] == side for v in vals]
+        )
+        for side in ("l", "r")
+    }
+    return max(mean, key=lambda side: mean[side])
+
+
 def collect_confidences(
-    model: PoseModel, joints: list[str], clips: list[Path], fps: float
+    model: PoseModel, exercise: str, clips: list[Path], fps: float
 ) -> dict[str, list[float]]:
-    confs: dict[str, list[float]] = {j: [] for j in joints}
+    """Per-joint confidences; near-side exercises use side-agnostic joint names."""
+    joints = per_side_joint_names(exercise)
+    side_agnostic = exercise in NEAR_SIDE_EXERCISES
+    confs: dict[str, list[float]] = {
+        (j[2:] if side_agnostic else j): [] for j in joints
+    }
     for clip in clips:
         model.reset()
+        clip_confs: dict[str, list[float]] = {j: [] for j in joints}
         for ts, frame in sample_frames(clip, fps):
             c = model.confidences(frame, ts)
             for j in joints:
-                confs[j].append(c[j])
+                clip_confs[j].append(c[j])
+        side = near_side(clip_confs) if side_agnostic else None
+        for j, vals in clip_confs.items():
+            if not side_agnostic:
+                confs[j].extend(vals)
+            elif j[0] == side:
+                confs[j[2:]].extend(vals)
     return confs
 
 
@@ -248,9 +271,9 @@ def evaluate(
     stats_by_result: StatsByResult = {}
     for model in models:
         for ex in EXERCISES:
-            joints = per_side_joint_names(ex)
             for subset in SUBSETS:
-                confs = collect_confidences(model, joints, clips[ex][subset], fps)
+                confs = collect_confidences(model, ex, clips[ex][subset], fps)
+                joints = list(confs)
                 frames = len(confs[joints[0]])
                 if frames == 0:
                     continue
@@ -301,8 +324,7 @@ def decide(
 ) -> tuple[str, dict[str, int], bool]:
     """model_names is ordered lightest first."""
     counts = {
-        m: sum(passes(stats_by_result, m, ex) for ex in EXERCISES)
-        for m in model_names
+        m: sum(passes(stats_by_result, m, ex) for ex in EXERCISES) for m in model_names
     }
     for m in model_names:
         if counts[m] == len(EXERCISES):
