@@ -10,18 +10,30 @@ wins; otherwise the model with the most passes (ties -> lighter).
 import argparse
 import csv
 import sys
+from collections.abc import Iterator
 from pathlib import Path
+from typing import NamedTuple, Protocol
 
 import cv2
+import mediapipe as mp
 import numpy as np
 import tensorflow as tf
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision
 
 ROOT = Path(__file__).resolve().parent
 MODELS_DIR = ROOT / "models"
 
+CLIP_SUFFIXES = (".mp4", ".mov")
+
 DETECTION_THRESHOLD = 0.3
 MIN_DETECTION_RATE = 0.90
 MIN_MEAN_CONFIDENCE = 0.50
+
+MOVENET_KEYPOINTS = 17
+BLAZEPOSE_LANDMARKS = 33
+
+SUBSETS = ("all", "hold")
 
 KEY_JOINTS = {
     "push_up": ["shoulders", "elbows", "wrists", "hips", "ankles"],
@@ -66,10 +78,26 @@ BLAZEPOSE_INDEX = {
     "r_ankle": 28,
 }
 
+Row = dict[str, str | float | int]
 
-def expand(exercise):
-    """Expand group names ('shoulders') to per-side joint names."""
-    names = []
+
+class Stats(NamedTuple):
+    detection_rate: float
+    mean_confidence: float
+    frames: int
+
+
+class ResultKey(NamedTuple):
+    model: str
+    exercise: str
+    subset: str
+
+
+StatsByResult = dict[ResultKey, Stats]
+
+
+def per_side_joint_names(exercise: str) -> list[str]:
+    names: list[str] = []
     for group in KEY_JOINTS[exercise]:
         if group == "nose":
             names.append("nose")
@@ -79,8 +107,17 @@ def expand(exercise):
     return names
 
 
+class PoseModel(Protocol):
+    name: str
+    index: dict[str, int]
+
+    def confidences(self, frame_rgb: np.ndarray, ts_ms: int) -> dict[str, float]: ...
+
+    def reset(self) -> None: ...
+
+
 class MoveNet:
-    def __init__(self, name, path):
+    def __init__(self, name: str, path: Path) -> None:
         self.name = name
         self.index = MOVENET_INDEX
         self.interp = tf.lite.Interpreter(model_path=str(path))
@@ -89,22 +126,22 @@ class MoveNet:
         self.out = self.interp.get_output_details()[0]
         self.size = int(self.inp["shape"][1])
 
-    def confidences(self, frame_rgb):
+    def confidences(self, frame_rgb: np.ndarray, ts_ms: int = 0) -> dict[str, float]:
         h, w = frame_rgb.shape[:2]
         scale = self.size / max(h, w)
         nh, nw = max(1, int(h * scale)), max(1, int(w * scale))
         resized = cv2.resize(frame_rgb, (nw, nh))
         canvas = np.zeros((self.size, self.size, 3), dtype=np.uint8)
         canvas[:nh, :nw] = resized
-        data = canvas[None]
-        data = data.astype(self.inp["dtype"])
+        data = canvas[None].astype(self.inp["dtype"])
         self.interp.set_tensor(self.inp["index"], data)
         self.interp.invoke()
         kp = self.interp.get_tensor(self.out["index"])
-        assert kp.shape == (1, 1, 17, 3), kp.shape
+        if kp.shape != (1, 1, MOVENET_KEYPOINTS, 3):
+            raise ValueError(f"unexpected MoveNet output shape {kp.shape}")
         return {j: float(kp[0, 0, i, 2]) for j, i in self.index.items()}
 
-    def reset(self):
+    def reset(self) -> None:
         pass
 
 
@@ -112,46 +149,39 @@ class BlazePose:
     name = "blazepose_full"
     index = BLAZEPOSE_INDEX
 
-    def __init__(self, path):
-        import mediapipe as mp
-        from mediapipe.tasks import python as mp_python
-        from mediapipe.tasks.python import vision
-
-        self.mp = mp
-        self.mp_python = mp_python
-        self.vision = vision
+    def __init__(self, path: Path) -> None:
         self.path = path
-        self.landmarker = None
-        self.reset()
+        self.landmarker = self._create()
 
-    def reset(self):
-        if self.landmarker is not None:
-            self.landmarker.close()
-        options = self.vision.PoseLandmarkerOptions(
-            base_options=self.mp_python.BaseOptions(
-                model_asset_path=str(self.path)
-            ),
-            running_mode=self.vision.RunningMode.VIDEO,
+    def _create(self) -> vision.PoseLandmarker:
+        options = vision.PoseLandmarkerOptions(
+            base_options=mp_python.BaseOptions(model_asset_path=str(self.path)),
+            running_mode=vision.RunningMode.VIDEO,
             num_poses=1,
         )
-        self.landmarker = self.vision.PoseLandmarker.create_from_options(
-            options
-        )
+        return vision.PoseLandmarker.create_from_options(options)
 
-    def confidences(self, frame_rgb, timestamp_ms=0):
-        image = self.mp.Image(
-            image_format=self.mp.ImageFormat.SRGB,
+    def reset(self) -> None:
+        """VIDEO mode needs increasing timestamps, so restart for each clip."""
+        self.landmarker.close()
+        self.landmarker = self._create()
+
+    def confidences(self, frame_rgb: np.ndarray, ts_ms: int = 0) -> dict[str, float]:
+        image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
             data=np.ascontiguousarray(frame_rgb),
         )
-        result = self.landmarker.detect_for_video(image, int(timestamp_ms))
+        result = self.landmarker.detect_for_video(image, int(ts_ms))
         if not result.pose_landmarks:
             return {j: 0.0 for j in self.index}
         lm = result.pose_landmarks[0]
-        assert len(lm) == 33, len(lm)
+        if len(lm) != BLAZEPOSE_LANDMARKS:
+            raise ValueError(f"unexpected BlazePose landmark count {len(lm)}")
         return {j: float(lm[i].visibility) for j, i in self.index.items()}
 
 
-def load_models():
+def load_models() -> list[PoseModel]:
+    """Lightest first; `decide` relies on this order."""
     return [
         MoveNet("movenet_lightning", MODELS_DIR / "movenet_lightning_int8.tflite"),
         MoveNet("movenet_thunder", MODELS_DIR / "movenet_thunder_int8.tflite"),
@@ -159,31 +189,35 @@ def load_models():
     ]
 
 
-def run_model(model, frame_rgb, ts_ms):
-    if isinstance(model, BlazePose):
-        return model.confidences(frame_rgb, ts_ms)
-    return model.confidences(frame_rgb)
-
-
-def sample_frames(path, fps):
+def sample_frames(path: Path, fps: float) -> Iterator[tuple[int, np.ndarray]]:
     cap = cv2.VideoCapture(str(path))
-    src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    step = max(1, int(round(src_fps / fps)))
-    i = 0
-    while True:
-        ok, frame = cap.read()
-        if not ok:
-            break
-        if i % step == 0:
-            yield int(i / src_fps * 1000), cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        i += 1
-    cap.release()
+    try:
+        if not cap.isOpened():
+            raise RuntimeError(f"cannot open video: {path}")
+        src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+        step = max(1, round(src_fps / fps))
+        i = 0
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            if i % step == 0:
+                yield int(i / src_fps * 1000), cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            i += 1
+    finally:
+        cap.release()
 
 
-def find_clips(clips_dir):
+def list_clip_files(directory: Path) -> list[Path]:
+    return sorted(
+        f for f in directory.iterdir() if f.suffix.lower() in CLIP_SUFFIXES
+    )
+
+
+def find_clips(clips_dir: str | Path) -> dict[str, dict[str, list[Path]]]:
     found = {}
     for ex in EXERCISES:
-        files = sorted((Path(clips_dir) / ex).glob("*.mp4"))
+        files = list_clip_files(Path(clips_dir) / ex)
         found[ex] = {
             "all": [f for f in files if not f.name.startswith("hold_")],
             "hold": [f for f in files if f.name.startswith("hold_")],
@@ -191,27 +225,39 @@ def find_clips(clips_dir):
     return found
 
 
-def evaluate(models, clips, fps):
-    """Return rows and aggregate {(model, exercise, subset): (det, conf, frames)}."""
-    rows = []
-    agg = {}
+def collect_confidences(
+    model: PoseModel, joints: list[str], clips: list[Path], fps: float
+) -> dict[str, list[float]]:
+    confs: dict[str, list[float]] = {j: [] for j in joints}
+    for clip in clips:
+        model.reset()
+        for ts, frame in sample_frames(clip, fps):
+            c = model.confidences(frame, ts)
+            for j in joints:
+                confs[j].append(c[j])
+    return confs
+
+
+def evaluate(
+    models: list[PoseModel],
+    clips: dict[str, dict[str, list[Path]]],
+    fps: float,
+) -> tuple[list[Row], StatsByResult]:
+    """Return per-joint rows and per-`ResultKey` aggregates."""
+    rows: list[Row] = []
+    stats_by_result: StatsByResult = {}
     for model in models:
         for ex in EXERCISES:
-            joints = expand(ex)
-            for subset in ("all", "hold"):
-                confs = {j: [] for j in joints}
-                for clip in clips[ex][subset]:
-                    model.reset()
-                    for ts, frame in sample_frames(clip, fps):
-                        c = run_model(model, frame, ts)
-                        for j in joints:
-                            confs[j].append(c[j])
+            joints = per_side_joint_names(ex)
+            for subset in SUBSETS:
+                confs = collect_confidences(model, joints, clips[ex][subset], fps)
                 frames = len(confs[joints[0]])
                 if frames == 0:
                     continue
+                subset_rows: list[Row] = []
                 for j in joints:
                     arr = np.array(confs[j])
-                    rows.append(
+                    subset_rows.append(
                         {
                             "model": model.name,
                             "exercise": ex,
@@ -224,35 +270,40 @@ def evaluate(models, clips, fps):
                             "frames": frames,
                         }
                     )
-                sel = [
-                    r
-                    for r in rows
-                    if r["model"] == model.name
-                    and r["exercise"] == ex
-                    and r["subset"] == subset
-                ]
-                agg[(model.name, ex, subset)] = (
-                    float(np.mean([r["detection_rate"] for r in sel])),
-                    float(np.mean([r["mean_confidence"] for r in sel])),
-                    frames,
+                rows.extend(subset_rows)
+                stats_by_result[ResultKey(model.name, ex, subset)] = Stats(
+                    detection_rate=float(
+                        np.mean([r["detection_rate"] for r in subset_rows])
+                    ),
+                    mean_confidence=float(
+                        np.mean([r["mean_confidence"] for r in subset_rows])
+                    ),
+                    frames=frames,
                 )
-    return rows, agg
+    return rows, stats_by_result
 
 
-def passes(agg, model, ex):
-    for subset in ("all", "hold"):
-        entry = agg.get((model, ex, subset))
-        if entry is None:
+def passes(stats_by_result: StatsByResult, model: str, ex: str) -> bool:
+    for subset in SUBSETS:
+        stats = stats_by_result.get(ResultKey(model, ex, subset))
+        if stats is None:
             return False
-        det, conf, _ = entry
-        if det < MIN_DETECTION_RATE or conf < MIN_MEAN_CONFIDENCE:
+        if (
+            stats.detection_rate < MIN_DETECTION_RATE
+            or stats.mean_confidence < MIN_MEAN_CONFIDENCE
+        ):
             return False
     return True
 
 
-def decide(agg, model_names):
+def decide(
+    stats_by_result: StatsByResult, model_names: list[str]
+) -> tuple[str, dict[str, int], bool]:
     """model_names is ordered lightest first."""
-    counts = {m: sum(passes(agg, m, ex) for ex in EXERCISES) for m in model_names}
+    counts = {
+        m: sum(passes(stats_by_result, m, ex) for ex in EXERCISES)
+        for m in model_names
+    }
     for m in model_names:
         if counts[m] == len(EXERCISES):
             return m, counts, True
@@ -261,7 +312,12 @@ def decide(agg, model_names):
     return winner, counts, False
 
 
-def write_outputs(rows, agg, model_names, out_dir):
+def write_outputs(
+    rows: list[Row],
+    stats_by_result: StatsByResult,
+    model_names: list[str],
+    out_dir: str | Path,
+) -> None:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     fields = [
@@ -278,7 +334,7 @@ def write_outputs(rows, agg, model_names, out_dir):
         w.writeheader()
         w.writerows(rows)
 
-    winner, counts, all_pass = decide(agg, model_names)
+    winner, counts, all_pass = decide(stats_by_result, model_names)
     lines = ["# Pose model evaluation", ""]
     for ex in EXERCISES:
         lines += [
@@ -288,43 +344,52 @@ def write_outputs(rows, agg, model_names, out_dir):
             "| ----- | ------ | -------------- | --------------- | ------ | ------ |",
         ]
         for m in model_names:
-            verdict = "PASS" if passes(agg, m, ex) else "FAIL"
-            for subset in ("all", "hold"):
-                e = agg.get((m, ex, subset))
-                if e is None:
+            verdict = "PASS" if passes(stats_by_result, m, ex) else "FAIL"
+            for subset in SUBSETS:
+                stats = stats_by_result.get(ResultKey(m, ex, subset))
+                if stats is None:
                     lines.append(f"| {m} | {subset} | n/a | n/a | 0 | {verdict} |")
                 else:
                     lines.append(
-                        f"| {m} | {subset} | {e[0]:.3f} | {e[1]:.3f} | {e[2]} | {verdict} |"
+                        f"| {m} | {subset} | {stats.detection_rate:.3f} "
+                        f"| {stats.mean_confidence:.3f} | {stats.frames} "
+                        f"| {verdict} |"
                     )
         lines.append("")
-    summary = ", ".join(f"{m}: {counts[m]}/4" for m in model_names)
-    lines.append(
-        f"Decision: {winner} ({'passes all four exercises' if all_pass else 'most passes, no model passes all four'}; {summary})"
+    summary = ", ".join(f"{m}: {counts[m]}/{len(EXERCISES)}" for m in model_names)
+    reason = (
+        "passes all four exercises"
+        if all_pass
+        else "most passes, no model passes all four"
     )
-    lines.append("")
+    decision = f"Decision: {winner} ({reason}; {summary})"
+    lines += [decision, ""]
     (out / "summary.md").write_text("\n".join(lines), encoding="utf-8")
-    print(lines[-2])
+    print(decision)
 
 
-def self_test(clips_dir):
+def self_test(clips_dir: str | Path) -> int:
     models = load_models()
     frames = [np.zeros((480, 640, 3), dtype=np.uint8)]
-    for clip in sorted(Path(clips_dir).glob("*/*.mp4")):
+    for clip in (
+        c
+        for ex_dir in sorted(p for p in Path(clips_dir).iterdir() if p.is_dir())
+        for c in list_clip_files(ex_dir)
+    ):
         for _, frame in sample_frames(clip, 1):
             frames.append(frame)
             break
         break
     for model in models:
         for i, frame in enumerate(frames):
-            c = run_model(model, frame, i * 100)
+            c = model.confidences(frame, i * 100)
             assert set(c) == set(model.index), model.name
             assert all(isinstance(v, float) for v in c.values())
         print(f"ok {model.name}")
     return 0
 
 
-def main():
+def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--clips", default=str(ROOT / "clips"))
     p.add_argument("--fps", type=float, default=10)
@@ -339,8 +404,8 @@ def main():
     clips = find_clips(args.clips)
     for ex in EXERCISES:
         print(ex, len(clips[ex]["all"]), "rep clips,", len(clips[ex]["hold"]), "hold")
-    rows, agg = evaluate(models, clips, args.fps)
-    write_outputs(rows, agg, [m.name for m in models], args.out)
+    rows, stats_by_result = evaluate(models, clips, args.fps)
+    write_outputs(rows, stats_by_result, [m.name for m in models], args.out)
     return 0
 
 

@@ -44,8 +44,10 @@ extension). Name files exactly as below and place them in
 | -------- | ----------------------------------------------------------------- | --------------------------------------------------------- |
 | push_up  | side_1 (normal light), side_2 (dim), diag45_1 (45 deg front-side) | hold_side.mp4 at the bottom (chest ~2 cm off the floor)   |
 | pull_up  | front_1 (normal), back_1, side_1 (dim)                            | hold_front.mp4 at the top (chin over bar)                 |
-| dip      | side_1 (normal), side_2 (dim), diag45_1                           | hold_side.mp4 at the bottom (upper arm parallel to floor) |
+| dip      | side_1 (normal), side_2 (normal), diag45_1 (dim)                  | hold_side.mp4 at the bottom (upper arm parallel to floor) |
 | squat    | side_1 (normal), side_2 (dim), diag45_1                           | hold_side.mp4 at the bottom (hip crease below knee)       |
 
-Each rep clip is `<view>_<take>.mp4`, for example `clips/push_up/side_1.mp4`.
+Each rep clip is `<view>_<take>.mp4` (or `.mov`, e.g. straight from an
+iPhone), for example `clips/push_up/side_1.mp4`. The hold-clip names above
+likewise accept `.mov`.
 Use one take in normal indoor light and one in dim light.

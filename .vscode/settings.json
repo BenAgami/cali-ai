@@ -2,5 +2,6 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.formatOnSave": true,
   "files.eol": "\n",
-  "prettier.requireConfig": true
+  "prettier.requireConfig": true,
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }

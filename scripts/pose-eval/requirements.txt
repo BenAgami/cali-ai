@@ -2,3 +2,4 @@ tensorflow==2.16.2
 mediapipe==0.10.14
 opencv-python==4.10.0.84
 numpy==1.26.4
+ruff==0.17.3
