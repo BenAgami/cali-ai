@@ -88,6 +88,10 @@ Recent decisions affecting current work:
 
 - Phase 8 added: Designing the user UI and UX
 
+### Roadmap Evolution
+
+- Phase 8 added: Designing the user UI and UX
+
 ### Pending Todos
 
 None yet.
