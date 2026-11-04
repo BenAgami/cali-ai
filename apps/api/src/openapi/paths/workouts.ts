@@ -3,6 +3,8 @@ import { z } from "zod";
 import { registry } from "../registry";
 import {
   CreateWorkoutBody,
+  GenerateWorkoutBody,
+  WorkoutGenerationPreviewResponse,
   UpdateWorkoutBody,
   WorkoutLogBody,
   WorkoutResponse,
@@ -68,7 +70,43 @@ registry.registerPath({
     201: successResponse(WorkoutResponse, "Workout created"),
     400: errorResponse("Validation error"),
     401: errorResponse("Unauthorized"),
-    404: errorResponse("Referenced exercise not found"),
+    404: errorResponse(
+      "Referenced exercise not found, or generationId does not belong to the user / did not succeed",
+    ),
+    409: errorResponse("generationId already saved (GENERATION_ALREADY_SAVED)"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/workouts/generate",
+  tags: ["Workouts"],
+  summary: "Generate a workout preview with AI (not saved)",
+  description:
+    "Synchronous. Save the preview via POST /workouts with its generationId.",
+  security: [bearerAuth],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: GenerateWorkoutBody } },
+    },
+  },
+  responses: {
+    200: successResponse(
+      WorkoutGenerationPreviewResponse,
+      "Generated workout preview",
+    ),
+    400: errorResponse("Validation error"),
+    401: errorResponse("Unauthorized"),
+    409: errorResponse("Generation already running (GENERATION_IN_PROGRESS)"),
+    428: errorResponse(
+      "Prerequisite missing (PROFILE_INCOMPLETE | BODY_METRICS_REQUIRED | AI_CONSENT_REQUIRED)",
+    ),
+    429: errorResponse("Daily generation cap reached (DAILY_LIMIT_REACHED)"),
+    503: errorResponse(
+      "Generation unavailable (GENERATION_FAILED | LLM_RATE_LIMITED | LLM_UNAVAILABLE | CATALOG_EMPTY)",
+    ),
     500: errorResponse("Internal server error"),
   },
 });

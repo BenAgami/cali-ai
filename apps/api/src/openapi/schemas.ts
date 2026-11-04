@@ -26,6 +26,8 @@ import {
   bodyMetricInputSchema,
   aiConsentSchema,
   saveBodyMetricResponseSchema,
+  generateWorkoutSchema,
+  workoutGenerationPreviewSchema,
 } from "@repo/common";
 
 import { Role, GoalStatus } from "@repo/db";
@@ -83,6 +85,10 @@ export const CreateWorkoutBody = registry.register(
 export const UpdateWorkoutBody = registry.register(
   "UpdateWorkoutBody",
   updateWorkoutSchema,
+);
+export const GenerateWorkoutBody = registry.register(
+  "GenerateWorkoutBody",
+  generateWorkoutSchema,
 );
 export const WorkoutLogBody = registry.register(
   "WorkoutLogBody",
@@ -297,6 +303,11 @@ export const ExerciseResponse = registry.register(
 export const WorkoutResponse = registry.register(
   "Workout",
   workoutWithExercisesSchema,
+);
+
+export const WorkoutGenerationPreviewResponse = registry.register(
+  "WorkoutGenerationPreview",
+  workoutGenerationPreviewSchema,
 );
 
 export const WorkoutLogResponse = registry.register(
