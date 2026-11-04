@@ -17,7 +17,10 @@ export const useRegister = () => {
       const result = await authApi.register(data);
       await setToken(result.token, result.refreshToken);
       const destination = returnTo?.startsWith("/") ? returnTo : "/";
-      router.replace(destination);
+      router.replace({
+        pathname: "/onboarding-body-metrics",
+        params: { returnTo: destination },
+      });
     } catch (err) {
       if (
         err instanceof ApiError &&
