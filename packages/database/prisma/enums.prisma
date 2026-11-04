@@ -54,3 +54,9 @@ enum AnalysisStage {
   WRITING_FEEDBACK
   COMPLETED
 }
+
+enum GenerationStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}

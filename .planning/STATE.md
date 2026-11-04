@@ -4,11 +4,11 @@ milestone: v1.0
 milestone_name: milestone
 status: unknown
 stopped_at: Phase 4 context gathered
-last_updated: "2026-11-04T08:57:38.852Z"
+last_updated: "2026-11-04T09:36:24.176Z"
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 0
-  total_plans: 10
+  total_plans: 21
   completed_plans: 9
 ---
 
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Users can record themselves doing calisthenics exercises and get actionable AI feedback on their form — what they did well and what to fix.
-**Current focus:** Phase 01 — infrastructure
+**Current focus:** Phase 04 — ai-workout-generation
 
 ## Current Position
 
-Phase: 01 (infrastructure) — EXECUTING
-Plan: 10 of 10
+Phase: 04 (ai-workout-generation) — EXECUTING
+Plan: 1 of 11
 
 ## Performance Metrics
 
@@ -98,6 +98,7 @@ None yet.
 - Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
 - OPEN BLOCKER (plan 01-04, roadmap criterion 6): the pose-model decision (MoveNet vs 33-point) is postponed because the developer is injured and cannot film the 16 shot-list clips. Task 1 (offline evaluator in `scripts/pose-eval/`) is done; Tasks 2 and 3 (clips, evaluation, `01-POSE-MODEL-DECISION.md`, Key Decisions row in PROJECT.md, `docs/architecture.md`) are pending. Phase 1 cannot be marked complete until this closes, and the decision must land before Phase 5 planning. Nothing else in Phase 1 depends on it; MoveNet Lightning stays the bundled default. Check that the capture schema does not cap keypoints at 17 before relying on that. Options if filming stays out of reach: have someone else perform the exercises, run a partial evaluation, or accept MoveNet Lightning explicitly as an override of D-21.
 - CONCERN (Phase 5, not started): `withTimeout` in `apps/api/src/utils/withTimeout.ts` only stops waiting; it cannot cancel the inner work, so a timed-out LLM call keeps running and is paid for, and only the guarded writes make its late result harmless. When the real LLM call replaces the `feedbackService` stub, change `withTimeout` to take `(signal) => Promise<T>` and pass an `AbortSignal` to the SDK request; keep the guarded writes either way. Also type `TimeoutError.code` as a union of the known codes (`ENQUEUE_TIMEOUT`, `LLM_TIMEOUT`) so a typo cannot silently never match.
+- Production deploys must run `yarn workspace @repo/db db:seed` after `db:migrate:deploy` so the `dip` exercise (Phase 4, D-14) exists; the seed is an idempotent upsert.
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
