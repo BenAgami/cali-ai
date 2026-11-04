@@ -15,6 +15,7 @@ import { useTheme } from "@src/context/ThemeContext";
 import { useProfileEdit } from "@src/hooks/useProfileEdit";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import AvatarPickerModal from "@src/components/AvatarPickerModal";
+import BodyMetricsForm from "@src/components/BodyMetricsForm";
 
 const ProfileEditScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -27,6 +28,8 @@ const ProfileEditScreen: React.FC = () => {
     avatarUri,
     experienceLevel,
     goalDraft,
+    bodyMetricsForm,
+    bodyMetricsError,
     isAvatarPickerVisible,
     setExperienceLevel,
     setGoalDraft,
@@ -227,6 +230,15 @@ const ProfileEditScreen: React.FC = () => {
               placeholderTextColor={colors.text + "66"}
             />
           </View>
+        </View>
+
+        {/* Body */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>Body</Text>
+          <BodyMetricsForm form={bodyMetricsForm} />
+          {bodyMetricsError && (
+            <Text style={styles.fieldError}>{bodyMetricsError}</Text>
+          )}
         </View>
 
         {/* Actions */}
