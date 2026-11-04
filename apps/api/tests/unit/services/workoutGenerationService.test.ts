@@ -82,7 +82,7 @@ const goodPlan = (): WorkoutPlanResult => ({
       },
     ],
   },
-  model: "claude-haiku-5-5",
+  model: "claude-sonnet-5-5",
   usage: { inputTokens: 10, outputTokens: 20 },
 });
 
@@ -201,8 +201,8 @@ describe("WorkoutGenerationService.generate ladder", () => {
 
     expect(provider.generateWorkoutPlan).toHaveBeenCalledTimes(1);
     expect(requestAt(provider, 0)).toMatchObject({
-      model: "claude-haiku-5-5",
-      effort: "low",
+      model: "claude-sonnet-5-5",
+      effort: "medium",
       timeoutMs: 15000,
       exerciseCodes: ["push_up", "pull_up", "plank"],
     });
@@ -218,14 +218,14 @@ describe("WorkoutGenerationService.generate ladder", () => {
       where: { id: GENERATION_ID },
       data: {
         status: "SUCCEEDED",
-        model: "claude-haiku-5-5",
+        model: "claude-sonnet-5-5",
         attempts: 1,
         completedAt: NOW,
       },
     });
     expect(preview).toMatchObject({
       generationId: GENERATION_ID,
-      model: "claude-haiku-5-5",
+      model: "claude-sonnet-5-5",
       name: "Upper body",
       note: null,
     });
@@ -233,12 +233,12 @@ describe("WorkoutGenerationService.generate ladder", () => {
     expect(preview.exercises[0].exercise).toEqual(catalogRows[0]);
   });
 
-  it("retries on haiku with validation feedback after an unknown code", async () => {
+  it("retries on the primary model with validation feedback after an unknown code", async () => {
     const provider = useProvider([badPlan(), goodPlan()]);
 
     await generate();
 
-    expect(requestAt(provider, 1).model).toBe("claude-haiku-5-5");
+    expect(requestAt(provider, 1).model).toBe("claude-sonnet-5-5");
     expect(requestAt(provider, 1).user).toContain(
       "Unknown exercise code: handstand",
     );
@@ -249,14 +249,14 @@ describe("WorkoutGenerationService.generate ladder", () => {
     );
   });
 
-  it("escalates to sonnet on the third attempt", async () => {
+  it("escalates to higher effort on the third attempt", async () => {
     const provider = useProvider([badPlan(), badPlan(), goodPlan()]);
 
     await generate();
 
     expect(requestAt(provider, 2)).toMatchObject({
       model: "claude-sonnet-5-5",
-      effort: "medium",
+      effort: "high",
       timeoutMs: 25000,
     });
   });

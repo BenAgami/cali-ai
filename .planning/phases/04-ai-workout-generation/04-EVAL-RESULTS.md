@@ -45,3 +45,14 @@ the user as a decision:
 - (c) Revise the prompt in `workoutPlanPrompt.ts` and/or rerun the eval (a rerun would help separate provider flakiness from quality).
 
 Latency rule: Haiku p50 is 3.1 s, well under 10 s, so no timeout default change is made.
+
+## Decision outcome (user, option b)
+
+Sonnet is now the primary model (changes D-16). Haiku is dropped from the
+default ladder; no further paid calls were made.
+
+- `LLM_MODEL_PRIMARY` default: `claude-sonnet-5-5`, `LLM_EFFORT_PRIMARY`: `medium` (as measured: 100% on all criteria, p50 2.4 s, max 5.7 s).
+- `LLM_MODEL_FALLBACK` default stays `claude-sonnet-5-5`; `LLM_EFFORT_FALLBACK` raised to `high` so the third rung escalates by effort rather than inventing a new model.
+- Timeouts unchanged (15 s / 25 s); Sonnet max latency 5.7 s fits, and the deadline invariant still holds.
+- Changed: `env.ts`, `.env.example`, `tests/unit/helpers/unitEnv.ts`, `env.test.ts`, `workoutGenerationService.test.ts`.
+- Open: Haiku timeouts/UNAVAILABLE were not re-run, so provider flakiness vs quality is unresolved.

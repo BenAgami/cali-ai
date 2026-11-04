@@ -171,10 +171,10 @@ describe("LLM and generation env", () => {
       R2_PUBLIC_DOMAIN: "cdn.example.com",
     });
 
-    expect(parsed.LLM_MODEL_PRIMARY).toBe("claude-haiku-5-5");
+    expect(parsed.LLM_MODEL_PRIMARY).toBe("claude-sonnet-5-5");
     expect(parsed.LLM_MODEL_FALLBACK).toBe("claude-sonnet-5-5");
-    expect(parsed.LLM_EFFORT_PRIMARY).toBe("low");
-    expect(parsed.LLM_EFFORT_FALLBACK).toBe("medium");
+    expect(parsed.LLM_EFFORT_PRIMARY).toBe("medium");
+    expect(parsed.LLM_EFFORT_FALLBACK).toBe("high");
     expect(parsed.LLM_PRIMARY_TIMEOUT_MS).toBe(15000);
     expect(parsed.LLM_FALLBACK_TIMEOUT_MS).toBe(25000);
     expect(parsed.LLM_MAX_TOKENS).toBe(2000);
