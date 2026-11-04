@@ -15,6 +15,7 @@ import {
   AI_ERROR_FALLBACK,
   AI_ERROR_MESSAGES,
 } from "@src/constants/aiMessages";
+import { setGeneratedPlan } from "@src/state/generatedPlanStore";
 import { generateWorkoutSchema, getMissingAiPrerequisites } from "@repo/common";
 import type {
   AiPrerequisiteCode,
@@ -181,8 +182,18 @@ export const useWorkoutGenerate = () => {
     );
   };
 
+  const editInBuilder = () => {
+    if (!preview) return;
+    setGeneratedPlan(preview);
+    router.push({
+      pathname: "/workout-builder",
+      params: { fromGeneration: "1" },
+    });
+  };
+
   return {
     loading: isLoading,
+    editInBuilder,
     step,
     experienceLevel,
     goalType,
