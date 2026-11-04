@@ -51,10 +51,10 @@ export const envSchema = z
       .min(1000)
       .default(15000),
     ANTHROPIC_API_KEY: z.string().min(1).optional(),
-    LLM_MODEL_PRIMARY: z.string().min(1).default("claude-haiku-5-5"),
+    LLM_MODEL_PRIMARY: z.string().min(1).default("claude-sonnet-5-5"),
     LLM_MODEL_FALLBACK: z.string().min(1).default("claude-sonnet-5-5"),
-    LLM_EFFORT_PRIMARY: z.enum(["low", "medium", "high"]).default("low"),
-    LLM_EFFORT_FALLBACK: z.enum(["low", "medium", "high"]).default("medium"),
+    LLM_EFFORT_PRIMARY: z.enum(["low", "medium", "high"]).default("medium"),
+    LLM_EFFORT_FALLBACK: z.enum(["low", "medium", "high"]).default("high"),
     LLM_PRIMARY_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
     LLM_FALLBACK_TIMEOUT_MS: z.coerce.number().int().min(1000).default(25000),
     LLM_MAX_TOKENS: z.coerce.number().int().min(256).max(8192).default(2000),
