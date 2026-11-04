@@ -196,7 +196,8 @@ Fields:
 - `full_name` TEXT.
 - `password_hash` TEXT.
 - `role` `Role` DEFAULT `USER`.
-- `experience_level` `ExperienceLevel` DEFAULT `BEGINNER`.
+- `experience_level` `ExperienceLevel` NULL (nullable; new users start unset and set it during onboarding or via Generate with AI).
+- `ai_consent_at` TIMESTAMPTZ NULL, `ai_consent_version` VARCHAR(20) NULL (consent to send profile data to the LLM provider).
 - `created_at` TIMESTAMPTZ DEFAULT `now()`.
 - `updated_at` TIMESTAMPTZ.
 
@@ -408,6 +409,27 @@ Indexes:
 
 - `idx_findings_result_type_order` on (`analysis_result_id`, `finding_type`, `sort_order`).
 - `idx_findings_code` on (`code`).
+
+### 4.8 `workout_generations`
+
+Purpose: audit and rate-limit record for each AI workout generation attempt.
+
+Fields:
+
+- `id` INT PK.
+- `user_id` INT FK -> `users(id)` ON DELETE CASCADE.
+- `status` `GenerationStatus` (`PENDING`, `SUCCEEDED`, `FAILED`) DEFAULT `PENDING`.
+- `goal_text` VARCHAR(500), `model` VARCHAR(80) NULL, `prompt_version` VARCHAR(40).
+- `attempts` INT DEFAULT 0, `error_code` VARCHAR(40) NULL.
+- `created_at`, `completed_at` TIMESTAMPTZ.
+
+Indexes: `(user_id, created_at DESC)`.
+
+Rules:
+
+- The daily cap counts all rows (any status) in a rolling 24h window.
+- `workouts.ai_model` (VARCHAR(80) NULL) and `workouts.generation_id` (INT NULL, UNIQUE, FK -> `workout_generations(id)` ON DELETE SET NULL) record provenance of saved AI plans.
+- `body_metrics` is now written from the profile/onboarding forms: append-only, skipped when height and weight are unchanged.
 
 ## 5. Smart To Add Now (Low Cost, High Future Value)
 
