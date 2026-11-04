@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-11-04T10:00:28.461Z"
+stopped_at: Completed 04-09-PLAN.md
+last_updated: "2026-11-04T10:36:33.107Z"
 progress:
   total_phases: 9
   completed_phases: 0
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 04 (ai-workout-generation) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Generate screen derives its step from getMissingAiPrerequisites; a 428 refetches the profile; consent copy lives in aiMessages.ts
 - [Phase 04]: Edited AI plans stay flagged: builder sends generationId on create only; disclaimer shows on Start when aiModel is non-null
 - [Phase 04]: Generation save: foreign/failed generationId is 404, double save 409 GENERATION_ALREADY_SAVED; edits never clear aiModel
+- [Phase 04]: Sonnet (claude-sonnet-5-5, effort medium) is primary per D-22 eval; fallback rung is Sonnet at high effort. Haiku missed thresholds (58% catalogValid, 33% levelDiffers) with timeouts/UNAVAILABLE.
 
 ### Roadmap Evolution
 
@@ -120,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-04T10:00:28.455Z
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-11-04T10:36:33.101Z
+Stopped at: Completed 04-09-PLAN.md
 Resume file: None
