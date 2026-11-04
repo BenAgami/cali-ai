@@ -122,6 +122,19 @@ const WorkoutGenerateScreen: React.FC = () => {
               styles.secondary,
               { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
             ]}
+            onPress={g.editInBuilder}
+            disabled={g.saving || g.generating}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.secondaryText, { color: colors.text }]}>
+              Edit in builder
+            </Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.secondary,
+              { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
+            ]}
             onPress={g.regenerate}
             disabled={g.saving || g.generating}
             accessibilityRole="button"
