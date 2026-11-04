@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-08-PLAN.md
-last_updated: "2026-11-04T09:54:16.954Z"
+stopped_at: Completed 04-10-PLAN.md
+last_updated: "2026-11-04T09:57:37.778Z"
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 21
-  completed_plans: 16
+  completed_plans: 17
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 04 (ai-workout-generation) — EXECUTING
-Plan: 8 of 11
+Plan: 9 of 11
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ _Updated after each plan completion_
 | Phase 04 P04 | 20min | 2 tasks | 8 files |
 | Phase 04 P05 | 20min | 2 tasks | 5 files |
 | Phase 04 P08 | 20min | 3 tasks | 13 files |
+| Phase 04 P10 | 10min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,7 @@ Recent decisions affecting current work:
 - [Phase 04]: LLM calls use SDK signal+timeout with maxRetries 0; vendor errors normalized to five LlmError codes
 - [Phase 04]: Plan validator re-checks numeric ranges server-side; failed generations count toward the daily cap; a shared AbortController deadline replaces withTimeout
 - [Phase 04]: Generate screen derives its step from getMissingAiPrerequisites; a 428 refetches the profile; consent copy lives in aiMessages.ts
+- [Phase 04]: Edited AI plans stay flagged: builder sends generationId on create only; disclaimer shows on Start when aiModel is non-null
 
 ### Roadmap Evolution
 
@@ -116,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-04T09:54:16.948Z
-Stopped at: Completed 04-08-PLAN.md
+Last session: 2026-11-04T09:57:37.771Z
+Stopped at: Completed 04-10-PLAN.md
 Resume file: None
