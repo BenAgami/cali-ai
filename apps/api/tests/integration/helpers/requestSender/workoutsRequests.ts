@@ -19,6 +19,19 @@ export const createWorkout = async (
     token,
   ).send(data);
 
+export const postGenerateWorkout = async (
+  app: Application,
+  body: object,
+  token?: string,
+) =>
+  withAuth(
+    supertest
+      .agent(app)
+      .post("/api/workouts/generate")
+      .set("Content-Type", "application/json"),
+    token,
+  ).send(body);
+
 export const listWorkouts = async (
   app: Application,
   token: string | undefined,

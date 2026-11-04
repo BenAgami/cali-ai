@@ -50,6 +50,8 @@ describe("POST /api/workouts", () => {
     expect(response.body.data.exercises[0].position).toBe(0);
     expect(response.body.data.exercises[0].sets).toBe(3);
     expect(response.body.data.exercises[0].reps).toBe(10);
+    expect(response.body.data.aiModel).toBeNull();
+    expect(response.body.data.generationId).toBeNull();
 
     const dbExercises = await prisma.workoutExercise.findMany({
       where: { workoutId: response.body.data.id },
