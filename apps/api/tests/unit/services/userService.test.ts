@@ -42,8 +42,45 @@ describe("UserService.getUserByUuid", () => {
     );
   });
 
+  it("flattens the latest body metric and selects consent fields", async () => {
+    const metric = { heightCm: 180, weightKg: 75, createdAt: new Date() };
+    prisma.user.findUnique.mockResolvedValue({
+      id: 1,
+      goals: [],
+      bodyMetrics: [metric],
+    });
+
+    const result = await userService.getUserByUuid("uuid-1");
+
+    const select = prisma.user.findUnique.mock.calls[0][0].select;
+    expect(select.aiConsentAt).toBe(true);
+    expect(select.aiConsentVersion).toBe(true);
+    expect(select.bodyMetrics).toMatchObject({
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 1,
+    });
+    expect(result).not.toHaveProperty("bodyMetrics");
+    expect(result.bodyMetric).toEqual(metric);
+  });
+
+  it("returns a null bodyMetric when none was saved", async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 1,
+      goals: [],
+      bodyMetrics: [],
+    });
+
+    const result = await userService.getUserByUuid("uuid-1");
+
+    expect(result.bodyMetric).toBeNull();
+  });
+
   it("selects only the most recent active goal", async () => {
-    prisma.user.findUnique.mockResolvedValue({ id: 1, goals: [] });
+    prisma.user.findUnique.mockResolvedValue({
+      id: 1,
+      goals: [],
+      bodyMetrics: [],
+    });
 
     await userService.getUserByUuid("uuid-1");
 
@@ -126,6 +163,26 @@ describe("UserService.updateProfile", () => {
     await expect(
       userService.updateProfile("uuid-1", { username: "x" }),
     ).rejects.toBe(error);
+  });
+});
+
+describe("UserService.recordAiConsent", () => {
+  it("stamps the consent time and version for the user", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-04T10:00:00.000Z"));
+    prisma.user.update.mockResolvedValue({});
+
+    await userService.recordAiConsent("uuid-1", { version: "2026-11-04" });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { uuid: "uuid-1" },
+      data: {
+        aiConsentAt: new Date("2026-11-04T10:00:00.000Z"),
+        aiConsentVersion: "2026-11-04",
+      },
+      select: { aiConsentAt: true, aiConsentVersion: true },
+    });
+    vi.useRealTimers();
   });
 });
 

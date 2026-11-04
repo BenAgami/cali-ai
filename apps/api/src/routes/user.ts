@@ -1,7 +1,12 @@
 import { Router } from "express";
 import z from "zod";
 
-import { updateProfileSchema, upsertGoalSchema } from "@repo/common";
+import {
+  aiConsentSchema,
+  bodyMetricInputSchema,
+  updateProfileSchema,
+  upsertGoalSchema,
+} from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
 import { authenticateToken } from "../middlewares/auth";
@@ -12,6 +17,8 @@ import {
   updateMyProfile,
   getAvatarUploadUrl,
   createMyGoal,
+  saveMyBodyMetrics,
+  recordMyAiConsent,
 } from "../controllers/user";
 
 const router: Router = Router();
@@ -48,6 +55,28 @@ router.post(
   authenticateToken,
   validateSchema(z.object({ body: upsertGoalSchema })),
   createMyGoal,
+);
+
+/**
+ * POST /me/body-metrics
+ * Save height and weight (new row only when changed)
+ */
+router.post(
+  "/me/body-metrics",
+  authenticateToken,
+  validateSchema(z.object({ body: bodyMetricInputSchema })),
+  saveMyBodyMetrics,
+);
+
+/**
+ * POST /me/ai-consent
+ * Record acceptance of the AI privacy notice
+ */
+router.post(
+  "/me/ai-consent",
+  authenticateToken,
+  validateSchema(z.object({ body: aiConsentSchema })),
+  recordMyAiConsent,
 );
 
 /**

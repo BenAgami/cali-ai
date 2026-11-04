@@ -5,6 +5,10 @@ import { registry } from "../registry";
 import {
   UpdateProfileBody,
   UpsertGoalBody,
+  BodyMetricBody,
+  AiConsentBody,
+  SaveBodyMetricResponse,
+  AiConsentResponse,
   UserProfileResponse,
   UpdateProfileResponse,
   GoalResponse,
@@ -81,6 +85,50 @@ registry.registerPath({
     400: errorResponse("Validation error"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("User not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/body-metrics",
+  tags: ["Users"],
+  summary: "Save height and weight for the current user",
+  security: [bearerAuth],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: BodyMetricBody } },
+    },
+  },
+  responses: {
+    201: successResponse(SaveBodyMetricResponse, "Body metrics saved"),
+    200: successResponse(
+      SaveBodyMetricResponse,
+      "Body metrics unchanged, no new row created",
+    ),
+    400: errorResponse("Validation error"),
+    401: errorResponse("Unauthorized"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/users/me/ai-consent",
+  tags: ["Users"],
+  summary: "Record acceptance of the AI privacy notice",
+  security: [bearerAuth],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: AiConsentBody } },
+    },
+  },
+  responses: {
+    200: successResponse(AiConsentResponse, "AI consent recorded"),
+    400: errorResponse("Validation error"),
+    401: errorResponse("Unauthorized"),
     500: errorResponse("Internal server error"),
   },
 });
