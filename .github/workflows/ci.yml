@@ -11,6 +11,7 @@ env:
   REDIS_URL: "redis://localhost:6379"
   JWT_SECRET: "ci-only-secret-do-not-use-in-prod-aaaaaaaaaaaaaaaaaaaaaaaaaa"
   JWT_EXPIRES_IN: "15m"
+  ANTHROPIC_API_KEY: "ci-only-dummy-key-not-a-real-key"
   REFRESH_TOKEN_EXPIRES_IN: "7d"
   CORS_ALLOWED_ORIGINS: "http://localhost:8081"
   R2_ACCOUNT_ID: "ci-account-id"
