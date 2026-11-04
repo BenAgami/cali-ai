@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase-complete
-stopped_at: Phase 01 complete; next is Phase 4 (AI Workout Generation)
-last_updated: "2026-11-08T13:00:00.000Z"
+status: unknown
+stopped_at: Phase 4 context gathered
+last_updated: "2026-11-04T09:36:24.176Z"
 progress:
-  total_phases: 8
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 9
+  completed_phases: 0
+  total_plans: 21
+  completed_plans: 9
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Users can record themselves doing calisthenics exercises and get actionable AI feedback on their form — what they did well and what to fix.
-**Current focus:** Phase 04 — AI workout generation (Phase 01 closed 2026-11-08)
+**Current focus:** Phase 04 — ai-workout-generation
 
 ## Current Position
 
-Phase: 01 (infrastructure) — COMPLETE (2026-11-08)
-Next: Phase 04 (AI workout generation); Phase 05 integrates BlazePose on device
+Phase: 04 (ai-workout-generation) — EXECUTING
+Plan: 1 of 11
 
 ## Performance Metrics
 
@@ -88,10 +88,6 @@ Recent decisions affecting current work:
 
 - Phase 8 added: Designing the user UI and UX
 
-### Roadmap Evolution
-
-- Phase 8 added: Designing the user UI and UX
-
 ### Pending Todos
 
 None yet.
@@ -99,14 +95,15 @@ None yet.
 ### Blockers/Concerns
 
 - INFRA-05 (gate passed 2026-10-22, plan 01-03): the Android dev build runs the MoveNet pose pass in a vision-camera frame processor (user-verified; device, keypoint count and mean score not reported), and the EAS iOS `development-simulator` build compiles. iOS runtime verification remains an accepted, deferred risk (no Mac or Apple developer account).
-- Open decisions: pricing model and per-analysis cost cap; keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
-- RESOLVED (plan 01-04, roadmap criterion 6, 2026-11-08): pose model is BlazePose Full (33 points), passing 4/4 exercises vs 1/4 for MoveNet Lightning and Thunder; see `phases/01-infrastructure/01-POSE-MODEL-DECISION.md`. Phase 5 must integrate BlazePose on device (no official fast-tflite recipe) and recheck low light (pull-up has no dim take).
+- Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
+- OPEN BLOCKER (plan 01-04, roadmap criterion 6): the pose-model decision (MoveNet vs 33-point) is postponed because the developer is injured and cannot film the 16 shot-list clips. Task 1 (offline evaluator in `scripts/pose-eval/`) is done; Tasks 2 and 3 (clips, evaluation, `01-POSE-MODEL-DECISION.md`, Key Decisions row in PROJECT.md, `docs/architecture.md`) are pending. Phase 1 cannot be marked complete until this closes, and the decision must land before Phase 5 planning. Nothing else in Phase 1 depends on it; MoveNet Lightning stays the bundled default. Check that the capture schema does not cap keypoints at 17 before relying on that. Options if filming stays out of reach: have someone else perform the exercises, run a partial evaluation, or accept MoveNet Lightning explicitly as an override of D-21.
 - CONCERN (Phase 5, not started): `withTimeout` in `apps/api/src/utils/withTimeout.ts` only stops waiting; it cannot cancel the inner work, so a timed-out LLM call keeps running and is paid for, and only the guarded writes make its late result harmless. When the real LLM call replaces the `feedbackService` stub, change `withTimeout` to take `(signal) => Promise<T>` and pass an `AbortSignal` to the SDK request; keep the guarded writes either way. Also type `TimeoutError.code` as a union of the known codes (`ENQUEUE_TIMEOUT`, `LLM_TIMEOUT`) so a typo cannot silently never match.
+- Production deploys must run `yarn workspace @repo/db db:seed` after `db:migrate:deploy` so the `dip` exercise (Phase 4, D-14) exists; the seed is an idempotent upsert.
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
 ## Session Continuity
 
-Last session: 2026-11-08
-Stopped at: Phase 01 complete (verification passed, UAT 3/3)
-Resume file: None
+Last session: 2026-11-04T08:57:38.817Z
+Stopped at: Phase 4 context gathered
+Resume file: .planning/phases/04-ai-workout-generation/04-CONTEXT.md
