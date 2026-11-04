@@ -8,6 +8,7 @@ export const USER_ROUTES = {
   me: "/api/users/me",
   avatarUploadUrl: "/api/users/me/avatar-upload-url",
   goals: "/api/users/me/goals",
+  bodyMetrics: "/api/users/me/body-metrics",
 } as const;
 
 export const EXERCISE_ROUTES = {

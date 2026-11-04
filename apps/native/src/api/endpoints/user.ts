@@ -1,4 +1,6 @@
 import type {
+  BodyMetricInput,
+  SaveBodyMetricResponse,
   UserProfile,
   UpdateProfileValues,
   UpsertGoalValues,
@@ -43,4 +45,7 @@ export const userApi = {
 
   upsertGoal: (data: UpsertGoalValues): Promise<void> =>
     apiClient.post(USER_ROUTES.goals, data),
+
+  saveBodyMetrics: (data: BodyMetricInput): Promise<SaveBodyMetricResponse> =>
+    apiClient.post<SaveBodyMetricResponse>(USER_ROUTES.bodyMetrics, data),
 };
