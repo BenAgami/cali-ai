@@ -1,10 +1,16 @@
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { UpdateProfileValues, UpsertGoalValues } from "@repo/common";
+import {
+  AiConsentValues,
+  BodyMetricInput,
+  UpdateProfileValues,
+  UpsertGoalValues,
+} from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import userService from "../services/userService";
+import bodyMetricService from "../services/bodyMetricService";
 
 type GetUserProfileParams = {
   uuid: string;
@@ -96,5 +102,45 @@ export const createMyGoal = async (req: Request, res: Response) => {
     success: true,
     message: "Goal created successfully",
     data: goal,
+  });
+};
+
+/**
+ * Save the current user's height and weight (skipped when unchanged)
+ * @route POST /api/users/me/body-metrics
+ */
+export const saveMyBodyMetrics = async (req: Request, res: Response) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const result = await bodyMetricService.saveIfChanged(
+    userUuid,
+    req.body as BodyMetricInput,
+  );
+
+  res.status(result.created ? StatusCodes.CREATED : StatusCodes.OK).json({
+    success: true,
+    message: result.created ? "Body metrics saved" : "Body metrics unchanged",
+    data: result,
+  });
+};
+
+/**
+ * Record the current user's acceptance of the AI privacy notice
+ * @route POST /api/users/me/ai-consent
+ */
+export const recordMyAiConsent = async (req: Request, res: Response) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const consent = await userService.recordAiConsent(
+    userUuid,
+    req.body as AiConsentValues,
+  );
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "AI consent recorded",
+    data: consent,
   });
 };

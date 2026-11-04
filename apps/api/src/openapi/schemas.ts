@@ -23,6 +23,9 @@ import {
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
   workoutSessionResponseSchema,
+  bodyMetricInputSchema,
+  aiConsentSchema,
+  saveBodyMetricResponseSchema,
 } from "@repo/common";
 
 import { Role, GoalStatus } from "@repo/db";
@@ -64,6 +67,14 @@ export const UpdateProfileBody = registry.register(
 export const UpsertGoalBody = registry.register(
   "UpsertGoalBody",
   upsertGoalSchema,
+);
+export const BodyMetricBody = registry.register(
+  "BodyMetricBody",
+  bodyMetricInputSchema,
+);
+export const AiConsentBody = registry.register(
+  "AiConsentBody",
+  aiConsentSchema,
 );
 export const CreateWorkoutBody = registry.register(
   "CreateWorkoutBody",
@@ -219,6 +230,19 @@ export const UserProfileResponse = registry.register(
       .nullable(),
     aiConsentVersion: z.string().nullable(),
     aiConsentAt: isoDateTime().nullable(),
+  }),
+);
+
+export const SaveBodyMetricResponse = registry.register(
+  "SaveBodyMetricResponse",
+  saveBodyMetricResponseSchema,
+);
+
+export const AiConsentResponse = registry.register(
+  "AiConsentResponse",
+  z.object({
+    aiConsentAt: isoDateTime(),
+    aiConsentVersion: z.string(),
   }),
 );
 
