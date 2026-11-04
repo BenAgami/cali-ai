@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-11-04T09:41:43.630Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-11-04T09:43:13.932Z"
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 21
-  completed_plans: 10
+  completed_plans: 11
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 04 (ai-workout-generation) — EXECUTING
-Plan: 2 of 11
+Plan: 3 of 11
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ _Updated after each plan completion_
 | Phase 01 P07 | 30min | 3 tasks | 18 files |
 | Phase 01 P09 | 30min | 3 tasks | 12 files |
 | Phase 01 P10 | multi-session | 3 tasks | 11 files |
+| Phase 04 P01 | 20min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Workers run in the API process on dedicated Redis connections; session FAILED only on final attempt, capture errors are UnrecoverableError; reaper is a BullMQ job scheduler
 - [Phase 01]: Capture/retry served at /api/sessions/:id/capture and /analysis/retry; retry reuses stored capture with a new job id; failed enqueue (5s timeout) fails the run ENQUEUE_FAILED and returns 503
 - [Phase 01]: SSE stream orchestration lives in analysisStreamService (subscribe-then-read, monotonic filter, terminal close); 404/409 thrown before headers, post-flush errors logged and stream closed
+- [Phase 04]: Saved workout is AI-generated iff aiModel non-null; ANTHROPIC_API_KEY required only in production
 
 ### Roadmap Evolution
 
@@ -104,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-04T09:41:43.624Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-11-04T09:43:13.926Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None

@@ -32,7 +32,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **WKT-03**: User can edit and delete their saved workouts
 - [x] **WKT-04**: User can start a workout session from a saved workout
 - [x] **WKT-05**: User can generate a workout from a natural language goal description (AI-generated)
-- [ ] **WKT-06**: AI-generated workouts are validated against the exercise catalog (no hallucinated exercise names)
+- [x] **WKT-06**: AI-generated workouts are validated against the exercise catalog (no hallucinated exercise names)
 - [x] **WKT-07**: AI-generated workouts respect user fitness level and goal from profile
 
 ### AI Form Analysis — Post-Set
@@ -137,7 +137,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKT-03      | Phase 3 | Complete |
 | WKT-04      | Phase 3 | Complete |
 | WKT-05      | Phase 4 | Complete |
-| WKT-06      | Phase 4 | Pending  |
+| WKT-06      | Phase 4 | Complete |
 | WKT-07      | Phase 4 | Complete |
 | FORM-01     | Phase 5 | Pending  |
 | FORM-02     | Phase 5 | Pending  |
