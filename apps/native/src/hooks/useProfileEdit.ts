@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { userApi, ApiError, userKeys } from "@src/api";
 import { useProfile } from "@src/hooks/queries/useProfile";
+import { useBodyMetricsForm } from "@src/hooks/useBodyMetricsForm";
 import type { GoalDraft } from "@src/types/user";
 import type { ExperienceLevel } from "@repo/common";
 
@@ -32,6 +33,19 @@ export const useProfileEdit = () => {
   const seededRef = useRef(false);
 
   const { data, isLoading } = useProfile();
+
+  const initialBodyMetric = useMemo(
+    () =>
+      data?.bodyMetric
+        ? {
+            heightCm: data.bodyMetric.heightCm,
+            weightKg: data.bodyMetric.weightKg,
+          }
+        : null,
+    [data?.bodyMetric],
+  );
+  const bodyMetricsForm = useBodyMetricsForm(initialBodyMetric);
+  const [bodyMetricsError, setBodyMetricsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data || seededRef.current) return;
@@ -75,6 +89,15 @@ export const useProfileEdit = () => {
             : {}),
           ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
         });
+      }
+
+      // Metrics are append-only: clearing both fields is a no-op, and an
+      // unchanged save sends no request.
+      if (!bodyMetricsForm.isEmpty) {
+        const validated = bodyMetricsForm.validate();
+        if (validated.ok && bodyMetricsForm.isChangedFrom(initialBodyMetric)) {
+          await userApi.saveBodyMetrics(validated.data);
+        }
       }
     },
     onSuccess: () => {
@@ -173,6 +196,14 @@ export const useProfileEdit = () => {
       return;
     }
     setUsernameError(null);
+    if (!bodyMetricsForm.isEmpty) {
+      const validated = bodyMetricsForm.validate();
+      if (!validated.ok) {
+        setBodyMetricsError(validated.message);
+        return;
+      }
+    }
+    setBodyMetricsError(null);
     saveMutation.mutate();
   };
 
@@ -185,6 +216,8 @@ export const useProfileEdit = () => {
     avatarUri,
     experienceLevel,
     goalDraft,
+    bodyMetricsForm,
+    bodyMetricsError,
     isAvatarPickerVisible,
     setExperienceLevel,
     setGoalDraft,
