@@ -102,8 +102,8 @@ Plans:
 
 - [x] 04-01-PLAN.md — Prisma migration (nullable level, AI consent, WorkoutGeneration, Workout provenance), dip seed, ApiError code + 428/429 errors, LLM/generation env vars
 - [x] 04-02-PLAN.md — Shared @repo/common contracts (body metrics, AI prerequisites/consent, generation preview, workout provenance) and nullable-level ripple
-- [ ] 04-03-PLAN.md — bodyMetricService (append-only, skip unchanged), shared AI prerequisite gate, POST /me/body-metrics and /me/ai-consent, extended GET /me
-- [ ] 04-04-PLAN.md — LlmProvider interface, Anthropic structured-output adapter with error normalization, versioned prompt builder
+- [x] 04-03-PLAN.md — bodyMetricService (append-only, skip unchanged), shared AI prerequisite gate, POST /me/body-metrics and /me/ai-consent, extended GET /me
+- [x] 04-04-PLAN.md — LlmProvider interface, Anthropic structured-output adapter with error normalization, versioned prompt builder
 - [ ] 04-05-PLAN.md — validateGeneratedPlan + workoutGenerationService (gate, daily cap, in-flight guard, Haiku/Haiku/Sonnet ladder, generation row)
 - [ ] 04-06-PLAN.md — POST /api/workouts/generate, save-with-provenance on POST /api/workouts, OpenAPI, integration tests
 - [x] 04-07-PLAN.md — Native ApiError code + timeouts, shared BodyMetricsForm with region units, onboarding step, profile-edit height/weight
