@@ -155,7 +155,7 @@ const LoginUser = z.object({
   fullName: z.string(),
   role: RoleEnum,
   avatarUrl: z.string().nullable(),
-  experienceLevel: ExperienceLevelEnum,
+  experienceLevel: ExperienceLevelEnum.nullable(),
   createdAt: isoDateTime(),
   updatedAt: isoDateTime(),
 });
@@ -205,11 +205,20 @@ export const UserProfileResponse = registry.register(
     fullName: z.string(),
     username: z.string(),
     avatarUrl: z.string().nullable(),
-    experienceLevel: ExperienceLevelEnum,
+    experienceLevel: ExperienceLevelEnum.nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
     role: RoleEnum,
     goals: z.array(GoalSummary),
+    bodyMetric: z
+      .object({
+        heightCm: z.number(),
+        weightKg: z.number(),
+        createdAt: isoDateTime(),
+      })
+      .nullable(),
+    aiConsentVersion: z.string().nullable(),
+    aiConsentAt: isoDateTime().nullable(),
   }),
 );
 
@@ -221,7 +230,7 @@ export const UpdateProfileResponse = registry.register(
     email: z.email(),
     fullName: z.string(),
     avatarUrl: z.string().nullable(),
-    experienceLevel: ExperienceLevelEnum,
+    experienceLevel: ExperienceLevelEnum.nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
     role: RoleEnum,

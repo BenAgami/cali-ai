@@ -20,7 +20,7 @@ export const useProfileEdit = () => {
   const [charCount, setCharCount] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [experienceLevel, setExperienceLevel] =
-    useState<ExperienceLevel>("BEGINNER");
+    useState<ExperienceLevel | null>(null);
   const [initialGoal, setInitialGoal] = useState<GoalDraft | null>(null);
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({
     goalType: "STRENGTH",
@@ -57,7 +57,7 @@ export const useProfileEdit = () => {
     mutationFn: async () => {
       await userApi.updateProfile({
         username: username.trim(),
-        experienceLevel,
+        ...(experienceLevel ? { experienceLevel } : {}),
       });
 
       const hasGoalChanged =
