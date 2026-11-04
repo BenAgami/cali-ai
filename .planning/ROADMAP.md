@@ -108,9 +108,9 @@ Plans:
 - [x] 04-06-PLAN.md — POST /api/workouts/generate, save-with-provenance on POST /api/workouts, OpenAPI, integration tests
 - [x] 04-07-PLAN.md — Native ApiError code + timeouts, shared BodyMetricsForm with region units, onboarding step, profile-edit height/weight
 - [x] 04-08-PLAN.md — Native Generate with AI screen: inline prerequisites, privacy notice, goal chips, preview with disclaimer, Save/Regenerate
-- [ ] 04-09-PLAN.md — Golden-set eval of Haiku vs Sonnet (D-22), latency/token spike, model default decision
+- [x] 04-09-PLAN.md — Golden-set eval of Haiku vs Sonnet (D-22), latency/token spike, model default decision
 - [x] 04-10-PLAN.md — Edit-in-builder hand-off keeping AI provenance, disclaimer on Start for AI workouts
-- [ ] 04-11-PLAN.md — Full CI gates, docs update, on-device verification checkpoint
+- [x] 04-11-PLAN.md — Full CI gates, docs update, on-device verification checkpoint
 
 ### Phase 5: AI Form Analysis (Camera + Post-Set)
 
