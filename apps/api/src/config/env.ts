@@ -50,8 +50,41 @@ export const envSchema = z
       .int()
       .min(1000)
       .default(15000),
+    ANTHROPIC_API_KEY: z.string().min(1).optional(),
+    LLM_MODEL_PRIMARY: z.string().min(1).default("claude-haiku-5-5"),
+    LLM_MODEL_FALLBACK: z.string().min(1).default("claude-sonnet-5-5"),
+    LLM_EFFORT_PRIMARY: z.enum(["low", "medium", "high"]).default("low"),
+    LLM_EFFORT_FALLBACK: z.enum(["low", "medium", "high"]).default("medium"),
+    LLM_PRIMARY_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
+    LLM_FALLBACK_TIMEOUT_MS: z.coerce.number().int().min(1000).default(25000),
+    LLM_MAX_TOKENS: z.coerce.number().int().min(256).max(8192).default(2000),
+    AI_GENERATION_DAILY_CAP: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(1000)
+      .default(10),
+    AI_GENERATION_DEADLINE_MS: z.coerce.number().int().min(5000).default(60000),
   })
   .superRefine((v, ctx) => {
+    if (v.NODE_ENV === "production" && !v.ANTHROPIC_API_KEY) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ANTHROPIC_API_KEY"],
+        message: "ANTHROPIC_API_KEY is required in production",
+      });
+    }
+
+    const minDeadline =
+      2 * v.LLM_PRIMARY_TIMEOUT_MS + v.LLM_FALLBACK_TIMEOUT_MS;
+    if (v.AI_GENERATION_DEADLINE_MS < minDeadline) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["AI_GENERATION_DEADLINE_MS"],
+        message: `AI_GENERATION_DEADLINE_MS must cover two primary attempts and one fallback attempt (${minDeadline} ms)`,
+      });
+    }
+
     const budget =
       v.ANALYSIS_MAX_ATTEMPTS * v.ANALYSIS_LLM_TIMEOUT_MS +
       v.ANALYSIS_BACKOFF_DELAY_MS * (2 ** (v.ANALYSIS_MAX_ATTEMPTS - 1) - 1) +
@@ -108,6 +141,20 @@ export const env = {
     llmTimeoutMs: parsedData.ANALYSIS_LLM_TIMEOUT_MS,
     stuckTimeoutMs: parsedData.ANALYSIS_STUCK_TIMEOUT_MS,
     reaperIntervalMs: parsedData.ANALYSIS_REAPER_INTERVAL_MS,
+  },
+  llm: {
+    apiKey: parsedData.ANTHROPIC_API_KEY,
+    primaryModel: parsedData.LLM_MODEL_PRIMARY,
+    fallbackModel: parsedData.LLM_MODEL_FALLBACK,
+    primaryEffort: parsedData.LLM_EFFORT_PRIMARY,
+    fallbackEffort: parsedData.LLM_EFFORT_FALLBACK,
+    primaryTimeoutMs: parsedData.LLM_PRIMARY_TIMEOUT_MS,
+    fallbackTimeoutMs: parsedData.LLM_FALLBACK_TIMEOUT_MS,
+    maxTokens: parsedData.LLM_MAX_TOKENS,
+  },
+  aiGeneration: {
+    dailyCap: parsedData.AI_GENERATION_DAILY_CAP,
+    deadlineMs: parsedData.AI_GENERATION_DEADLINE_MS,
   },
   r2: {
     accountId: parsedData.R2_ACCOUNT_ID,

@@ -159,6 +159,48 @@ describe("envSchema", () => {
   });
 });
 
+describe("LLM and generation env", () => {
+  it("applies the documented defaults", () => {
+    const parsed = envSchema.parse({
+      DATABASE_URL: "postgresql://u:p@127.0.0.1:1/db?schema=public",
+      JWT_SECRET: "a".repeat(32),
+      R2_ACCOUNT_ID: "account",
+      R2_ACCESS_KEY_ID: "access-key",
+      R2_SECRET_ACCESS_KEY: "secret-key",
+      R2_BUCKET_NAME: "bucket",
+      R2_PUBLIC_DOMAIN: "cdn.example.com",
+    });
+
+    expect(parsed.LLM_MODEL_PRIMARY).toBe("claude-haiku-5-5");
+    expect(parsed.LLM_MODEL_FALLBACK).toBe("claude-sonnet-5-5");
+    expect(parsed.LLM_EFFORT_PRIMARY).toBe("low");
+    expect(parsed.LLM_EFFORT_FALLBACK).toBe("medium");
+    expect(parsed.LLM_PRIMARY_TIMEOUT_MS).toBe(15000);
+    expect(parsed.LLM_FALLBACK_TIMEOUT_MS).toBe(25000);
+    expect(parsed.LLM_MAX_TOKENS).toBe(2000);
+    expect(parsed.AI_GENERATION_DAILY_CAP).toBe(10);
+    expect(parsed.AI_GENERATION_DEADLINE_MS).toBe(60000);
+  });
+
+  it("requires ANTHROPIC_API_KEY in production", () => {
+    expectIssueOn("ANTHROPIC_API_KEY", { NODE_ENV: "production" });
+  });
+
+  it("allows a missing ANTHROPIC_API_KEY in development", () => {
+    expect(() => parse({ NODE_ENV: "development" })).not.toThrow();
+  });
+
+  it("rejects a deadline shorter than two primary plus one fallback attempt", () => {
+    expectIssueOn("AI_GENERATION_DEADLINE_MS", {
+      AI_GENERATION_DEADLINE_MS: "54000",
+    });
+  });
+
+  it("rejects an unknown effort level", () => {
+    expectIssueOn("LLM_EFFORT_PRIMARY", { LLM_EFFORT_PRIMARY: "extreme" });
+  });
+});
+
 describe("unit project env", () => {
   it("supplies inline values for exactly the vars envSchema declares", () => {
     expect(Object.keys(unitEnv).sort()).toEqual(
