@@ -6,3 +6,6 @@ export * from "./validations/exercise";
 export * from "./validations/pagination";
 export * from "./validations/analysis";
 export * from "./validations/poseCapture";
+export * from "./validations/bodyMetric";
+export * from "./validations/aiPrerequisites";
+export * from "./validations/workoutGeneration";
