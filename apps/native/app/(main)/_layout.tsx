@@ -14,6 +14,15 @@ const MainLayout: React.FC = () => {
         options={{ headerShown: true, title: "Edit Profile" }}
       />
       <Stack.Screen
+        name="onboarding-body-metrics"
+        options={{
+          headerShown: true,
+          title: "About you",
+          headerBackVisible: false,
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
         name="exercise-catalog"
         options={{ headerShown: true, title: "Exercises" }}
       />
