@@ -62,3 +62,31 @@ export const postMyGoal = async (
 
   return request;
 };
+
+export const postMyBodyMetrics = async (
+  app: Application,
+  body: Record<string, unknown>,
+  token?: string,
+) => {
+  const request = supertest(app).post("/api/users/me/body-metrics").send(body);
+
+  if (token) {
+    request.set("Authorization", `Bearer ${token}`);
+  }
+
+  return request;
+};
+
+export const postMyAiConsent = async (
+  app: Application,
+  body: Record<string, unknown>,
+  token?: string,
+) => {
+  const request = supertest(app).post("/api/users/me/ai-consent").send(body);
+
+  if (token) {
+    request.set("Authorization", `Bearer ${token}`);
+  }
+
+  return request;
+};
