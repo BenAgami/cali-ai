@@ -3,12 +3,14 @@ import { StatusCodes } from "http-status-codes";
 
 import type {
   CreateWorkoutValues,
+  GenerateWorkoutValues,
   UpdateWorkoutValues,
   WorkoutLogValues,
 } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import workoutService from "../services/workoutService";
+import workoutGenerationService from "../services/workoutGenerationService";
 
 type ListWorkoutsQuery = {
   limit?: number;
@@ -141,5 +143,24 @@ export const startWorkout = async (
     success: true,
     message: "Workout started successfully",
     data: log,
+  });
+};
+
+/**
+ * Generate an AI workout preview
+ * @route POST /api/workouts/generate
+ */
+export const generateWorkout = async (
+  req: Request<WorkoutIdParam, unknown, GenerateWorkoutValues>,
+  res: Response,
+) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const preview = await workoutGenerationService.generate(userUuid, req.body);
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "Workout generated",
+    data: preview,
   });
 };
