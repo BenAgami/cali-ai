@@ -47,6 +47,10 @@ const MainLayout: React.FC = () => {
         options={{ headerShown: true, title: "Build workout" }}
       />
       <Stack.Screen
+        name="workout-generate"
+        options={{ headerShown: true, title: "Generate with AI" }}
+      />
+      <Stack.Screen
         name="dev-pose-check"
         options={{ headerShown: true, title: "Pose check" }}
       />
