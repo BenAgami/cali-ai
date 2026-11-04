@@ -6,7 +6,11 @@ import type {
   WorkoutExerciseInput,
 } from "@repo/common";
 
-import { NotFoundError, BadRequestError } from "../errors";
+import { NotFoundError, BadRequestError, ConflictError } from "../errors";
+import {
+  isPrismaKnownRequestError,
+  PrismaErrorCode,
+} from "../utils/prismaErrorCodes";
 
 import { lookAheadTake, paginate } from "../utils/pagination";
 import { parseOptionalDate } from "../utils/parseDate";
@@ -91,24 +95,47 @@ export class WorkoutService {
     data.exercises.forEach((ex) => this.validateExerciseInput(ex));
     await this.assertExercisesExist(data.exercises.map((ex) => ex.exerciseId));
 
-    const workout = await this.prisma.workout.create({
-      data: {
-        userId,
-        name: data.name,
-        exercises: {
-          create: data.exercises.map((ex, idx) => ({
-            exerciseId: ex.exerciseId,
-            position: idx,
-            sets: ex.sets,
-            reps: ex.reps ?? null,
-            durationSecs: ex.durationSecs ?? null,
-            restSecs: ex.restSecs,
-          })),
+    let provenance: { aiModel: string; generationId: number } | undefined;
+    if (data.generationId !== undefined) {
+      const generation = await this.prisma.workoutGeneration.findFirst({
+        where: { id: data.generationId, userId, status: "SUCCEEDED" },
+        select: { id: true, model: true },
+      });
+      if (!generation?.model) throw new NotFoundError("Generation not found");
+      provenance = { aiModel: generation.model, generationId: generation.id };
+    }
+
+    try {
+      return await this.prisma.workout.create({
+        data: {
+          userId,
+          name: data.name,
+          ...(provenance ?? {}),
+          exercises: {
+            create: data.exercises.map((ex, idx) => ({
+              exerciseId: ex.exerciseId,
+              position: idx,
+              sets: ex.sets,
+              reps: ex.reps ?? null,
+              durationSecs: ex.durationSecs ?? null,
+              restSecs: ex.restSecs,
+            })),
+          },
         },
-      },
-      include: workoutInclude,
-    });
-    return workout;
+        include: workoutInclude,
+      });
+    } catch (error) {
+      if (
+        isPrismaKnownRequestError(error) &&
+        error.code === PrismaErrorCode.UNIQUE_CONSTRAINT_VIOLATION
+      ) {
+        throw new ConflictError(
+          "This generated workout was already saved",
+          "GENERATION_ALREADY_SAVED",
+        );
+      }
+      throw error;
+    }
   }
 
   async updateWorkout(
