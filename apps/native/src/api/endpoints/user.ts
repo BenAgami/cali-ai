@@ -1,3 +1,4 @@
+import { AI_CONSENT_VERSION } from "@repo/common";
 import type {
   BodyMetricInput,
   SaveBodyMetricResponse,
@@ -48,4 +49,7 @@ export const userApi = {
 
   saveBodyMetrics: (data: BodyMetricInput): Promise<SaveBodyMetricResponse> =>
     apiClient.post<SaveBodyMetricResponse>(USER_ROUTES.bodyMetrics, data),
+
+  acceptAiConsent: (): Promise<void> =>
+    apiClient.post(USER_ROUTES.aiConsent, { version: AI_CONSENT_VERSION }),
 };

@@ -9,6 +9,7 @@ export const USER_ROUTES = {
   avatarUploadUrl: "/api/users/me/avatar-upload-url",
   goals: "/api/users/me/goals",
   bodyMetrics: "/api/users/me/body-metrics",
+  aiConsent: "/api/users/me/ai-consent",
 } as const;
 
 export const EXERCISE_ROUTES = {
@@ -18,6 +19,7 @@ export const EXERCISE_ROUTES = {
 
 export const WORKOUT_ROUTES = {
   list: "/api/workouts",
+  generate: "/api/workouts/generate",
   detail: (id: number) => `/api/workouts/${id}`,
   logs: (id: number) => `/api/workouts/${id}/logs`,
 } as const;
