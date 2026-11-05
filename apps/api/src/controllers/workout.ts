@@ -58,8 +58,10 @@ export const getWorkoutById = async (
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
+
   const workoutId = Number(req.params.id);
   const workout = await workoutService.getWorkoutById(userUuid, workoutId);
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: "Workout retrieved successfully",
@@ -77,7 +79,9 @@ export const createWorkout = async (
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
+
   const workout = await workoutService.createWorkout(userUuid, req.body);
+
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Workout created successfully",
@@ -95,12 +99,14 @@ export const updateWorkout = async (
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
+
   const workoutId = Number(req.params.id);
   const workout = await workoutService.updateWorkout(
     userUuid,
     workoutId,
     req.body,
   );
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: "Workout updated successfully",
@@ -118,8 +124,10 @@ export const deleteWorkout = async (
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
+
   const workoutId = Number(req.params.id);
   await workoutService.deleteWorkout(userUuid, workoutId);
+
   res.status(StatusCodes.NO_CONTENT).send();
 };
 
@@ -133,12 +141,14 @@ export const startWorkout = async (
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
+
   const workoutId = Number(req.params.id);
   const log = await workoutService.startWorkoutLog(
     userUuid,
     workoutId,
     req.body,
   );
+
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Workout started successfully",
@@ -158,6 +168,7 @@ export const generateWorkout = async (
   if (!userUuid) return;
 
   const preview = await workoutGenerationService.generate(userUuid, req.body);
+
   res.status(StatusCodes.OK).json({
     success: true,
     message: "Workout generated",
