@@ -13,7 +13,7 @@ import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 
-import { loginSchema, LoginValues } from "@repo/common";
+import { loginSchema, type LoginValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,

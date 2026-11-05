@@ -7,8 +7,11 @@ import {
   ServiceUnavailableError,
   TooManyRequestsError,
 } from "../../../src/errors";
-import { getLlmProvider, LlmError } from "../../../src/lib/llm";
-import type { WorkoutPlanResult } from "../../../src/lib/llm";
+import {
+  getLlmProvider,
+  LlmError,
+  type WorkoutPlanResult,
+} from "../../../src/lib/llm";
 import aiPrerequisitesService from "../../../src/services/aiPrerequisitesService";
 import {
   createFakeLlmProvider,

@@ -1,4 +1,4 @@
-import { Application } from "express";
+import type { Application } from "express";
 
 import { connectPrisma, getPrismaClient } from "@repo/db";
 

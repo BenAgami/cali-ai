@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-import { ZodError, ZodType } from "zod";
+import type { Request, Response, NextFunction } from "express";
+import { ZodError, type ZodType } from "zod";
 import { StatusCodes } from "http-status-codes";
 
 import { getZodErrorMessage } from "../utils/zodErrorMessage";

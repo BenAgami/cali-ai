@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { bodyMetricInputSchema } from "@repo/common";
-import type { BodyMetricInput } from "@repo/common";
+import { bodyMetricInputSchema, type BodyMetricInput } from "@repo/common";
 import {
   cmToFeetInches,
   feetInchesToCm,
   getDefaultUnitSystem,
   kgToLb,
   lbToKg,
+  type UnitSystem,
 } from "@src/utils/units";
-import type { UnitSystem } from "@src/utils/units";
 
 export type BodyMetricsField =
   | "heightCm"

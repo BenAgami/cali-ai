@@ -1,10 +1,10 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
 import {
-  RegisterUserDto,
+  type RegisterUserDto,
   RegisterUserBuilder,
 } from "../builders/registerUserBuilder";
 
@@ -12,7 +12,10 @@ import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/testSetup";
-import { LoginUserBuilder, LoginUserDto } from "../builders/loginUserBuilder";
+import {
+  LoginUserBuilder,
+  type LoginUserDto,
+} from "../builders/loginUserBuilder";
 import { registerUser, loginUser } from "../helpers/requestSender/authRequests";
 
 describe("POST /api/auth/login", () => {

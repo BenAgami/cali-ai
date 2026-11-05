@@ -1,4 +1,5 @@
-import z, { ZodError } from "zod";
+import type z from "zod";
+import type { ZodError } from "zod";
 
 type ZodErrorMessage = { message: string }[];
 

@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-import MyJwtPayload from "../../types/myJwtPayload";
+import type MyJwtPayload from "../../types/myJwtPayload";
 import { env } from "../../config/env";
 
 const optionalAuth = (

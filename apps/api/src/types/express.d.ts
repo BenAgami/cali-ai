@@ -1,5 +1,5 @@
 import "express";
-import MyJwtPayload from "./myJwtPayload";
+import type MyJwtPayload from "./myJwtPayload";
 
 declare global {
   namespace Express {

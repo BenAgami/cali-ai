@@ -1,13 +1,13 @@
 import {
   createContext,
-  ReactNode,
+  type ReactNode,
   useContext,
   useEffect,
   useState,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { themes, ThemeNames, ThemeColors } from "../theme/colors";
+import { themes, type ThemeNames, type ThemeColors } from "../theme/colors";
 
 type ThemeContextType = {
   currentTheme: ThemeNames;

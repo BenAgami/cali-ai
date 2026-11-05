@@ -1,5 +1,4 @@
-import { getPrismaClient } from "@repo/db";
-import type { ExperienceLevel, GoalType } from "@repo/db";
+import { getPrismaClient, type ExperienceLevel, type GoalType } from "@repo/db";
 import {
   getMissingAiPrerequisites,
   type AiPrerequisiteCode,

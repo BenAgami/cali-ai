@@ -1,5 +1,5 @@
-import { JwtPayload } from "jsonwebtoken";
-import { Role } from "@repo/db";
+import type { JwtPayload } from "jsonwebtoken";
+import type { Role } from "@repo/db";
 
 interface MyJwtPayload extends JwtPayload {
   role: Role;

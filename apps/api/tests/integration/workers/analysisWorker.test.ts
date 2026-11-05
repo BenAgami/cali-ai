@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { Application } from "express";
+import type { Application } from "express";
 
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, SessionStatus } from "@repo/db";
 import type { PoseCapturePayload } from "@repo/common";
 
 import { env } from "../../../src/config/env";
