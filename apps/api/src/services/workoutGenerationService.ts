@@ -1,5 +1,6 @@
 import { getPrismaClient } from "@repo/db";
 import type {
+  ExerciseSummary,
   GenerateWorkoutValues,
   WorkoutGenerationPreview,
 } from "@repo/common";
@@ -19,10 +20,7 @@ import {
 } from "../prompts/workoutPlanPrompt";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 import { toError } from "../utils/toError";
-import {
-  validateGeneratedPlan,
-  type CatalogExercise,
-} from "../utils/validateGeneratedPlan";
+import { validateGeneratedPlan } from "../utils/validateGeneratedPlan";
 
 import aiPrerequisitesService from "./aiPrerequisitesService";
 
@@ -96,7 +94,7 @@ export class WorkoutGenerationService {
         "CATALOG_EMPTY",
       );
     }
-    const catalogMap = new Map<string, CatalogExercise>(
+    const catalogMap = new Map<string, ExerciseSummary>(
       catalog.map((e) => [e.code.toLowerCase(), e]),
     );
     const exerciseCodes: [string, ...string[]] = [

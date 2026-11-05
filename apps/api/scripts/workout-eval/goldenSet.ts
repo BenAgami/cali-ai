@@ -1,8 +1,6 @@
-import type { GoalType } from "@repo/common";
+import type { ExerciseSummary, GoalType } from "@repo/common";
 
-import type { CatalogExercise } from "../../src/utils/validateGeneratedPlan";
-
-export const EVAL_CATALOG: CatalogExercise[] = [
+export const EVAL_CATALOG: ExerciseSummary[] = [
   { id: 1, code: "push_up", displayName: "Push Up", exerciseType: "DYNAMIC" },
   { id: 2, code: "pull_up", displayName: "Pull Up", exerciseType: "DYNAMIC" },
   { id: 3, code: "squat", displayName: "Squat", exerciseType: "DYNAMIC" },
