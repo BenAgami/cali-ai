@@ -1,6 +1,8 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import type { ExerciseSummary } from "@repo/common";
+
 import { env } from "../../src/config/env";
 import { getLlmProvider, LlmError } from "../../src/lib/llm";
 import type { LlmEffort } from "../../src/lib/llm/types";
@@ -8,10 +10,7 @@ import {
   buildWorkoutPlanPrompt,
   WORKOUT_PLAN_PROMPT_VERSION,
 } from "../../src/prompts/workoutPlanPrompt";
-import {
-  validateGeneratedPlan,
-  type CatalogExercise,
-} from "../../src/utils/validateGeneratedPlan";
+import { validateGeneratedPlan } from "../../src/utils/validateGeneratedPlan";
 import {
   EVAL_CATALOG,
   EVAL_GOALS,
@@ -39,7 +38,7 @@ type CallRecord = {
 
 const out = (text: string) => process.stdout.write(`${text}\n`);
 
-const catalogMap = new Map<string, CatalogExercise>(
+const catalogMap = new Map<string, ExerciseSummary>(
   EVAL_CATALOG.map((e) => [e.code, e]),
 );
 const exerciseCodes: [string, ...string[]] = [

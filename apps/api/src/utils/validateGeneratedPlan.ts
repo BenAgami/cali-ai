@@ -1,14 +1,10 @@
-import { createWorkoutSchema } from "@repo/common";
-import type { ExerciseType, ExperienceLevel } from "@repo/common";
+import {
+  createWorkoutSchema,
+  type ExerciseSummary,
+  type ExperienceLevel,
+} from "@repo/common";
 
 import type { WorkoutPlanDraft } from "../lib/llm";
-
-export type CatalogExercise = {
-  id: number;
-  code: string;
-  displayName: string;
-  exerciseType: ExerciseType;
-};
 
 export type ValidatedPlan = {
   name: string;
@@ -19,7 +15,7 @@ export type ValidatedPlan = {
     reps: number | null;
     durationSecs: number | null;
     restSecs: number;
-    exercise: CatalogExercise;
+    exercise: ExerciseSummary;
   }>;
 };
 
@@ -39,7 +35,7 @@ const DURATION = { min: 5, max: 120 };
 const REST = { min: 30, max: 300 };
 const BEGINNER = { maxSets: 4, maxReps: 15 };
 
-const outside = (value: number, range: { min: number; max: number }) =>
+const isOutsideRange = (value: number, range: { min: number; max: number }) =>
   !Number.isInteger(value) || value < range.min || value > range.max;
 
 /**
@@ -48,7 +44,7 @@ const outside = (value: number, range: { min: number; max: number }) =>
  */
 export const validateGeneratedPlan = (
   draft: WorkoutPlanDraft,
-  catalog: ReadonlyMap<string, CatalogExercise>,
+  catalog: ReadonlyMap<string, ExerciseSummary>,
   level: ExperienceLevel,
 ): PlanValidationResult => {
   const issues: string[] = [];
@@ -86,7 +82,7 @@ export const validateGeneratedPlan = (
         issues.push(
           `${code} is DYNAMIC: set reps and set durationSecs to null`,
         );
-      } else if (outside(item.reps, REPS)) {
+      } else if (isOutsideRange(item.reps, REPS)) {
         issues.push(
           `${code}: reps must be ${REPS.min}-${REPS.max}, got ${item.reps}`,
         );
@@ -99,13 +95,13 @@ export const validateGeneratedPlan = (
       issues.push(
         `${code} is STATIC_HOLD: set durationSecs and set reps to null`,
       );
-    } else if (outside(item.durationSecs, DURATION)) {
+    } else if (isOutsideRange(item.durationSecs, DURATION)) {
       issues.push(
         `${code}: durationSecs must be ${DURATION.min}-${DURATION.max}, got ${item.durationSecs}`,
       );
     }
 
-    if (outside(item.sets, SETS)) {
+    if (isOutsideRange(item.sets, SETS)) {
       issues.push(
         `${code}: sets must be ${SETS.min}-${SETS.max}, got ${item.sets}`,
       );
@@ -115,7 +111,7 @@ export const validateGeneratedPlan = (
       );
     }
 
-    if (outside(item.restSecs, REST)) {
+    if (isOutsideRange(item.restSecs, REST)) {
       issues.push(
         `${code}: restSecs must be ${REST.min}-${REST.max}, got ${item.restSecs}`,
       );

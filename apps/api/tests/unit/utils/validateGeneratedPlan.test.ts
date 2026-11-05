@@ -1,10 +1,9 @@
-import type { WorkoutPlanDraft } from "../../../src/lib/llm";
-import {
-  validateGeneratedPlan,
-  type CatalogExercise,
-} from "../../../src/utils/validateGeneratedPlan";
+import type { ExerciseSummary } from "@repo/common";
 
-const entries: CatalogExercise[] = [
+import type { WorkoutPlanDraft } from "../../../src/lib/llm";
+import { validateGeneratedPlan } from "../../../src/utils/validateGeneratedPlan";
+
+const entries: ExerciseSummary[] = [
   { id: 1, code: "push_up", displayName: "Push-up", exerciseType: "DYNAMIC" },
   { id: 2, code: "pull_up", displayName: "Pull-up", exerciseType: "DYNAMIC" },
   { id: 4, code: "plank", displayName: "Plank", exerciseType: "STATIC_HOLD" },
