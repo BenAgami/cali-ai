@@ -95,32 +95,19 @@ describe("AnthropicProvider.generateWorkoutPlan", () => {
     });
   });
 
-  it("maps a refusal", async () => {
+  it.for([
+    ["a refusal", { stop_reason: "refusal" }, "REFUSAL"],
+    ["max_tokens", { stop_reason: "max_tokens" }, "INVALID_OUTPUT"],
+    ["null parsed_output", { parsed_output: null }, "INVALID_OUTPUT"],
+  ] as const)("maps %s to %s", async ([, overrides, code]) => {
     const { parse, provider } = setup();
-    parse.mockResolvedValue(okMessage({ stop_reason: "refusal" }));
-    await expectCode(provider.generateWorkoutPlan(makeRequest()), "REFUSAL");
-  });
+    parse.mockResolvedValue(okMessage(overrides));
 
-  it("maps max_tokens to INVALID_OUTPUT", async () => {
-    const { parse, provider } = setup();
-    parse.mockResolvedValue(okMessage({ stop_reason: "max_tokens" }));
-    await expectCode(
-      provider.generateWorkoutPlan(makeRequest()),
-      "INVALID_OUTPUT",
-    );
-  });
-
-  it("maps null parsed_output to INVALID_OUTPUT", async () => {
-    const { parse, provider } = setup();
-    parse.mockResolvedValue(okMessage({ parsed_output: null }));
-    await expectCode(
-      provider.generateWorkoutPlan(makeRequest()),
-      "INVALID_OUTPUT",
-    );
+    await expectCode(provider.generateWorkoutPlan(makeRequest()), code);
   });
 
   const headers = new Headers();
-  it.each([
+  it.for([
     [
       "RATE_LIMITED",
       () => new Anthropic.RateLimitError(429, {}, "slow down", headers),
@@ -144,7 +131,7 @@ describe("AnthropicProvider.generateWorkoutPlan", () => {
       () => new Anthropic.AuthenticationError(401, {}, "bad key", headers),
     ],
     ["INVALID_OUTPUT", () => new Error("zod parse failure")],
-  ])("maps a rejection to %s", async (code, makeError) => {
+  ] as const)("maps a rejection to %s", async ([code, makeError]) => {
     const { parse, provider } = setup();
     const cause = makeError();
     parse.mockRejectedValue(cause);
