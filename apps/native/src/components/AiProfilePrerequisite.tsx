@@ -8,8 +8,12 @@ import {
   View,
 } from "react-native";
 
-import { EXPERIENCE_LEVELS, GOAL_TYPES } from "@repo/common";
-import type { ExperienceLevel, GoalType } from "@repo/common";
+import {
+  EXPERIENCE_LEVELS,
+  GOAL_TYPES,
+  type ExperienceLevel,
+  type GoalType,
+} from "@repo/common";
 import { useTheme } from "@src/context/ThemeContext";
 
 interface AiProfilePrerequisiteProps {

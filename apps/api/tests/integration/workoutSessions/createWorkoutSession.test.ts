@@ -1,7 +1,7 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, SessionStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -13,7 +13,7 @@ import { createExercise } from "../helpers/db/exerciseHelper";
 
 import {
   WorkoutSessionBuilder,
-  WorkoutSessionDto,
+  type WorkoutSessionDto,
 } from "../builders/workoutSessionBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 

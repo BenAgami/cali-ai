@@ -1,10 +1,10 @@
-import { AI_CONSENT_VERSION } from "@repo/common";
-import type {
-  BodyMetricInput,
-  SaveBodyMetricResponse,
-  UserProfile,
-  UpdateProfileValues,
-  UpsertGoalValues,
+import {
+  AI_CONSENT_VERSION,
+  type BodyMetricInput,
+  type SaveBodyMetricResponse,
+  type UserProfile,
+  type UpdateProfileValues,
+  type UpsertGoalValues,
 } from "@repo/common";
 
 import { apiClient } from "../client";

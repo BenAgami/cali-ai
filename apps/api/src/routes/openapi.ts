@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, type Request, type Response } from "express";
 import helmet from "helmet";
 import { apiReference } from "@scalar/express-api-reference";
 

@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib";
-import { Application } from "express";
+import type { Application } from "express";
 import supertest from "supertest";
 
 import type { PoseCapturePayload } from "@repo/common";

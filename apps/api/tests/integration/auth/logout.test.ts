@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 

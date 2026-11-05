@@ -1,8 +1,8 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 import jwt from "jsonwebtoken";
 
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
 import { env } from "../../../src/config/env";
 import {
@@ -14,7 +14,7 @@ import { registerUser } from "../helpers/requestSender/authRequests";
 
 import {
   RegisterUserBuilder,
-  RegisterUserDto,
+  type RegisterUserDto,
 } from "../builders/registerUserBuilder";
 
 describe("GET /api/me", () => {

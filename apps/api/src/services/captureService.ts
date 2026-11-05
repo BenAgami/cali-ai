@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { z } from "zod";
+import type { z } from "zod";
 
-import {
+import type {
   captureAcceptedResponseSchema,
-  type PoseCapturePayload,
+  PoseCapturePayload,
 } from "@repo/common";
 import { SessionStatus } from "@repo/db";
 

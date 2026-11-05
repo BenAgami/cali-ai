@@ -1,7 +1,7 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { ExerciseType, getPrismaClient } from "@repo/db";
+import { ExerciseType, type getPrismaClient } from "@repo/db";
 import { AI_CONSENT_VERSION } from "@repo/common";
 
 import {

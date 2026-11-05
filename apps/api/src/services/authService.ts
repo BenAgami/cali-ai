@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 
 import { getPrismaClient } from "@repo/db";
-import { RegisterValues, LoginValues } from "@repo/common";
+import type { RegisterValues, LoginValues } from "@repo/common";
 
 import { ConflictError, UnauthorizedError } from "../errors";
 

@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
 import { env } from "../config/env";
-import { Role } from "@repo/db";
+import type { Role } from "@repo/db";
 
 interface SignedPayload {
   uuid: string;

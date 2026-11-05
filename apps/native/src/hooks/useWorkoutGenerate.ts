@@ -16,12 +16,13 @@ import {
   AI_ERROR_MESSAGES,
 } from "@src/constants/aiMessages";
 import { setGeneratedPlan } from "@src/state/generatedPlanStore";
-import { generateWorkoutSchema, getMissingAiPrerequisites } from "@repo/common";
-import type {
-  AiPrerequisiteCode,
-  ExperienceLevel,
-  GoalType,
-  WorkoutGenerationPreview,
+import {
+  generateWorkoutSchema,
+  getMissingAiPrerequisites,
+  type AiPrerequisiteCode,
+  type ExperienceLevel,
+  type GoalType,
+  type WorkoutGenerationPreview,
 } from "@repo/common";
 
 export type GenerateStep = AiPrerequisiteCode | "READY";

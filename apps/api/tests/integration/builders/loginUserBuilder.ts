@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 
-import { RegisterUserDto } from "./registerUserBuilder";
+import type { RegisterUserDto } from "./registerUserBuilder";
 
 export interface LoginUserDto {
   email?: string;

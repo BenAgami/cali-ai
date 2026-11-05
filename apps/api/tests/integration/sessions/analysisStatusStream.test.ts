@@ -1,9 +1,9 @@
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 import { analysisStatusEventSchema } from "@repo/common";
 
 import analysisStateService from "../../../src/services/analysisStateService";

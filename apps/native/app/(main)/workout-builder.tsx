@@ -18,9 +18,11 @@ import DraggableFlatList, {
 
 import AiDisclaimer from "@src/components/AiDisclaimer";
 import { useTheme } from "@src/context/ThemeContext";
-import { useWorkoutBuilder } from "@src/hooks/useWorkoutBuilder";
+import {
+  useWorkoutBuilder,
+  type DraftExercise,
+} from "@src/hooks/useWorkoutBuilder";
 import WorkoutExerciseRow from "@src/components/WorkoutExerciseRow";
-import type { DraftExercise } from "@src/hooks/useWorkoutBuilder";
 import { consumePickedExercise } from "@src/state/pickedExerciseStore";
 
 type BuilderParams = {

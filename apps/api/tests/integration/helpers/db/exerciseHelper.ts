@@ -1,6 +1,9 @@
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
-import { ExerciseBuilder, ExerciseDto } from "../../builders/exerciseBuilder";
+import {
+  ExerciseBuilder,
+  type ExerciseDto,
+} from "../../builders/exerciseBuilder";
 
 export const createExercise = async (
   prisma: ReturnType<typeof getPrismaClient>,
