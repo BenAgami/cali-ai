@@ -47,16 +47,16 @@ describe("buildWorkoutPlanPrompt", () => {
   });
 
   it("carries profile context and wrapped goal text in the user turn", () => {
-    const { user } = buildWorkoutPlanPrompt(makeInput());
+    const { userPrompt } = buildWorkoutPlanPrompt(makeInput());
 
-    expect(user).toContain(
+    expect(userPrompt).toContain(
       "<goal>SECRET-GOAL-TEXT build upper body strength</goal>",
     );
-    expect(user).toContain("INTERMEDIATE");
-    expect(user).toContain("Do a muscle-up");
-    expect(user).toContain("SKILL");
-    expect(user).toContain("Height: 180 cm");
-    expect(user).toContain("Weight: 75 kg");
+    expect(userPrompt).toContain("INTERMEDIATE");
+    expect(userPrompt).toContain("Do a muscle-up");
+    expect(userPrompt).toContain("SKILL");
+    expect(userPrompt).toContain("Height: 180 cm");
+    expect(userPrompt).toContain("Weight: 75 kg");
   });
 
   it("adds retry feedback only when previous issues are given", () => {
@@ -66,9 +66,11 @@ describe("buildWorkoutPlanPrompt", () => {
     const without = buildWorkoutPlanPrompt(makeInput());
     const empty = buildWorkoutPlanPrompt(makeInput({ previousIssues: [] }));
 
-    expect(withIssues.user).toContain("Your previous plan was rejected");
-    expect(withIssues.user).toContain("- Unknown exercise code: handstand");
-    expect(without.user).not.toContain("Your previous plan was rejected");
-    expect(empty.user).not.toContain("Your previous plan was rejected");
+    expect(withIssues.userPrompt).toContain("Your previous plan was rejected");
+    expect(withIssues.userPrompt).toContain(
+      "- Unknown exercise code: handstand",
+    );
+    expect(without.userPrompt).not.toContain("Your previous plan was rejected");
+    expect(empty.userPrompt).not.toContain("Your previous plan was rejected");
   });
 });

@@ -64,7 +64,7 @@ export class AnthropicProvider implements LlmProvider {
           model: req.model,
           max_tokens: req.maxTokens,
           system: req.system,
-          messages: [{ role: "user", content: req.user }],
+          messages: [{ role: "user", content: req.userPrompt }],
           output_config: {
             format: zodOutputFormat(buildPlanOutputSchema(req.exerciseCodes)),
             effort: req.effort,

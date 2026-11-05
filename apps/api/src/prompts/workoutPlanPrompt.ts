@@ -67,7 +67,7 @@ const buildUserTurn = (input: WorkoutPlanPromptInput): string => {
 
 export const buildWorkoutPlanPrompt = (
   input: WorkoutPlanPromptInput,
-): { system: string; user: string } => ({
+): { system: string; userPrompt: string } => ({
   system: buildSystemPrompt(input.catalog),
-  user: buildUserTurn(input),
+  userPrompt: buildUserTurn(input),
 });
