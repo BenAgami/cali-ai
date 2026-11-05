@@ -142,7 +142,7 @@ export class WorkoutGenerationService {
         attemptsMade = index + 1;
 
         try {
-          const { system, user } = buildWorkoutPlanPrompt({
+          const { system, userPrompt } = buildWorkoutPlanPrompt({
             experienceLevel: context.experienceLevel,
             goal: context.goal,
             heightCm: context.heightCm,
@@ -158,7 +158,7 @@ export class WorkoutGenerationService {
             timeoutMs: attempt.timeoutMs,
             signal: controller.signal,
             system,
-            user,
+            userPrompt,
             exerciseCodes,
           });
 

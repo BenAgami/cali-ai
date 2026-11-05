@@ -39,7 +39,7 @@ export type WorkoutPlanRequest = {
   timeoutMs: number;
   signal: AbortSignal;
   system: string;
-  user: string;
+  userPrompt: string;
   exerciseCodes: [string, ...string[]];
 };
 

@@ -109,7 +109,7 @@ const runOne = async (
       timeoutMs: target.timeoutMs,
       signal: AbortSignal.timeout(target.timeoutMs),
       system: prompt.system,
-      user: prompt.user,
+      userPrompt: prompt.userPrompt,
       exerciseCodes,
     });
     record.latencyMs = Math.round(performance.now() - start);

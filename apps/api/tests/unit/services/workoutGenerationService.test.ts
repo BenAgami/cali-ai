@@ -242,7 +242,7 @@ describe("WorkoutGenerationService.generate ladder", () => {
     await generate();
 
     expect(requestAt(provider, 1).model).toBe("claude-sonnet-5-5");
-    expect(requestAt(provider, 1).user).toContain(
+    expect(requestAt(provider, 1).userPrompt).toContain(
       "Unknown exercise code: handstand",
     );
     expect(prisma.workoutGeneration.update).toHaveBeenCalledWith(

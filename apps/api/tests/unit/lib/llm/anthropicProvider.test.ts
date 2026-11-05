@@ -27,7 +27,7 @@ const makeRequest = (): WorkoutPlanRequest => ({
   timeoutMs: 5000,
   signal: new AbortController().signal,
   system: "sys",
-  user: "usr",
+  userPrompt: "usr",
   exerciseCodes: ["push-up", "squat"],
 });
 
