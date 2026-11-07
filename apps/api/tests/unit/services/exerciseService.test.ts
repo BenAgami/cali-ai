@@ -29,8 +29,8 @@ beforeEach(() => {
 });
 
 describe("ExerciseService.listExercises", () => {
-  const list = (limit: number, offset = 0, includeInactive = false) =>
-    exerciseService.listExercises({ limit, offset, includeInactive });
+  const list = (limit: number, offset = 0, shouldIncludeInactive = false) =>
+    exerciseService.listExercises({ limit, offset, shouldIncludeInactive });
 
   it("filters to active exercises by default", async () => {
     prisma.exercise.findMany.mockResolvedValue([]);

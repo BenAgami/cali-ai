@@ -4,14 +4,14 @@ import { View, Text, Pressable, Modal, StyleSheet } from "react-native";
 import { useTheme } from "@src/context/ThemeContext";
 
 type Props = {
-  visible: boolean;
+  isVisible: boolean;
   onClose: () => void;
   onPickLibrary: () => void;
   onPickCamera: () => void;
 };
 
 const AvatarPickerModal: React.FC<Props> = ({
-  visible,
+  isVisible,
   onClose,
   onPickLibrary,
   onPickCamera,
@@ -20,7 +20,7 @@ const AvatarPickerModal: React.FC<Props> = ({
 
   return (
     <Modal
-      visible={visible}
+      visible={isVisible}
       transparent
       animationType="slide"
       onRequestClose={onClose}

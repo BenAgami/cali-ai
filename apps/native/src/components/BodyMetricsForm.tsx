@@ -52,22 +52,22 @@ const BodyMetricsForm: React.FC<BodyMetricsFormProps> = ({ form }) => {
     <View>
       <View style={[styles.toggle, { backgroundColor: colors.surface }]}>
         {UNIT_OPTIONS.map((opt) => {
-          const active = opt.value === unitSystem;
+          const isActive = opt.value === unitSystem;
           return (
             <Pressable
               key={opt.value}
               onPress={() => setUnitSystem(opt.value)}
               style={[
                 styles.toggleOption,
-                active && { backgroundColor: colors.background },
+                isActive && { backgroundColor: colors.background },
               ]}
               accessibilityRole="button"
-              accessibilityState={{ selected: active }}
+              accessibilityState={{ selected: isActive }}
             >
               <Text
                 style={[
                   styles.toggleLabel,
-                  { color: colors.text, opacity: active ? 1 : 0.6 },
+                  { color: colors.text, opacity: isActive ? 1 : 0.6 },
                 ]}
               >
                 {opt.label}

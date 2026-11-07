@@ -39,13 +39,13 @@ export const useAnalysisStatus = (
     if (sessionId === null || runKey === null) return;
 
     let source: EventSource<"status"> | null = null;
-    let cancelled = false;
+    let isCancelled = false;
     setEvent(null);
     setError(null);
 
     void (async () => {
       const token = await tokenStore.getAccessToken();
-      if (cancelled) return;
+      if (isCancelled) return;
 
       source = new EventSource<"status">(
         buildApiUrl(SESSION_ROUTES.status(sessionId)),
@@ -84,7 +84,7 @@ export const useAnalysisStatus = (
     })();
 
     return () => {
-      cancelled = true;
+      isCancelled = true;
       source?.close();
     };
   }, [sessionId, runKey]);

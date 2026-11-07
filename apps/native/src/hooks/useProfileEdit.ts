@@ -95,7 +95,10 @@ export const useProfileEdit = () => {
       // unchanged save sends no request.
       if (!bodyMetricsForm.isEmpty) {
         const validated = bodyMetricsForm.validate();
-        if (validated.ok && bodyMetricsForm.isChangedFrom(initialBodyMetric)) {
+        if (
+          validated.isValid &&
+          bodyMetricsForm.isChangedFrom(initialBodyMetric)
+        ) {
           await userApi.saveBodyMetrics(validated.data);
         }
       }
@@ -198,7 +201,7 @@ export const useProfileEdit = () => {
     setUsernameError(null);
     if (!bodyMetricsForm.isEmpty) {
       const validated = bodyMetricsForm.validate();
-      if (!validated.ok) {
+      if (!validated.isValid) {
         setBodyMetricsError(validated.message);
         return;
       }
@@ -208,8 +211,8 @@ export const useProfileEdit = () => {
   };
 
   return {
-    loading: isLoading,
-    saving: saveMutation.isPending,
+    isLoading,
+    isSaving: saveMutation.isPending,
     username,
     usernameError,
     charCount,

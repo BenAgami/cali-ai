@@ -23,7 +23,7 @@ const OnboardingBodyMetricsScreen: React.FC = () => {
 
   const handleSave = () => {
     const result = form.validate();
-    if (!result.ok) {
+    if (!result.isValid) {
       setError(result.message);
       return;
     }

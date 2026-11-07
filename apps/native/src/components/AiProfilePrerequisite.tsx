@@ -24,7 +24,7 @@ interface AiProfilePrerequisiteProps {
   onChangeGoalTitle: (title: string) => void;
   onChangeGoalType: (type: GoalType) => void;
   onSave: () => void;
-  saving: boolean;
+  isSaving: boolean;
   error: string | null;
 }
 
@@ -39,27 +39,27 @@ const AiProfilePrerequisite: React.FC<AiProfilePrerequisiteProps> = ({
   onChangeGoalTitle,
   onChangeGoalType,
   onSave,
-  saving,
+  isSaving,
   error,
 }) => {
   const { colors } = useTheme();
 
-  const renderChip = (text: string, active: boolean, onPress: () => void) => (
+  const renderChip = (text: string, isActive: boolean, onPress: () => void) => (
     <Pressable
       key={text}
       style={({ pressed }) => [
         styles.chip,
         {
-          backgroundColor: active ? "#007AFF" : colors.surface,
-          borderColor: active ? "#007AFF" : colors.text + "33",
+          backgroundColor: isActive ? "#007AFF" : colors.surface,
+          borderColor: isActive ? "#007AFF" : colors.text + "33",
           opacity: pressed ? 0.8 : 1,
         },
       ]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityState={{ selected: active }}
+      accessibilityState={{ selected: isActive }}
     >
-      <Text style={{ color: active ? "#FFFFFF" : colors.text, fontSize: 13 }}>
+      <Text style={{ color: isActive ? "#FFFFFF" : colors.text, fontSize: 13 }}>
         {text}
       </Text>
     </Pressable>
@@ -115,10 +115,10 @@ const AiProfilePrerequisite: React.FC<AiProfilePrerequisiteProps> = ({
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: saving || pressed ? "#007AFF88" : "#007AFF" },
+          { backgroundColor: isSaving || pressed ? "#007AFF88" : "#007AFF" },
         ]}
         onPress={onSave}
-        disabled={saving}
+        disabled={isSaving}
         accessibilityRole="button"
       >
         <Text style={styles.buttonText}>Save</Text>

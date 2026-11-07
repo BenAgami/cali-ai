@@ -6,10 +6,10 @@ import { useTheme } from "@src/context/ThemeContext";
 import { AI_DISCLAIMER_TEXT } from "@src/constants/aiMessages";
 
 interface AiDisclaimerProps {
-  compact?: boolean;
+  isCompact?: boolean;
 }
 
-const AiDisclaimer: React.FC<AiDisclaimerProps> = ({ compact = false }) => {
+const AiDisclaimer: React.FC<AiDisclaimerProps> = ({ isCompact = false }) => {
   const { colors } = useTheme();
 
   return (
@@ -17,12 +17,12 @@ const AiDisclaimer: React.FC<AiDisclaimerProps> = ({ compact = false }) => {
       style={[
         styles.container,
         { backgroundColor: colors.surface },
-        compact && styles.compact,
+        isCompact && styles.compact,
       ]}
     >
       <Ionicons
         name="information-circle-outline"
-        size={compact ? 16 : 20}
+        size={isCompact ? 16 : 20}
         color={colors.text}
         style={styles.icon}
       />
@@ -31,7 +31,7 @@ const AiDisclaimer: React.FC<AiDisclaimerProps> = ({ compact = false }) => {
         style={[
           styles.text,
           { color: colors.text },
-          compact && styles.compactText,
+          isCompact && styles.compactText,
         ]}
       >
         {AI_DISCLAIMER_TEXT}

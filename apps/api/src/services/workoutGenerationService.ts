@@ -64,7 +64,7 @@ type GenerationRun = {
   catalog: Catalog;
   signal: AbortSignal;
   attemptsMade: number;
-  finalised: boolean;
+  isFinalised: boolean;
 };
 
 type AttemptOutcome =
@@ -112,13 +112,13 @@ export class WorkoutGenerationService {
       catalog,
       signal: controller.signal,
       attemptsMade: 0,
-      finalised: false,
+      isFinalised: false,
     };
 
     try {
       return await this.runAttempts(run);
     } catch (error) {
-      if (!run.finalised) await this.markUnexpectedFailure(run);
+      if (!run.isFinalised) await this.markUnexpectedFailure(run);
       throw error;
     } finally {
       clearTimeout(deadline);
@@ -235,7 +235,7 @@ export class WorkoutGenerationService {
       catalog.byCode,
       context.experienceLevel,
     );
-    if (!validation.ok) {
+    if (!validation.isValid) {
       run.log.warn(
         { attempt: run.attemptsMade, model: attempt.model },
         "Generated plan failed validation",
@@ -252,7 +252,7 @@ export class WorkoutGenerationService {
         completedAt: new Date(),
       },
     });
-    run.finalised = true;
+    run.isFinalised = true;
     run.log.info(
       {
         attempt: run.attemptsMade,
@@ -313,7 +313,7 @@ export class WorkoutGenerationService {
         completedAt: new Date(),
       },
     });
-    run.finalised = true;
+    run.isFinalised = true;
   }
 
   private async markUnexpectedFailure(run: GenerationRun) {

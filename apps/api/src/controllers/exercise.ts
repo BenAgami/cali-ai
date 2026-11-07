@@ -33,7 +33,7 @@ export const listExercises = async (
   const result = await exerciseService.listExercises({
     limit,
     offset,
-    includeInactive: shouldIncludeInactive,
+    shouldIncludeInactive,
   });
 
   res.status(StatusCodes.OK).json({

@@ -62,12 +62,12 @@ export const useWorkoutGenerate = () => {
   const [goalTitle, setGoalTitle] = useState("");
   const [profileError, setProfileError] = useState<string | null>(null);
   const experienceLevel = levelDraft ?? profile?.experienceLevel ?? null;
-  const needsGoal = !profile || profile.goals.length === 0;
+  const isGoalMissing = !profile || profile.goals.length === 0;
 
   const profileMutation = useMutation<void, Error, ExperienceLevel>({
     mutationFn: async (level) => {
       await userApi.updateProfile({ experienceLevel: level });
-      if (needsGoal) {
+      if (isGoalMissing) {
         await userApi.upsertGoal({ goalType, title: goalTitle.trim() });
       }
     },
@@ -78,7 +78,7 @@ export const useWorkoutGenerate = () => {
   });
 
   const saveProfilePrerequisite = () => {
-    if (!experienceLevel || (needsGoal && goalTitle.trim().length === 0)) {
+    if (!experienceLevel || (isGoalMissing && goalTitle.trim().length === 0)) {
       setProfileError(PROFILE_ERROR);
       return;
     }
@@ -93,7 +93,7 @@ export const useWorkoutGenerate = () => {
 
   const saveBodyMetrics = () => {
     const result = bodyMetricsForm.validate();
-    if (!result.ok) {
+    if (!result.isValid) {
       setBodyMetricsError(result.message);
       return;
     }
@@ -193,34 +193,34 @@ export const useWorkoutGenerate = () => {
   };
 
   return {
-    loading: isLoading,
+    isLoading,
     editInBuilder,
     step,
     experienceLevel,
     goalType,
     goalTitle,
     profileError,
-    savingProfile: profileMutation.isPending,
+    isSavingProfile: profileMutation.isPending,
     setExperienceLevel: setLevelDraft,
     setGoalType,
     setGoalTitle,
     saveProfilePrerequisite,
     bodyMetricsForm,
     bodyMetricsError,
-    savingBodyMetrics: bodyMetricsMutation.isPending,
+    isSavingBodyMetrics: bodyMetricsMutation.isPending,
     saveBodyMetrics,
-    acceptingConsent: consentMutation.isPending,
+    isAcceptingConsent: consentMutation.isPending,
     acceptConsent,
     goalText,
     setGoalText,
     selectExample: setGoalText,
     canGenerate,
-    generating: generateMutation.isPending,
+    isGenerating: generateMutation.isPending,
     generate,
     regenerate,
     preview,
     previewRows: preview ? preview.exercises.map(formatPreviewRow) : [],
-    saving: createMutation.isPending,
+    isSaving: createMutation.isPending,
     save,
     errorMessage,
   };

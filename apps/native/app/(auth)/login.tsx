@@ -53,7 +53,7 @@ const signInFields: FieldConfig<LoginValues>[] = [
 ];
 
 const SignInScreen: React.FC = () => {
-  const [rememberMe, setRememberMe] = useState(false);
+  const [shouldRememberMe, setShouldRememberMe] = useState(false);
   const { handleSignIn, error } = useLogin();
   const router = useRouter();
 
@@ -113,8 +113,10 @@ const SignInScreen: React.FC = () => {
                   onSubmit={handleSignIn}
                   extraRow={
                     <AuthRememberRow
-                      rememberMe={rememberMe}
-                      onToggleRemember={() => setRememberMe(!rememberMe)}
+                      shouldRememberMe={shouldRememberMe}
+                      onToggleRemember={() =>
+                        setShouldRememberMe(!shouldRememberMe)
+                      }
                       onForgotPassword={() => {}}
                     />
                   }

@@ -120,7 +120,7 @@ export const useNotificationReminder = () => {
 
   return {
     reminderConfig,
-    loading: isLoading,
+    isLoading,
     scheduleReminder,
     cancelReminder,
   };

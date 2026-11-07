@@ -75,17 +75,17 @@ describe("progress bus", () => {
         }),
     );
     const { subscribeToAnalysisEvents } = await loadBus();
-    let resolved = false;
+    let isResolved = false;
 
     const pending = subscribeToAnalysisEvents(1, vi.fn()).then(() => {
-      resolved = true;
+      isResolved = true;
     });
     await Promise.resolve();
-    expect(resolved).toBe(false);
+    expect(isResolved).toBe(false);
 
     release();
     await pending;
-    expect(resolved).toBe(true);
+    expect(isResolved).toBe(true);
   });
 
   it("fans out to two listeners with one Redis SUBSCRIBE and ignores other sessions", async () => {

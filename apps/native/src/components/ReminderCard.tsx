@@ -23,16 +23,16 @@ type Props = { username: string };
 
 const ReminderCard: React.FC<Props> = ({ username }) => {
   const { colors } = useTheme();
-  const { reminderConfig, loading, scheduleReminder, cancelReminder } =
+  const { reminderConfig, isLoading, scheduleReminder, cancelReminder } =
     useNotificationReminder();
 
-  const [expanded, setExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [pickerDate, setPickerDate] = useState(() => {
     const d = new Date();
     d.setHours(7, 30, 0, 0);
     return d;
   });
-  const [showPicker, setShowPicker] = useState(Platform.OS === "ios");
+  const [isPickerVisible, setIsPickerVisible] = useState(Platform.OS === "ios");
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([
     DayOfWeek.Monday,
     DayOfWeek.Wednesday,
@@ -40,7 +40,7 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
   ]);
 
   const handleTimeChange = (event: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === "android") setShowPicker(false);
+    if (Platform.OS === "android") setIsPickerVisible(false);
     if (selected) setPickerDate(selected);
   };
 
@@ -60,7 +60,7 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
       pickerDate.getMinutes(),
       selectedDays,
     );
-    setExpanded(false);
+    setIsExpanded(false);
   };
 
   const handleEdit = () => {
@@ -70,11 +70,11 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
       setPickerDate(d);
       setSelectedDays(reminderConfig.daysOfWeek);
     }
-    setShowPicker(Platform.OS === "ios");
-    setExpanded(true);
+    setIsPickerVisible(Platform.OS === "ios");
+    setIsExpanded(true);
   };
 
-  if (loading) return null;
+  if (isLoading) return null;
 
   return (
     <View
@@ -91,7 +91,7 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
           <Text style={[styles.nudgeSubtitle, { color: baseColors.grayDark }]}>
             Set a workout reminder to keep your streak going
           </Text>
-          {!expanded && (
+          {!isExpanded && (
             <Pressable
               style={({ pressed }) => [
                 styles.button,
@@ -101,8 +101,8 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
                 },
               ]}
               onPress={() => {
-                setShowPicker(Platform.OS === "ios");
-                setExpanded(true);
+                setIsPickerVisible(Platform.OS === "ios");
+                setIsExpanded(true);
               }}
             >
               <Text style={styles.buttonText}>Set Reminder</Text>
@@ -120,7 +120,7 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
           <Text style={[styles.reminderDays, { color: baseColors.grayDark }]}>
             {formatDays(reminderConfig.daysOfWeek)}
           </Text>
-          {!expanded && (
+          {!isExpanded && (
             <View style={styles.actionRow}>
               <Pressable
                 style={({ pressed }) => [
@@ -151,18 +151,18 @@ const ReminderCard: React.FC<Props> = ({ username }) => {
         </>
       )}
 
-      {expanded && (
+      {isExpanded && (
         <ReminderPicker
           pickerDate={pickerDate}
-          showPicker={showPicker}
+          isPickerVisible={isPickerVisible}
           selectedDays={selectedDays}
           onTimeChange={handleTimeChange}
-          onShowPicker={() => setShowPicker(true)}
+          onShowPicker={() => setIsPickerVisible(true)}
           onToggleDay={handleToggleDay}
           onSave={() => {
             void handleSave();
           }}
-          onCancel={() => setExpanded(false)}
+          onCancel={() => setIsExpanded(false)}
         />
       )}
     </View>

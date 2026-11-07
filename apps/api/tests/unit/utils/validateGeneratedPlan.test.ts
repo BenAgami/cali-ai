@@ -51,7 +51,7 @@ const issuesOf = (
   level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" = "BEGINNER",
 ) => {
   const result = validateGeneratedPlan(draft, catalog, level);
-  if (result.ok) throw new Error("expected invalid plan");
+  if (result.isValid) throw new Error("expected invalid plan");
   return result.issues;
 };
 
@@ -60,7 +60,7 @@ describe("validateGeneratedPlan", () => {
     const result = validateGeneratedPlan(draft(), catalog, "BEGINNER");
 
     expect(result).toEqual({
-      ok: true,
+      isValid: true,
       plan: {
         name: "Upper body",
         note: null,
@@ -86,7 +86,7 @@ describe("validateGeneratedPlan", () => {
       catalog,
       "BEGINNER",
     );
-    expect(result.ok).toBe(true);
+    expect(result.isValid).toBe(true);
   });
 
   it("rejects unknown codes", () => {
@@ -138,7 +138,7 @@ describe("validateGeneratedPlan", () => {
       holdItem(),
     ]);
     expect(issuesOf(d, "BEGINNER")).toHaveLength(1);
-    expect(validateGeneratedPlan(d, catalog, "ADVANCED").ok).toBe(true);
+    expect(validateGeneratedPlan(d, catalog, "ADVANCED").isValid).toBe(true);
   });
 
   it.each([
@@ -185,7 +185,7 @@ describe("validateGeneratedPlan", () => {
       catalog,
       "BEGINNER",
     );
-    if (!result.ok) throw new Error("expected valid plan");
+    if (!result.isValid) throw new Error("expected valid plan");
     expect(result.plan.name).toHaveLength(100);
     expect(result.plan.note).toHaveLength(300);
   });

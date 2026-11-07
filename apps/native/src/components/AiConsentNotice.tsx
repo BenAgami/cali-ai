@@ -6,13 +6,13 @@ import { AI_CONSENT_BODY_TEXT } from "@src/constants/aiMessages";
 
 interface AiConsentNoticeProps {
   onAccept: () => void;
-  accepting: boolean;
+  isAccepting: boolean;
 }
 
 // Wording is pending legal review (open item in STATE.md).
 const AiConsentNotice: React.FC<AiConsentNoticeProps> = ({
   onAccept,
-  accepting,
+  isAccepting,
 }) => {
   const { colors } = useTheme();
 
@@ -27,10 +27,10 @@ const AiConsentNotice: React.FC<AiConsentNoticeProps> = ({
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          { backgroundColor: accepting || pressed ? "#007AFF88" : "#007AFF" },
+          { backgroundColor: isAccepting || pressed ? "#007AFF88" : "#007AFF" },
         ]}
         onPress={onAccept}
-        disabled={accepting}
+        disabled={isAccepting}
         accessibilityRole="button"
         accessibilityLabel="I agree"
       >

@@ -128,8 +128,8 @@ const runOne = async (
     );
 
     const validation = validateGeneratedPlan(result.plan, catalogMap, level);
-    record.isCatalogValid = validation.ok;
-    if (!validation.ok) record.issues = validation.issues;
+    record.isCatalogValid = validation.isValid;
+    if (!validation.isValid) record.issues = validation.issues;
   } catch (error) {
     record.latencyMs = Math.round(performance.now() - start);
     record.llmErrorCode =

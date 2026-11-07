@@ -28,15 +28,15 @@ const WorkoutGenerateScreen: React.FC = () => {
   const primaryButton = (
     text: string,
     onPress: () => void,
-    disabled: boolean,
+    isDisabled: boolean,
   ) => (
     <Pressable
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: disabled || pressed ? "#007AFF88" : "#007AFF" },
+        { backgroundColor: isDisabled || pressed ? "#007AFF88" : "#007AFF" },
       ]}
       onPress={onPress}
-      disabled={disabled}
+      disabled={isDisabled}
       accessibilityRole="button"
     >
       <Text style={styles.buttonText}>{text}</Text>
@@ -44,7 +44,7 @@ const WorkoutGenerateScreen: React.FC = () => {
   );
 
   const renderBody = () => {
-    if (g.loading) {
+    if (g.isLoading) {
       return (
         <ActivityIndicator
           size="large"
@@ -64,7 +64,7 @@ const WorkoutGenerateScreen: React.FC = () => {
           onChangeGoalTitle={g.setGoalTitle}
           onChangeGoalType={g.setGoalType}
           onSave={g.saveProfilePrerequisite}
-          saving={g.savingProfile}
+          isSaving={g.isSavingProfile}
           error={g.profileError}
         />
       );
@@ -80,7 +80,7 @@ const WorkoutGenerateScreen: React.FC = () => {
           {g.bodyMetricsError && (
             <Text style={styles.error}>{g.bodyMetricsError}</Text>
           )}
-          {primaryButton("Save", g.saveBodyMetrics, g.savingBodyMetrics)}
+          {primaryButton("Save", g.saveBodyMetrics, g.isSavingBodyMetrics)}
         </View>
       );
     }
@@ -89,7 +89,7 @@ const WorkoutGenerateScreen: React.FC = () => {
       return (
         <AiConsentNotice
           onAccept={g.acceptConsent}
-          accepting={g.acceptingConsent}
+          isAccepting={g.isAcceptingConsent}
         />
       );
     }
@@ -116,14 +116,14 @@ const WorkoutGenerateScreen: React.FC = () => {
               <Text style={{ color: colors.text, fontSize: 15 }}>{row}</Text>
             </View>
           ))}
-          {primaryButton("Save workout", g.save, g.saving || g.generating)}
+          {primaryButton("Save workout", g.save, g.isSaving || g.isGenerating)}
           <Pressable
             style={({ pressed }) => [
               styles.secondary,
               { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
             ]}
             onPress={g.editInBuilder}
-            disabled={g.saving || g.generating}
+            disabled={g.isSaving || g.isGenerating}
             accessibilityRole="button"
           >
             <Text style={[styles.secondaryText, { color: colors.text }]}>
@@ -136,7 +136,7 @@ const WorkoutGenerateScreen: React.FC = () => {
               { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
             ]}
             onPress={g.regenerate}
-            disabled={g.saving || g.generating}
+            disabled={g.isSaving || g.isGenerating}
             accessibilityRole="button"
           >
             <Text style={[styles.secondaryText, { color: colors.text }]}>
@@ -164,7 +164,7 @@ const WorkoutGenerateScreen: React.FC = () => {
           ]}
           value={g.goalText}
           onChangeText={g.setGoalText}
-          editable={!g.generating}
+          editable={!g.isGenerating}
           multiline
           maxLength={500}
           placeholder="e.g. Get stronger at pull-ups with 30-minute sessions"
@@ -182,7 +182,7 @@ const WorkoutGenerateScreen: React.FC = () => {
                 },
               ]}
               onPress={() => g.selectExample(example)}
-              disabled={g.generating}
+              disabled={g.isGenerating}
               accessibilityRole="button"
             >
               <Text style={{ color: colors.text, fontSize: 13 }}>
@@ -191,7 +191,7 @@ const WorkoutGenerateScreen: React.FC = () => {
             </Pressable>
           ))}
         </View>
-        {g.generating ? (
+        {g.isGenerating ? (
           <View style={styles.generating}>
             <ActivityIndicator color={colors.text} />
             <Text style={{ color: colors.text, marginTop: 8 }}>

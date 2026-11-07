@@ -24,22 +24,22 @@ const ExerciseTypeSegmented: React.FC<ExerciseTypeSegmentedProps> = ({
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
       {OPTIONS.map((opt) => {
-        const active = opt.value === value;
+        const isActive = opt.value === value;
         return (
           <Pressable
             key={opt.value}
             onPress={() => onChange(opt.value)}
             style={[
               styles.option,
-              active && { backgroundColor: colors.background },
+              isActive && { backgroundColor: colors.background },
             ]}
             accessibilityRole="button"
-            accessibilityState={{ selected: active }}
+            accessibilityState={{ selected: isActive }}
           >
             <Text
               style={[
                 styles.label,
-                { color: colors.text, opacity: active ? 1 : 0.6 },
+                { color: colors.text, opacity: isActive ? 1 : 0.6 },
               ]}
             >
               {opt.label}

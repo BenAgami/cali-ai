@@ -45,7 +45,7 @@ const parseJson = async (res: Response): Promise<Record<string, unknown>> => {
 const sendRequest = async (
   path: string,
   init: RequestInit,
-  withAuth: boolean,
+  shouldAttachAuth: boolean,
   timeoutMs: number = TIMEOUT_MS,
 ): Promise<Response> => {
   const controller = new AbortController();
@@ -56,7 +56,7 @@ const sendRequest = async (
       ...(init.headers as Record<string, string>),
     };
 
-    if (withAuth) {
+    if (shouldAttachAuth) {
       const token = await tokenStore.getAccessToken();
       if (token) headers["Authorization"] = `Bearer ${token}`;
     }

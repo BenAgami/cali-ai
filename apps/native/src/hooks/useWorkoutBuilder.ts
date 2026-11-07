@@ -39,7 +39,7 @@ const draftFromServer = (workout: WorkoutWithExercises): DraftExercise[] =>
 
 export interface UseWorkoutBuilderOptions {
   workoutId?: number;
-  fromGeneration?: boolean;
+  isFromGeneration?: boolean;
 }
 
 export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
@@ -57,7 +57,7 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
 
   useEffect(() => {
     if (seededRef.current) return;
-    if (isEdit || !options.fromGeneration) return;
+    if (isEdit || !options.isFromGeneration) return;
     seededRef.current = true;
     const plan = consumeGeneratedPlan();
     if (!plan) return;
@@ -76,7 +76,7 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
       })),
     );
     setGenerationId(plan.generationId);
-  }, [isEdit, options.fromGeneration]);
+  }, [isEdit, options.isFromGeneration]);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -130,29 +130,32 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
   const validation = useMemo(() => {
     const trimmed = name.trim();
     if (trimmed.length < 1)
-      return { valid: false, message: "Name is required" } as const;
+      return { isValid: false, message: "Name is required" } as const;
     if (trimmed.length > 100)
-      return { valid: false, message: "Name max 100 chars" } as const;
+      return { isValid: false, message: "Name max 100 chars" } as const;
     if (exercises.length < 1)
-      return { valid: false, message: "Add at least one exercise" } as const;
+      return { isValid: false, message: "Add at least one exercise" } as const;
     if (exercises.length > 50)
-      return { valid: false, message: "Max 50 exercises per workout" } as const;
+      return {
+        isValid: false,
+        message: "Max 50 exercises per workout",
+      } as const;
     for (const ex of exercises) {
       const isStatic = ex.exerciseType === "STATIC_HOLD";
       if (isStatic && (ex.durationSecs == null || ex.durationSecs < 1)) {
         return {
-          valid: false,
+          isValid: false,
           message: "Static Hold exercises need a duration",
         } as const;
       }
       if (!isStatic && (ex.reps == null || ex.reps < 1)) {
         return {
-          valid: false,
+          isValid: false,
           message: "Dynamic exercises need reps",
         } as const;
       }
     }
-    return { valid: true } as const;
+    return { isValid: true } as const;
   }, [name, exercises]);
 
   const buildPayload = useCallback((): CreateWorkoutValues => {
@@ -175,7 +178,7 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
       onCreated: (workoutId: number) => void,
       onUpdated: (workoutId: number) => void,
     ) => {
-      if (!validation.valid) {
+      if (!validation.isValid) {
         Alert.alert("Cannot save", validation.message ?? "Invalid workout");
         return;
       }
@@ -218,7 +221,7 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
     reorderExercises,
     validation,
     save,
-    saving: createMutation.isPending || updateMutation.isPending,
+    isSaving: createMutation.isPending || updateMutation.isPending,
     isAiDraft: generationId !== undefined,
   };
 };

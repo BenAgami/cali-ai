@@ -20,8 +20,8 @@ export type ValidatedPlan = {
 };
 
 export type PlanValidationResult =
-  | { ok: true; plan: ValidatedPlan }
-  | { ok: false; issues: string[] };
+  | { isValid: true; plan: ValidatedPlan }
+  | { isValid: false; issues: string[] };
 
 const MIN_EXERCISES = 3;
 const MAX_EXERCISES = 6;
@@ -127,7 +127,7 @@ export const validateGeneratedPlan = (
     }
   }
 
-  if (issues.length > 0) return { ok: false, issues };
+  if (issues.length > 0) return { isValid: false, issues };
 
   const parsed = createWorkoutSchema.safeParse({
     name,
@@ -140,8 +140,8 @@ export const validateGeneratedPlan = (
     })),
   });
   if (!parsed.success) {
-    return { ok: false, issues: ["Plan does not fit the workout schema"] };
+    return { isValid: false, issues: ["Plan does not fit the workout schema"] };
   }
 
-  return { ok: true, plan: { name, note, exercises } };
+  return { isValid: true, plan: { name, note, exercises } };
 };

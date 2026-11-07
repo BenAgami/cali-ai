@@ -40,7 +40,7 @@ const WorkoutBuilderScreen: React.FC = () => {
 
   const builder = useWorkoutBuilder({
     workoutId,
-    fromGeneration: params.fromGeneration === "1",
+    isFromGeneration: params.fromGeneration === "1",
   });
 
   // Pull a picked exercise from the store every time the builder regains focus.
@@ -131,7 +131,7 @@ const WorkoutBuilderScreen: React.FC = () => {
 
         {builder.isAiDraft && (
           <View style={styles.disclaimer}>
-            <AiDisclaimer compact />
+            <AiDisclaimer isCompact />
           </View>
         )}
 
@@ -200,12 +200,12 @@ const WorkoutBuilderScreen: React.FC = () => {
         >
           <Pressable
             onPress={handleSave}
-            disabled={!builder.validation.valid || builder.saving}
+            disabled={!builder.validation.isValid || builder.isSaving}
             style={({ pressed }) => [
               styles.saveButton,
               {
                 backgroundColor:
-                  !builder.validation.valid || builder.saving
+                  !builder.validation.isValid || builder.isSaving
                     ? "#A0A0A0"
                     : pressed
                       ? "#006EE6"
@@ -218,14 +218,14 @@ const WorkoutBuilderScreen: React.FC = () => {
             }
           >
             <Text style={styles.saveButtonText}>
-              {builder.saving
+              {builder.isSaving
                 ? "Saving..."
                 : builder.isEdit
                   ? "Save changes"
                   : "Save workout"}
             </Text>
           </Pressable>
-          {!builder.validation.valid && builder.validation.message && (
+          {!builder.validation.isValid && builder.validation.message && (
             <Text style={[styles.validationText, { color: colors.text }]}>
               {builder.validation.message}
             </Text>

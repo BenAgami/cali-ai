@@ -24,8 +24,8 @@ type MetricValue = { heightCm: number | null; weightKg: number | null };
 type InitialMetrics = { heightCm: number; weightKg: number } | null;
 
 export type BodyMetricsValidation =
-  | { ok: true; data: BodyMetricInput }
-  | { ok: false; message: string };
+  | { isValid: true; data: BodyMetricInput }
+  | { isValid: false; message: string };
 
 const EMPTY_FIELDS: BodyMetricsFields = {
   heightCm: "",
@@ -123,10 +123,10 @@ export const useBodyMetricsForm = (initial: InitialMetrics) => {
 
   const validate = (): BodyMetricsValidation => {
     if (value.heightCm === null && value.weightKg === null) {
-      return { ok: false, message: "Enter your height and weight" };
+      return { isValid: false, message: "Enter your height and weight" };
     }
     if (value.heightCm === null || value.weightKg === null) {
-      return { ok: false, message: "Enter both height and weight" };
+      return { isValid: false, message: "Enter both height and weight" };
     }
     const parsed = bodyMetricInputSchema.safeParse({
       heightCm: value.heightCm,
@@ -134,12 +134,12 @@ export const useBodyMetricsForm = (initial: InitialMetrics) => {
     });
     if (!parsed.success) {
       return {
-        ok: false,
+        isValid: false,
         message:
           "Height must be 100-250 cm (3'4\"-8'2\") and weight 30-300 kg (66-661 lb)",
       };
     }
-    return { ok: true, data: parsed.data };
+    return { isValid: true, data: parsed.data };
   };
 
   const isChangedFrom = (base: InitialMetrics): boolean => {

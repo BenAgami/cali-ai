@@ -8,7 +8,7 @@ import { lookAheadTake, paginate } from "../utils/pagination";
 type ListExercisesInput = {
   limit: number;
   offset: number;
-  includeInactive: boolean;
+  shouldIncludeInactive: boolean;
 };
 
 export class ExerciseService {
@@ -17,10 +17,10 @@ export class ExerciseService {
   }
 
   async listExercises(input: ListExercisesInput) {
-    const { limit, offset, includeInactive } = input;
+    const { limit, offset, shouldIncludeInactive } = input;
 
     const exercises = await this.prisma.exercise.findMany({
-      where: includeInactive ? {} : { isActive: true },
+      where: shouldIncludeInactive ? {} : { isActive: true },
       orderBy: [{ displayName: "asc" }, { id: "asc" }],
       skip: offset,
       take: lookAheadTake(limit),
@@ -29,13 +29,13 @@ export class ExerciseService {
     return paginate(exercises, limit, offset);
   }
 
-  async getExerciseByCode(code: string, includeInactive = false) {
+  async getExerciseByCode(code: string, shouldIncludeInactive = false) {
     const normalizedCode = normalizeString(code);
 
     const exercise = await this.prisma.exercise.findFirst({
       where: {
         code: normalizedCode,
-        ...(includeInactive ? {} : { isActive: true }),
+        ...(shouldIncludeInactive ? {} : { isActive: true }),
       },
     });
 
