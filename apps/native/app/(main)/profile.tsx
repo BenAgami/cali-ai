@@ -18,7 +18,7 @@ import AvatarDisplay from "@src/components/AvatarDisplay";
 import { ApiError } from "@src/api";
 
 const formatExperienceLevel = (level: string | null): string =>
-  level === null ? "Not set" : level.charAt(0) + level.slice(1).toLowerCase();
+  !level ? "Not set" : level.charAt(0) + level.slice(1).toLowerCase();
 
 const ProfileScreen: React.FC = () => {
   const { colors } = useTheme();

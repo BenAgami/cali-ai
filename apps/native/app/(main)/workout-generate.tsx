@@ -23,7 +23,7 @@ import {
 
 const WorkoutGenerateScreen: React.FC = () => {
   const { colors } = useTheme();
-  const g = useWorkoutGenerate();
+  const workoutGenerate = useWorkoutGenerate();
 
   const primaryButton = (
     text: string,
@@ -44,7 +44,7 @@ const WorkoutGenerateScreen: React.FC = () => {
   );
 
   const renderBody = () => {
-    if (g.isLoading) {
+    if (workoutGenerate.isLoading) {
       return (
         <ActivityIndicator
           size="large"
@@ -54,76 +54,84 @@ const WorkoutGenerateScreen: React.FC = () => {
       );
     }
 
-    if (g.step === "PROFILE_INCOMPLETE") {
+    if (workoutGenerate.step === "PROFILE_INCOMPLETE") {
       return (
         <AiProfilePrerequisite
-          experienceLevel={g.experienceLevel}
-          goalTitle={g.goalTitle}
-          goalType={g.goalType}
-          onChangeLevel={g.setExperienceLevel}
-          onChangeGoalTitle={g.setGoalTitle}
-          onChangeGoalType={g.setGoalType}
-          onSave={g.saveProfilePrerequisite}
-          isSaving={g.isSavingProfile}
-          error={g.profileError}
+          experienceLevel={workoutGenerate.experienceLevel}
+          goalTitle={workoutGenerate.goalTitle}
+          goalType={workoutGenerate.goalType}
+          onChangeLevel={workoutGenerate.setExperienceLevel}
+          onChangeGoalTitle={workoutGenerate.setGoalTitle}
+          onChangeGoalType={workoutGenerate.setGoalType}
+          onSave={workoutGenerate.saveProfilePrerequisite}
+          isSaving={workoutGenerate.isSavingProfile}
+          error={workoutGenerate.profileError}
         />
       );
     }
 
-    if (g.step === "BODY_METRICS_REQUIRED") {
+    if (workoutGenerate.step === "BODY_METRICS_REQUIRED") {
       return (
         <View>
           <Text style={[styles.heading, { color: colors.text }]}>
             Add your height and weight
           </Text>
-          <BodyMetricsForm form={g.bodyMetricsForm} />
-          {g.bodyMetricsError && (
-            <Text style={styles.error}>{g.bodyMetricsError}</Text>
+          <BodyMetricsForm form={workoutGenerate.bodyMetricsForm} />
+          {workoutGenerate.bodyMetricsError && (
+            <Text style={styles.error}>{workoutGenerate.bodyMetricsError}</Text>
           )}
-          {primaryButton("Save", g.saveBodyMetrics, g.isSavingBodyMetrics)}
+          {primaryButton(
+            "Save",
+            workoutGenerate.saveBodyMetrics,
+            workoutGenerate.isSavingBodyMetrics,
+          )}
         </View>
       );
     }
 
-    if (g.step === "AI_CONSENT_REQUIRED") {
+    if (workoutGenerate.step === "AI_CONSENT_REQUIRED") {
       return (
         <AiConsentNotice
-          onAccept={g.acceptConsent}
-          isAccepting={g.isAcceptingConsent}
+          onAccept={workoutGenerate.acceptConsent}
+          isAccepting={workoutGenerate.isAcceptingConsent}
         />
       );
     }
 
-    if (g.preview) {
+    if (workoutGenerate.preview) {
       return (
         <View>
           <AiDisclaimer />
           <Text style={[styles.previewName, { color: colors.text }]}>
-            {g.preview.name}
+            {workoutGenerate.preview.name}
           </Text>
-          {g.preview.note !== null && (
+          {workoutGenerate.preview.note !== null && (
             <View style={[styles.note, { backgroundColor: colors.surface }]}>
               <Text style={{ color: colors.text, fontSize: 14 }}>
-                {g.preview.note}
+                {workoutGenerate.preview.note}
               </Text>
             </View>
           )}
-          {g.previewRows.map((row, index) => (
+          {workoutGenerate.previewRows.map((row, index) => (
             <View
-              key={`${g.preview?.exercises[index]?.exerciseId}-${index}`}
+              key={`${workoutGenerate.preview?.exercises[index]?.exerciseId}-${index}`}
               style={[styles.row, { backgroundColor: colors.surface }]}
             >
               <Text style={{ color: colors.text, fontSize: 15 }}>{row}</Text>
             </View>
           ))}
-          {primaryButton("Save workout", g.save, g.isSaving || g.isGenerating)}
+          {primaryButton(
+            "Save workout",
+            workoutGenerate.save,
+            workoutGenerate.isSaving || workoutGenerate.isGenerating,
+          )}
           <Pressable
             style={({ pressed }) => [
               styles.secondary,
               { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
             ]}
-            onPress={g.editInBuilder}
-            disabled={g.isSaving || g.isGenerating}
+            onPress={workoutGenerate.editInBuilder}
+            disabled={workoutGenerate.isSaving || workoutGenerate.isGenerating}
             accessibilityRole="button"
           >
             <Text style={[styles.secondaryText, { color: colors.text }]}>
@@ -135,15 +143,17 @@ const WorkoutGenerateScreen: React.FC = () => {
               styles.secondary,
               { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
             ]}
-            onPress={g.regenerate}
-            disabled={g.isSaving || g.isGenerating}
+            onPress={workoutGenerate.regenerate}
+            disabled={workoutGenerate.isSaving || workoutGenerate.isGenerating}
             accessibilityRole="button"
           >
             <Text style={[styles.secondaryText, { color: colors.text }]}>
               Regenerate
             </Text>
           </Pressable>
-          {g.errorMessage && <Text style={styles.error}>{g.errorMessage}</Text>}
+          {workoutGenerate.errorMessage && (
+            <Text style={styles.error}>{workoutGenerate.errorMessage}</Text>
+          )}
         </View>
       );
     }
@@ -162,9 +172,9 @@ const WorkoutGenerateScreen: React.FC = () => {
               borderColor: colors.text + "33",
             },
           ]}
-          value={g.goalText}
-          onChangeText={g.setGoalText}
-          editable={!g.isGenerating}
+          value={workoutGenerate.goalText}
+          onChangeText={workoutGenerate.setGoalText}
+          editable={!workoutGenerate.isGenerating}
           multiline
           maxLength={500}
           placeholder="e.g. Get stronger at pull-ups with 30-minute sessions"
@@ -181,8 +191,8 @@ const WorkoutGenerateScreen: React.FC = () => {
                   borderColor: colors.text + "33",
                 },
               ]}
-              onPress={() => g.selectExample(example)}
-              disabled={g.isGenerating}
+              onPress={() => workoutGenerate.selectExample(example)}
+              disabled={workoutGenerate.isGenerating}
               accessibilityRole="button"
             >
               <Text style={{ color: colors.text, fontSize: 13 }}>
@@ -191,7 +201,7 @@ const WorkoutGenerateScreen: React.FC = () => {
             </Pressable>
           ))}
         </View>
-        {g.isGenerating ? (
+        {workoutGenerate.isGenerating ? (
           <View style={styles.generating}>
             <ActivityIndicator color={colors.text} />
             <Text style={{ color: colors.text, marginTop: 8 }}>
@@ -199,9 +209,15 @@ const WorkoutGenerateScreen: React.FC = () => {
             </Text>
           </View>
         ) : (
-          primaryButton("Generate", g.generate, !g.canGenerate)
+          primaryButton(
+            "Generate",
+            workoutGenerate.generate,
+            !workoutGenerate.canGenerate,
+          )
         )}
-        {g.errorMessage && <Text style={styles.error}>{g.errorMessage}</Text>}
+        {workoutGenerate.errorMessage && (
+          <Text style={styles.error}>{workoutGenerate.errorMessage}</Text>
+        )}
       </View>
     );
   };

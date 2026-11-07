@@ -86,7 +86,7 @@ export const useBodyMetricsForm = (initial: InitialMetrics) => {
   const [unitSystem, setUnitSystemState] =
     useState<UnitSystem>(getDefaultUnitSystem);
   const [fields, setFields] = useState<BodyMetricsFields>(EMPTY_FIELDS);
-  const [edited, setEdited] = useState(false);
+  const [isEdited, setIsEdited] = useState(false);
   const [seeded, setSeeded] = useState<MetricValue | null>(null);
   const seededRef = useRef(false);
 
@@ -101,15 +101,13 @@ export const useBodyMetricsForm = (initial: InitialMetrics) => {
     setFields(fieldsFromMetric(base));
   }, [initial]);
 
-  // Until the user edits, report the stored metric exactly: imperial display
-  // rounds to whole inches, which would otherwise read as a change.
   const value = useMemo<MetricValue>(
-    () => (!edited && seeded ? seeded : metricFromFields(fields, unitSystem)),
-    [edited, seeded, fields, unitSystem],
+    () => (!isEdited && seeded ? seeded : metricFromFields(fields, unitSystem)),
+    [isEdited, seeded, fields, unitSystem],
   );
 
   const setField = (field: BodyMetricsField, text: string) => {
-    setEdited(true);
+    setIsEdited(true);
     setFields((prev) => ({ ...prev, [field]: text }));
   };
 
