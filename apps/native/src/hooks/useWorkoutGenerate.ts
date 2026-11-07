@@ -56,7 +56,6 @@ export const useWorkoutGenerate = () => {
     : [];
   const step: GenerateStep = missing.at(0) ?? "READY";
 
-  // Profile prerequisite
   const [levelDraft, setLevelDraft] = useState<ExperienceLevel | null>(null);
   const [goalType, setGoalType] = useState<GoalType>("STRENGTH");
   const [goalTitle, setGoalTitle] = useState("");
@@ -86,7 +85,6 @@ export const useWorkoutGenerate = () => {
     profileMutation.mutate(experienceLevel);
   };
 
-  // Body metrics prerequisite
   const bodyMetricsForm = useBodyMetricsForm(null);
   const bodyMetricsMutation = useSaveBodyMetrics();
   const [bodyMetricsError, setBodyMetricsError] = useState<string | null>(null);
@@ -103,11 +101,9 @@ export const useWorkoutGenerate = () => {
     });
   };
 
-  // Consent
   const consentMutation = useAcceptAiConsent();
   const acceptConsent = () => consentMutation.mutate();
 
-  // Generation
   const [goalText, setGoalText] = useState("");
   const [preview, setPreview] = useState<WorkoutGenerationPreview | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

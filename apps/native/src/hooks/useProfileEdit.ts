@@ -91,8 +91,6 @@ export const useProfileEdit = () => {
         });
       }
 
-      // Metrics are append-only: clearing both fields is a no-op, and an
-      // unchanged save sends no request.
       if (!bodyMetricsForm.isEmpty) {
         const validated = bodyMetricsForm.validate();
         if (

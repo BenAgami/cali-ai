@@ -9,7 +9,6 @@ interface AiConsentNoticeProps {
   isAccepting: boolean;
 }
 
-// Wording is pending legal review (open item in STATE.md).
 const AiConsentNotice: React.FC<AiConsentNoticeProps> = ({
   onAccept,
   isAccepting,

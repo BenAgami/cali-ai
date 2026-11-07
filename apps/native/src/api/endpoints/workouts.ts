@@ -12,7 +12,6 @@ import type {
 import { apiClient } from "../client";
 import { WORKOUT_ROUTES } from "@src/constants/routes";
 
-// Above the server's 60 s generation deadline so the server error wins.
 const GENERATE_TIMEOUT_MS = 75_000;
 
 export const workoutApi = {
