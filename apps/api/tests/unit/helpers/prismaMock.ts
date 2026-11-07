@@ -27,6 +27,8 @@ const MODELS = [
   "workoutSession",
   "userGoal",
   "poseCapture",
+  "bodyMetric",
+  "workoutGeneration",
 ] as const;
 
 type MockDelegate = Record<(typeof DELEGATE_METHODS)[number], Mock>;

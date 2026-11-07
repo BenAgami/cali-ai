@@ -6,13 +6,14 @@ import {
   Platform,
   Text,
   Pressable,
+  ScrollView,
 } from "react-native";
 
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 import { Stack, useRouter } from "expo-router";
 
-import { loginSchema, LoginValues } from "@repo/common";
+import { loginSchema, type LoginValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,
@@ -72,76 +73,83 @@ const SignInScreen: React.FC = () => {
           colors={["#0f0c29", "#302b63", "#24243e"]}
           style={{ flex: 1 }}
         >
-          <Pressable
-            onPress={() => router.push("/")}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.pressed,
-            ]}
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+            showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.backButtonText}>{"←"}</Text>
-          </Pressable>
-          <AuthImageHeader
-            image={marsImage}
-            overlay={
-              <LinearGradient
-                colors={["transparent", "rgba(10, 10, 10, 0.8)"]}
-                style={styles.imageOverlay}
-              />
-            }
-          />
-
-          <View style={styles.formWrapper}>
-            <AuthHeader
-              title="Welcome Back"
-              subtitle="Sign in to continue your journey"
+            <Pressable
+              onPress={() => router.push("/")}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.backButtonText}>{"←"}</Text>
+            </Pressable>
+            <AuthImageHeader
+              image={marsImage}
+              overlay={
+                <LinearGradient
+                  colors={["transparent", "rgba(10, 10, 10, 0.8)"]}
+                  style={styles.imageOverlay}
+                />
+              }
             />
 
-            <View style={styles.formContainer}>
-              {error && <Text style={styles.errorText}>{error}</Text>}
-              <AuthFormFields
-                schema={loginSchema}
-                defaultValues={defaultFormData}
-                fields={signInFields}
-                onSubmit={handleSignIn}
-                extraRow={
-                  <AuthRememberRow
-                    rememberMe={rememberMe}
-                    onToggleRemember={() => setRememberMe(!rememberMe)}
-                    onForgotPassword={() => {}}
-                  />
-                }
-                renderSubmit={(submit) => (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.submitButton,
-                      pressed && styles.pressed,
-                    ]}
-                    onPress={submit}
-                  >
-                    <LinearGradient
-                      colors={["#667eea", "#764ba2"]}
-                      style={styles.buttonGradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
+            <View style={styles.formWrapper}>
+              <AuthHeader
+                title="Welcome Back"
+                subtitle="Sign in to continue your journey"
+              />
+
+              <View style={styles.formContainer}>
+                {error && <Text style={styles.errorText}>{error}</Text>}
+                <AuthFormFields
+                  schema={loginSchema}
+                  defaultValues={defaultFormData}
+                  fields={signInFields}
+                  onSubmit={handleSignIn}
+                  extraRow={
+                    <AuthRememberRow
+                      rememberMe={rememberMe}
+                      onToggleRemember={() => setRememberMe(!rememberMe)}
+                      onForgotPassword={() => {}}
+                    />
+                  }
+                  renderSubmit={(submit) => (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.submitButton,
+                        pressed && styles.pressed,
+                      ]}
+                      onPress={submit}
                     >
-                      <Text style={styles.submitButtonText}>Sign In</Text>
-                    </LinearGradient>
-                  </Pressable>
-                )}
-              />
+                      <LinearGradient
+                        colors={["#667eea", "#764ba2"]}
+                        style={styles.buttonGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                      >
+                        <Text style={styles.submitButtonText}>Sign In</Text>
+                      </LinearGradient>
+                    </Pressable>
+                  )}
+                />
 
-              <AuthOrDivider />
+                <AuthOrDivider />
 
-              <GoogleSignInButton onPress={handleGoogleSignIn} />
+                <GoogleSignInButton onPress={handleGoogleSignIn} />
 
-              <AuthFooter
-                text="Don't have an account?"
-                linkText="Sign Up"
-                onPressLink={() => router.push("/register")}
-              />
+                <AuthFooter
+                  text="Don't have an account?"
+                  linkText="Sign Up"
+                  onPressLink={() => router.push("/register")}
+                />
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </LinearGradient>
       </KeyboardAvoidingView>
     </>

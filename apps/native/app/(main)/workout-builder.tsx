@@ -16,14 +16,18 @@ import DraggableFlatList, {
   type RenderItemParams,
 } from "react-native-draggable-flatlist";
 
+import AiDisclaimer from "@src/components/AiDisclaimer";
 import { useTheme } from "@src/context/ThemeContext";
-import { useWorkoutBuilder } from "@src/hooks/useWorkoutBuilder";
+import {
+  useWorkoutBuilder,
+  type DraftExercise,
+} from "@src/hooks/useWorkoutBuilder";
 import WorkoutExerciseRow from "@src/components/WorkoutExerciseRow";
-import type { DraftExercise } from "@src/hooks/useWorkoutBuilder";
 import { consumePickedExercise } from "@src/state/pickedExerciseStore";
 
 type BuilderParams = {
   id?: string;
+  fromGeneration?: string;
 };
 
 const BUILDER_PATH = "/workout-builder";
@@ -34,7 +38,10 @@ const WorkoutBuilderScreen: React.FC = () => {
   const params = useLocalSearchParams<BuilderParams>();
   const workoutId = params.id ? Number(params.id) : undefined;
 
-  const builder = useWorkoutBuilder({ workoutId });
+  const builder = useWorkoutBuilder({
+    workoutId,
+    fromGeneration: params.fromGeneration === "1",
+  });
 
   // Pull a picked exercise from the store every time the builder regains focus.
   // Fires after returning from the picker via router.dismiss(2).
@@ -121,6 +128,12 @@ const WorkoutBuilderScreen: React.FC = () => {
             accessibilityLabel="Workout name"
           />
         </View>
+
+        {builder.isAiDraft && (
+          <View style={styles.disclaimer}>
+            <AiDisclaimer compact />
+          </View>
+        )}
 
         <DraggableFlatList
           data={builder.exercises}
@@ -238,6 +251,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 10,
   },
+  disclaimer: { paddingHorizontal: 16, paddingBottom: 4 },
   listContent: { paddingTop: 12, paddingBottom: 24 },
   addButton: {
     marginHorizontal: 16,

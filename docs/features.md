@@ -99,7 +99,7 @@ User can:
 # 5. Future Features (Planned)
 
 - Real-time feedback mode (deferred; not in v1)
-- AI-generated workout plans (roadmap Phase 4)
+- AI-generated workout plans: implemented in Phase 4 (goal text + profile in, catalog-only plan out, with disclaimer and consent)
 - Personalized training programs
 - Skill progression tracking
 - A trained in-house form model to replace the AI API score

@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { Role } from "@repo/db";
+import type { Role } from "@repo/db";
 
 const authorize =
   (...allowedRoles: Role[]) =>

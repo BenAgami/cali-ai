@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
-import { DateTimePickerEvent } from "@react-native-community/datetimepicker";
+import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { baseColors } from "@src/theme/colors";

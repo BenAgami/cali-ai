@@ -1,4 +1,4 @@
-import { z, ZodEmail, ZodString } from "zod";
+import { z, type ZodEmail, type ZodString } from "zod";
 
 import { AUTH_MESSAGES } from "../constants/messages";
 

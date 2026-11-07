@@ -1,7 +1,7 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient } from "@repo/db";
+import { ExerciseType, type getPrismaClient } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -12,7 +12,6 @@ import { createExercise } from "../helpers/db/exerciseHelper";
 import { createWorkout } from "../helpers/requestSender/workoutsRequests";
 import { WorkoutBuilder } from "../builders/workoutBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
-import { ExerciseType } from "@repo/db";
 
 describe("POST /api/workouts", () => {
   let app: Application;
@@ -50,6 +49,8 @@ describe("POST /api/workouts", () => {
     expect(response.body.data.exercises[0].position).toBe(0);
     expect(response.body.data.exercises[0].sets).toBe(3);
     expect(response.body.data.exercises[0].reps).toBe(10);
+    expect(response.body.data.aiModel).toBeNull();
+    expect(response.body.data.generationId).toBeNull();
 
     const dbExercises = await prisma.workoutExercise.findMany({
       where: { workoutId: response.body.data.id },

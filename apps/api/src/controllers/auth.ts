@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import {
+import type {
   RegisterValues,
   LoginValues,
   RefreshTokenValues,

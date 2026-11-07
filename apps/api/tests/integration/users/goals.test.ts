@@ -1,7 +1,7 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -12,7 +12,7 @@ import { registerUser } from "../helpers/requestSender/authRequests";
 
 import {
   RegisterUserBuilder,
-  RegisterUserDto,
+  type RegisterUserDto,
 } from "../builders/registerUserBuilder";
 
 describe("POST /api/users/me/goals", () => {

@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { finished } from "node:stream";
 
 import { PayloadTooLargeError } from "../errors";

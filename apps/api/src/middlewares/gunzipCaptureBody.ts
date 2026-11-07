@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { promisify } from "node:util";
 import { gunzip } from "node:zlib";
 

@@ -3,15 +3,15 @@ import { View, StyleSheet } from "react-native";
 import {
   useForm,
   Controller,
-  FieldValues,
-  DefaultValues,
-  Path,
+  type FieldValues,
+  type DefaultValues,
+  type Path,
 } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { ZodType } from "zod";
 
-import { AuthInput, AuthInputProps } from "@repo/ui";
+import { AuthInput, type AuthInputProps } from "@repo/ui";
 
 export type FieldConfig<T> = {
   name: keyof T & string;

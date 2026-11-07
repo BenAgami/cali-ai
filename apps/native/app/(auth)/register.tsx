@@ -13,7 +13,7 @@ import { Stack, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { LinearGradient } from "expo-linear-gradient";
 
-import { registerSchema, RegisterValues } from "@repo/common";
+import { registerSchema, type RegisterValues } from "@repo/common";
 import {
   AuthImageHeader,
   AuthHeader,

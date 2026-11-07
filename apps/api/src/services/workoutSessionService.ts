@@ -1,5 +1,5 @@
 import { getPrismaClient, SessionStatus } from "@repo/db";
-import { CreateWorkoutSessionValues } from "@repo/common";
+import type { CreateWorkoutSessionValues } from "@repo/common";
 
 import { NotFoundError } from "../errors";
 

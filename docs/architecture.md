@@ -148,6 +148,19 @@ The LLM is the scorer at launch. Meanwhile:
 
 ---
 
+# 6a. AI Workout Generation
+
+- Synchronous `POST /api/workouts/generate` (no queue); returns a draft plan the client previews, then saves through the normal workout endpoint.
+- Shared gate `aiPrerequisitesService.assertAiPrerequisites` checks profile completeness, AI consent and catalog; Phase 5 reuses it.
+- `LlmProvider` interface with `AnthropicProvider`: structured outputs, a per-request exercise-code enum (no exercise outside the catalog), `maxRetries: 0`, `AbortSignal` for timeouts (no `withTimeout`).
+- Attempt ladder: Haiku, then Haiku with validation feedback, then Sonnet.
+- Errors: 428 `PROFILE_INCOMPLETE`, 429 `DAILY_LIMIT_REACHED`, 409 `GENERATION_IN_PROGRESS`, 503 `GENERATION_FAILED` / `CATALOG_EMPTY`.
+- Daily cap via `AI_GENERATION_DAILY_CAP` (rolling 24h, counts all `workout_generations` rows).
+- Provenance: saved plans carry `ai_model` and `generation_id`.
+- Deploy: run `yarn workspace @repo/db db:seed` after `db:migrate:deploy` so the `dip` exercise exists.
+
+---
+
 # 7. Architecture Principles
 
 - Pose runs where the video is, so video stays on the device.

@@ -96,7 +96,21 @@ Plans:
 2. Every exercise in the AI-generated plan exists in the exercise catalog — no hallucinated exercise names are accepted
 3. The generated workout visibly adapts to the user's fitness level and primary goal from their profile (a beginner gets a different plan than an advanced user for the same goal)
 4. A disclaimer is shown on every AI-generated plan before the user starts it
-   **Plans**: TBD
+   **Plans:** 11 plans
+
+Plans:
+
+- [x] 04-01-PLAN.md — Prisma migration (nullable level, AI consent, WorkoutGeneration, Workout provenance), dip seed, ApiError code + 428/429 errors, LLM/generation env vars
+- [x] 04-02-PLAN.md — Shared @repo/common contracts (body metrics, AI prerequisites/consent, generation preview, workout provenance) and nullable-level ripple
+- [x] 04-03-PLAN.md — bodyMetricService (append-only, skip unchanged), shared AI prerequisite gate, POST /me/body-metrics and /me/ai-consent, extended GET /me
+- [x] 04-04-PLAN.md — LlmProvider interface, Anthropic structured-output adapter with error normalization, versioned prompt builder
+- [x] 04-05-PLAN.md — validateGeneratedPlan + workoutGenerationService (gate, daily cap, in-flight guard, Haiku/Haiku/Sonnet ladder, generation row)
+- [x] 04-06-PLAN.md — POST /api/workouts/generate, save-with-provenance on POST /api/workouts, OpenAPI, integration tests
+- [x] 04-07-PLAN.md — Native ApiError code + timeouts, shared BodyMetricsForm with region units, onboarding step, profile-edit height/weight
+- [x] 04-08-PLAN.md — Native Generate with AI screen: inline prerequisites, privacy notice, goal chips, preview with disclaimer, Save/Regenerate
+- [x] 04-09-PLAN.md — Golden-set eval of Haiku vs Sonnet (D-22), latency/token spike, model default decision
+- [x] 04-10-PLAN.md — Edit-in-builder hand-off keeping AI provenance, disclaimer on Start for AI workouts
+- [x] 04-11-PLAN.md — Full CI gates, docs update, on-device verification checkpoint
 
 ### Phase 5: AI Form Analysis (Camera + Post-Set)
 
@@ -166,8 +180,18 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 1. Infrastructure            | 9/10           | In progress | -          |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
-| 4. AI Workout Generation     | 0/TBD          | Not started | -          |
+| 4. AI Workout Generation     | 0/11           | Planned     | -          |
 | 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
+
+### Phase 8: Designing the user UI and UX
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 7
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 8 to break down)

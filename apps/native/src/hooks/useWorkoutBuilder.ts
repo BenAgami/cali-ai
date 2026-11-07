@@ -11,6 +11,7 @@ import type { DraftExerciseValues } from "@src/components/WorkoutExerciseRow";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useCreateWorkout } from "@src/hooks/mutations/useCreateWorkout";
 import { useUpdateWorkout } from "@src/hooks/mutations/useUpdateWorkout";
+import { consumeGeneratedPlan } from "@src/state/generatedPlanStore";
 
 export interface DraftExercise extends DraftExerciseValues {
   localId: string;
@@ -38,6 +39,7 @@ const draftFromServer = (workout: WorkoutWithExercises): DraftExercise[] =>
 
 export interface UseWorkoutBuilderOptions {
   workoutId?: number;
+  fromGeneration?: boolean;
 }
 
 export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
@@ -48,7 +50,33 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
 
   const [name, setName] = useState("");
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
+  const [generationId, setGenerationId] = useState<number | undefined>(
+    undefined,
+  );
   const seededRef = useRef(false);
+
+  useEffect(() => {
+    if (seededRef.current) return;
+    if (isEdit || !options.fromGeneration) return;
+    seededRef.current = true;
+    const plan = consumeGeneratedPlan();
+    if (!plan) return;
+    setName(plan.name);
+    setExercises(
+      plan.exercises.map((ex) => ({
+        localId: makeLocalId(),
+        exerciseId: ex.exerciseId,
+        exerciseCode: ex.exercise.code,
+        exerciseDisplayName: ex.exercise.displayName,
+        exerciseType: ex.exercise.exerciseType,
+        sets: ex.sets,
+        reps: ex.reps,
+        durationSecs: ex.durationSecs,
+        restSecs: ex.restSecs,
+      })),
+    );
+    setGenerationId(plan.generationId);
+  }, [isEdit, options.fromGeneration]);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -138,8 +166,9 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
           ex.exerciseType === "STATIC_HOLD" ? ex.durationSecs : null,
         restSecs: ex.restSecs,
       })),
+      ...(generationId !== undefined && !isEdit ? { generationId } : {}),
     };
-  }, [name, exercises]);
+  }, [name, exercises, generationId, isEdit]);
 
   const save = useCallback(
     async (
@@ -190,5 +219,6 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
     validation,
     save,
     saving: createMutation.isPending || updateMutation.isPending,
+    isAiDraft: generationId !== undefined,
   };
 };

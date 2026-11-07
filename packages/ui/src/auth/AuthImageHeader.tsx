@@ -1,5 +1,10 @@
 import React from "react";
-import { View, Image, StyleSheet, ImageSourcePropType } from "react-native";
+import {
+  View,
+  Image,
+  StyleSheet,
+  type ImageSourcePropType,
+} from "react-native";
 
 export type AuthImageHeaderProps = {
   image: ImageSourcePropType;
