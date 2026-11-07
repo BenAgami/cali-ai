@@ -11,7 +11,10 @@ const entries: ExerciseSummary[] = [
 ];
 const catalog = new Map(entries.map((e) => [e.code, e]));
 
-const dyn = (code: string, overrides: Record<string, unknown> = {}) => ({
+const dynamicItem = (
+  code: string,
+  overrides: Record<string, unknown> = {},
+) => ({
   exerciseCode: code,
   sets: 3,
   reps: 10,
@@ -20,7 +23,7 @@ const dyn = (code: string, overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const plank = (overrides: Record<string, unknown> = {}) => ({
+const holdItem = (overrides: Record<string, unknown> = {}) => ({
   exerciseCode: "plank",
   sets: 3,
   reps: null,
@@ -31,9 +34,9 @@ const plank = (overrides: Record<string, unknown> = {}) => ({
 
 const draft = (
   exercises: WorkoutPlanDraft["exercises"] = [
-    dyn("push_up"),
-    dyn("pull_up"),
-    plank(),
+    dynamicItem("push_up"),
+    dynamicItem("pull_up"),
+    holdItem(),
   ],
   overrides: Partial<WorkoutPlanDraft> = {},
 ): WorkoutPlanDraft => ({
@@ -44,10 +47,10 @@ const draft = (
 });
 
 const issuesOf = (
-  d: WorkoutPlanDraft,
+  draft: WorkoutPlanDraft,
   level: "BEGINNER" | "INTERMEDIATE" | "ADVANCED" = "BEGINNER",
 ) => {
-  const result = validateGeneratedPlan(d, catalog, level);
+  const result = validateGeneratedPlan(draft, catalog, level);
   if (result.ok) throw new Error("expected invalid plan");
   return result.issues;
 };
@@ -79,7 +82,7 @@ describe("validateGeneratedPlan", () => {
 
   it("matches codes after trim and lowercase", () => {
     const result = validateGeneratedPlan(
-      draft([dyn("Push_Up "), dyn("pull_up"), plank()]),
+      draft([dynamicItem("Push_Up "), dynamicItem("pull_up"), holdItem()]),
       catalog,
       "BEGINNER",
     );
@@ -88,12 +91,16 @@ describe("validateGeneratedPlan", () => {
 
   it("rejects unknown codes", () => {
     expect(
-      issuesOf(draft([dyn("handstand"), dyn("pull_up"), plank()])),
+      issuesOf(
+        draft([dynamicItem("handstand"), dynamicItem("pull_up"), holdItem()]),
+      ),
     ).toContain("Unknown exercise code: handstand");
   });
 
   it.each([2, 7])("rejects %i exercises", (count) => {
-    const exercises = Array.from({ length: count }, () => dyn("push_up"));
+    const exercises = Array.from({ length: count }, () =>
+      dynamicItem("push_up"),
+    );
     expect(issuesOf(draft(exercises))).toContain(
       "Plan must have 3 to 6 exercises",
     );
@@ -102,9 +109,9 @@ describe("validateGeneratedPlan", () => {
   it("rejects a DYNAMIC exercise with a duration instead of reps", () => {
     const issues = issuesOf(
       draft([
-        dyn("push_up", { reps: null, durationSecs: 30 }),
-        dyn("pull_up"),
-        plank(),
+        dynamicItem("push_up", { reps: null, durationSecs: 30 }),
+        dynamicItem("pull_up"),
+        holdItem(),
       ]),
     );
     expect(issues).toEqual([expect.stringMatching(/push_up.*reps/)]);
@@ -113,9 +120,9 @@ describe("validateGeneratedPlan", () => {
   it("rejects a STATIC_HOLD exercise with reps", () => {
     const issues = issuesOf(
       draft([
-        dyn("push_up"),
-        dyn("pull_up"),
-        plank({ reps: 5, durationSecs: null }),
+        dynamicItem("push_up"),
+        dynamicItem("pull_up"),
+        holdItem({ reps: 5, durationSecs: null }),
       ]),
     );
     expect(issues).toEqual([expect.stringMatching(/plank.*durationSecs/)]);
@@ -125,27 +132,31 @@ describe("validateGeneratedPlan", () => {
     ["sets 5", { sets: 5 }],
     ["reps 20", { reps: 20 }],
   ])("applies beginner bounds (%s)", (_label, override) => {
-    const d = draft([dyn("push_up", override), dyn("pull_up"), plank()]);
+    const d = draft([
+      dynamicItem("push_up", override),
+      dynamicItem("pull_up"),
+      holdItem(),
+    ]);
     expect(issuesOf(d, "BEGINNER")).toHaveLength(1);
     expect(validateGeneratedPlan(d, catalog, "ADVANCED").ok).toBe(true);
   });
 
   it.each([
-    ["restSecs 10", dyn("push_up", { restSecs: 10 })],
-    ["restSecs 400", dyn("push_up", { restSecs: 400 })],
-    ["sets 0", dyn("push_up", { sets: 0 })],
-    ["sets 7", dyn("push_up", { sets: 7 })],
-    ["reps 31", dyn("push_up", { reps: 31 })],
+    ["restSecs 10", dynamicItem("push_up", { restSecs: 10 })],
+    ["restSecs 400", dynamicItem("push_up", { restSecs: 400 })],
+    ["sets 0", dynamicItem("push_up", { sets: 0 })],
+    ["sets 7", dynamicItem("push_up", { sets: 7 })],
+    ["reps 31", dynamicItem("push_up", { reps: 31 })],
   ])("rejects out-of-range %s for any level", (_label, exercise) => {
-    const d = draft([exercise, dyn("pull_up"), plank()]);
+    const d = draft([exercise, dynamicItem("pull_up"), holdItem()]);
     expect(issuesOf(d, "ADVANCED")).toHaveLength(1);
   });
 
   it("rejects hold durations outside 5-120", () => {
     const d = draft([
-      dyn("push_up"),
-      dyn("pull_up"),
-      plank({ durationSecs: 600 }),
+      dynamicItem("push_up"),
+      dynamicItem("pull_up"),
+      holdItem({ durationSecs: 600 }),
     ]);
     expect(issuesOf(d, "ADVANCED")).toEqual([
       expect.stringContaining("durationSecs"),
@@ -154,7 +165,10 @@ describe("validateGeneratedPlan", () => {
 
   it("collects all issues rather than stopping at the first", () => {
     const issues = issuesOf(
-      draft([dyn("handstand"), dyn("push_up", { restSecs: 5 })]),
+      draft([
+        dynamicItem("handstand"),
+        dynamicItem("push_up", { restSecs: 5 }),
+      ]),
     );
     expect(issues).toHaveLength(3);
   });
