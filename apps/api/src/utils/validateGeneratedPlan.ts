@@ -52,9 +52,7 @@ export const validateGeneratedPlan = (
   const name = draft.name.trim().slice(0, MAX_NAME_LENGTH).trim();
   if (name.length === 0) issues.push("Plan name is empty");
 
-  const note = draft.note
-    ? draft.note.trim().slice(0, MAX_NOTE_LENGTH) || null
-    : null;
+  const note = draft.note?.trim().slice(0, MAX_NOTE_LENGTH) || null;
 
   if (
     draft.exercises.length < MIN_EXERCISES ||
@@ -75,7 +73,7 @@ export const validateGeneratedPlan = (
       continue;
     }
 
-    const before = issues.length;
+    const issueCountAtStart = issues.length;
 
     if (exercise.exerciseType === "DYNAMIC") {
       if (item.reps === null || item.durationSecs !== null) {
@@ -117,7 +115,7 @@ export const validateGeneratedPlan = (
       );
     }
 
-    if (issues.length === before) {
+    if (issues.length === issueCountAtStart) {
       exercises.push({
         exerciseId: exercise.id,
         sets: item.sets,
