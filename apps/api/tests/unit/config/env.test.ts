@@ -161,15 +161,7 @@ describe("envSchema", () => {
 
 describe("LLM and generation env", () => {
   it("applies the documented defaults", () => {
-    const parsed = envSchema.parse({
-      DATABASE_URL: "postgresql://u:p@127.0.0.1:1/db?schema=public",
-      JWT_SECRET: "a".repeat(32),
-      R2_ACCOUNT_ID: "account",
-      R2_ACCESS_KEY_ID: "access-key",
-      R2_SECRET_ACCESS_KEY: "secret-key",
-      R2_BUCKET_NAME: "bucket",
-      R2_PUBLIC_DOMAIN: "cdn.example.com",
-    });
+    const parsed = parse();
 
     expect(parsed.LLM_MODEL_PRIMARY).toBe("claude-sonnet-5-5");
     expect(parsed.LLM_MODEL_FALLBACK).toBe("claude-sonnet-5-5");
