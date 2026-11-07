@@ -27,12 +27,12 @@ type CallRecord = {
   latencyMs: number;
   inputTokens: number | null;
   outputTokens: number | null;
-  schemaValid: boolean;
+  isSchemaValid: boolean;
   llmErrorCode: string | null;
-  catalogValid: boolean;
+  isCatalogValid: boolean;
   issues: string[];
-  restPresent: boolean;
-  noteSet: boolean;
+  hasRest: boolean;
+  hasNote: boolean;
   volume: number | null;
 };
 
@@ -60,13 +60,17 @@ const targets: Array<{ model: string; effort: LlmEffort; timeoutMs: number }> =
     },
   ];
 
-const pct = (n: number, d: number) =>
-  d === 0 ? "n/a" : `${Math.round((n / d) * 100)}%`;
-const mean = (xs: number[]) =>
-  xs.length === 0 ? 0 : Math.round(xs.reduce((a, b) => a + b, 0) / xs.length);
-const p50 = (xs: number[]) => {
-  const s = [...xs].sort((a, b) => a - b);
-  return s.length === 0 ? 0 : Math.round(s[Math.floor((s.length - 1) / 2)]);
+const formatPercent = (count: number, total: number) =>
+  total === 0 ? "n/a" : `${Math.round((count / total) * 100)}%`;
+const averageRounded = (values: number[]) =>
+  values.length === 0
+    ? 0
+    : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+const medianRounded = (values: number[]) => {
+  const sorted = [...values].sort((first, second) => first - second);
+  return sorted.length === 0
+    ? 0
+    : Math.round(sorted[Math.floor((sorted.length - 1) / 2)]);
 };
 
 const runOne = async (
@@ -91,12 +95,12 @@ const runOne = async (
     latencyMs: 0,
     inputTokens: null,
     outputTokens: null,
-    schemaValid: false,
+    isSchemaValid: false,
     llmErrorCode: null,
-    catalogValid: false,
+    isCatalogValid: false,
     issues: [],
-    restPresent: false,
-    noteSet: false,
+    hasRest: false,
+    hasNote: false,
     volume: null,
   };
 
@@ -113,18 +117,18 @@ const runOne = async (
       exerciseCodes,
     });
     record.latencyMs = Math.round(performance.now() - start);
-    record.schemaValid = true;
+    record.isSchemaValid = true;
     record.inputTokens = result.usage.inputTokens;
     record.outputTokens = result.usage.outputTokens;
-    record.noteSet = result.plan.note !== null && result.plan.note !== "";
-    record.restPresent = result.plan.exercises.every((e) => e.restSecs >= 30);
+    record.hasNote = result.plan.note !== null && result.plan.note !== "";
+    record.hasRest = result.plan.exercises.every((e) => e.restSecs >= 30);
     record.volume = result.plan.exercises.reduce(
       (sum, e) => sum + e.sets * (e.reps ?? (e.durationSecs ?? 0) / 3),
       0,
     );
 
     const validation = validateGeneratedPlan(result.plan, catalogMap, level);
-    record.catalogValid = validation.ok;
+    record.isCatalogValid = validation.ok;
     if (!validation.ok) record.issues = validation.issues;
   } catch (error) {
     record.latencyMs = Math.round(performance.now() - start);
@@ -142,11 +146,12 @@ const main = async () => {
   for (const target of targets) {
     for (const goal of EVAL_GOALS) {
       for (const level of EVAL_LEVELS) {
-        const r = await runOne(target, goal, level);
-        records.push(r);
+        const callRecord = await runOne(target, goal, level);
+        records.push(callRecord);
         out(
-          `${target.model} | ${goal} | ${level} | ${r.latencyMs}ms | ${
-            r.llmErrorCode ?? (r.catalogValid ? "ok" : "invalid")
+          `${target.model} | ${goal} | ${level} | ${callRecord.latencyMs}ms | ${
+            callRecord.llmErrorCode ??
+            (callRecord.isCatalogValid ? "ok" : "invalid")
           }`,
         );
       }
@@ -154,56 +159,92 @@ const main = async () => {
   }
 
   const summary = targets.map((target) => {
-    const rs = records.filter((r) => r.model === target.model);
-    const ok = rs.filter((r) => r.schemaValid);
-    const pairs = EVAL_GOALS.map((goal) => {
-      const b = rs.find((r) => r.goal === goal && r.level === "BEGINNER");
-      const a = rs.find((r) => r.goal === goal && r.level === "ADVANCED");
-      return b?.volume != null && a?.volume != null && a.volume > b.volume;
+    const targetRecords = records.filter(
+      (record) => record.model === target.model,
+    );
+    const schemaValidRecords = targetRecords.filter(
+      (record) => record.isSchemaValid,
+    );
+    const isVolumeHigherForAdvancedByGoal = EVAL_GOALS.map((goal) => {
+      const beginnerRecord = targetRecords.find(
+        (record) => record.goal === goal && record.level === "BEGINNER",
+      );
+      const advancedRecord = targetRecords.find(
+        (record) => record.goal === goal && record.level === "ADVANCED",
+      );
+      return (
+        beginnerRecord?.volume != null &&
+        advancedRecord?.volume != null &&
+        advancedRecord.volume > beginnerRecord.volume
+      );
     });
-    const noteRs = rs.filter((r) => EVAL_NOTE_GOALS.has(r.goal));
-    const row = {
+    const noteGoalRecords = targetRecords.filter((record) =>
+      EVAL_NOTE_GOALS.has(record.goal),
+    );
+    return {
       model: target.model,
       effort: target.effort,
-      calls: rs.length,
-      schemaValid: pct(ok.length, rs.length),
-      catalogValid: pct(rs.filter((r) => r.catalogValid).length, rs.length),
-      restPresent: pct(ok.filter((r) => r.restPresent).length, ok.length),
-      levelDiffers: pct(pairs.filter(Boolean).length, pairs.length),
-      noteOnHandstandAndKnee: pct(
-        noteRs.filter((r) => r.noteSet).length,
-        noteRs.length,
+      calls: targetRecords.length,
+      schemaValid: formatPercent(
+        schemaValidRecords.length,
+        targetRecords.length,
       ),
-      p50LatencyMs: p50(rs.map((r) => r.latencyMs)),
-      maxLatencyMs: Math.max(0, ...rs.map((r) => r.latencyMs)),
-      meanInputTokens: mean(ok.map((r) => r.inputTokens ?? 0)),
-      meanOutputTokens: mean(ok.map((r) => r.outputTokens ?? 0)),
+      catalogValid: formatPercent(
+        targetRecords.filter((record) => record.isCatalogValid).length,
+        targetRecords.length,
+      ),
+      restPresent: formatPercent(
+        schemaValidRecords.filter((record) => record.hasRest).length,
+        schemaValidRecords.length,
+      ),
+      levelDiffers: formatPercent(
+        isVolumeHigherForAdvancedByGoal.filter(Boolean).length,
+        isVolumeHigherForAdvancedByGoal.length,
+      ),
+      noteOnHandstandAndKnee: formatPercent(
+        noteGoalRecords.filter((record) => record.hasNote).length,
+        noteGoalRecords.length,
+      ),
+      p50LatencyMs: medianRounded(
+        targetRecords.map((record) => record.latencyMs),
+      ),
+      maxLatencyMs: Math.max(
+        0,
+        ...targetRecords.map((record) => record.latencyMs),
+      ),
+      meanInputTokens: averageRounded(
+        schemaValidRecords.map((record) => record.inputTokens ?? 0),
+      ),
+      meanOutputTokens: averageRounded(
+        schemaValidRecords.map((record) => record.outputTokens ?? 0),
+      ),
     };
-    return row;
   });
 
   out("");
   out(`Prompt version: ${WORKOUT_PLAN_PROMPT_VERSION}`);
-  for (const row of summary) {
+  for (const targetSummary of summary) {
     out("");
-    for (const [k, v] of Object.entries(row)) out(`  ${k.padEnd(24)} ${v}`);
+    for (const [metric, value] of Object.entries(targetSummary)) {
+      out(`  ${metric.padEnd(24)} ${value}`);
+    }
   }
 
-  const dir = path.join(import.meta.dirname, "results");
-  await mkdir(dir, { recursive: true });
-  const file = path.join(
-    dir,
+  const resultsDir = path.join(import.meta.dirname, "results");
+  await mkdir(resultsDir, { recursive: true });
+  const resultsFile = path.join(
+    resultsDir,
     `${new Date().toISOString().replace(/:/g, "-")}.json`,
   );
   await writeFile(
-    file,
+    resultsFile,
     JSON.stringify(
       { promptVersion: WORKOUT_PLAN_PROMPT_VERSION, summary, records },
       null,
       2,
     ),
   );
-  out(`\nResults written to ${file}`);
+  out(`\nResults written to ${resultsFile}`);
 };
 
 await main();
