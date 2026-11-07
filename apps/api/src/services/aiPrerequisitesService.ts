@@ -23,11 +23,6 @@ const MESSAGES: Record<AiPrerequisiteCode, string> = {
   AI_CONSENT_REQUIRED: "Accept the AI privacy notice before using AI features",
 };
 
-/**
- * Single shared gate for AI features (D-05): workout generation now, form
- * analysis later. Throws 428 with a machine-readable code for the first
- * missing prerequisite.
- */
 export class AiPrerequisitesService {
   private get prisma() {
     return getPrismaClient();
@@ -67,20 +62,12 @@ export class AiPrerequisitesService {
       throw new PreconditionRequiredError(MESSAGES[code], code);
     }
 
-    // Defensive narrowing; unreachable when the check above passes.
-    if (!user.experienceLevel || !goal || !bodyMetric) {
-      throw new PreconditionRequiredError(
-        MESSAGES.PROFILE_INCOMPLETE,
-        "PROFILE_INCOMPLETE",
-      );
-    }
-
     return {
       userId,
-      experienceLevel: user.experienceLevel,
+      experienceLevel: user.experienceLevel!,
       goal: { goalType: goal.goalType, title: goal.title },
-      heightCm: bodyMetric.heightCm,
-      weightKg: bodyMetric.weightKg,
+      heightCm: bodyMetric!.heightCm,
+      weightKg: bodyMetric!.weightKg,
     };
   }
 }
