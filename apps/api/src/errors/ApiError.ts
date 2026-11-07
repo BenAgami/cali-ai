@@ -12,7 +12,7 @@ class ApiError extends Error {
   ) {
     super(message);
     this.status = this.statusCode = status;
-    if (code !== undefined) this.code = code;
+    this.code = code;
 
     Object.setPrototypeOf(this, new.target.prototype);
     this.name = new.target.name;

@@ -9,7 +9,6 @@ import {
   type WorkoutPlanResult,
 } from "./types";
 
-// Built per request so the model can only emit codes from the live catalog.
 // The API ignores min/max, so ranges are re-validated server-side.
 const buildPlanOutputSchema = (codes: [string, ...string[]]) =>
   z.object({
