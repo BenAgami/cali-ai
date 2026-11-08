@@ -18,6 +18,7 @@ erDiagram
     User ||--o{ UserGoal : sets
     User ||--o{ WorkoutSession : performs
     Exercise ||--o{ WorkoutSession : selected_in
+    Workout ||--o{ WorkoutSession : recorded_in
     WorkoutSession ||--o| PoseCapture : captures
     WorkoutSession ||--o| AnalysisResult : produces
     AnalysisResult ||--o{ AnalysisFinding : contains
@@ -54,6 +55,8 @@ erDiagram
         int id PK
         int user_id FK
         int exercise_id FK
+        int workout_id FK
+        int set_number
         string processing_status
         text notes
         timestamp performed_at
@@ -70,7 +73,9 @@ erDiagram
     AnalysisResult {
         int id PK
         int session_id FK
+        string outcome
         int form_score
+        text[] untrackable_reasons
         json score_breakdown
         text summary_feedback
         json raw_feedback
@@ -82,6 +87,13 @@ erDiagram
         text rubric_version
         timestamp analyzed_at
         timestamp created_at
+    }
+
+    AnalysisFinding {
+        int id PK
+        int analysis_result_id FK
+        int sort_order
+        int[] rep_numbers
     }
 
     PoseCapture {
@@ -122,7 +134,18 @@ erDiagram
     }
 ```
 
+### Phase 5 notes
+
+- `WorkoutSession.workoutId` is a nullable FK to `Workout` (SET NULL on delete, so the session survives workout deletion). `setNumber` is the 1-based set within the workout run. Several sessions may share one `(workoutId, setNumber)`: "Record again" creates a new session and the latest is shown.
+- `AnalysisResult.outcome` is `SCORED` or `UNTRACKABLE`. `formScore` is null when `UNTRACKABLE`, and `untrackableReasons` lists why. Phase 7 trend queries must filter `outcome = SCORED`. `formScore` is stored but never returned to the app (FORM-04).
+- `AnalysisFinding.repNumbers` holds 1-based rep references (FORM-06).
+
 ## 3. Enums
+
+`AnalysisOutcome`
+
+- `SCORED`
+- `UNTRACKABLE`
 
 `Role`
 
