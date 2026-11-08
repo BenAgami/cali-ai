@@ -3,16 +3,16 @@ import { NodeHttpHandler } from "@smithy/node-http-handler";
 import { Agent as HttpsAgent } from "node:https";
 
 import { env } from "../config/env";
-import { VIDEO_ANALYSIS_WORKER_CONCURRENCY } from "../config/constants";
 
 const R2_CONNECTION_TIMEOUT_MS = 5_000;
 const R2_REQUEST_TIMEOUT_MS = 10_000;
-const R2_SOCKET_HEADROOM_MULTIPLIER = 3;
+const R2_MAX_SOCKETS = 15;
+const R2_MAX_FREE_SOCKETS = 5;
 
 const httpsAgent = new HttpsAgent({
   keepAlive: true,
-  maxSockets: VIDEO_ANALYSIS_WORKER_CONCURRENCY * R2_SOCKET_HEADROOM_MULTIPLIER,
-  maxFreeSockets: VIDEO_ANALYSIS_WORKER_CONCURRENCY,
+  maxSockets: R2_MAX_SOCKETS,
+  maxFreeSockets: R2_MAX_FREE_SOCKETS,
 });
 
 export const r2Client = new S3Client({

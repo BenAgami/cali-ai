@@ -8,6 +8,7 @@ import "./paths/users";
 import "./paths/workouts";
 import "./paths/exercises";
 import "./paths/workoutSessions";
+import "./paths/sessions";
 
 registry.registerComponent("securitySchemes", "BearerAuth", {
   type: "http",

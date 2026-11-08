@@ -9,12 +9,20 @@ const mockLogger = {
   fatal: vi.fn(),
 };
 const mockQueueClose = vi.fn();
+const mockMaintenanceClose = vi.fn();
+const mockStopWorkers = vi.fn();
+const mockCloseProgressBus = vi.fn();
 const mockRedisQuit = vi.fn();
 const mockDisconnectPrisma = vi.fn();
 
 vi.mock("../../../src/lib/logger", () => ({ logger: mockLogger }));
 vi.mock("../../../src/lib/queue", () => ({
-  videoAnalysisQueue: { close: mockQueueClose },
+  formAnalysisQueue: { close: mockQueueClose },
+  maintenanceQueue: { close: mockMaintenanceClose },
+}));
+vi.mock("../../../src/workers", () => ({ stopWorkers: mockStopWorkers }));
+vi.mock("../../../src/lib/progressBus", () => ({
+  closeProgressBus: mockCloseProgressBus,
 }));
 vi.mock("../../../src/lib/redis", () => ({
   redisConnection: { quit: mockRedisQuit },
@@ -44,6 +52,9 @@ const registerAndCapture = async (getServer: () => Server | undefined) => {
 beforeEach(() => {
   vi.resetModules();
   mockQueueClose.mockReset().mockResolvedValue(undefined);
+  mockMaintenanceClose.mockReset().mockResolvedValue(undefined);
+  mockStopWorkers.mockReset().mockResolvedValue(undefined);
+  mockCloseProgressBus.mockReset().mockResolvedValue(undefined);
   mockRedisQuit.mockReset().mockResolvedValue(undefined);
   mockDisconnectPrisma.mockReset().mockResolvedValue(undefined);
   vi.spyOn(process, "exit").mockImplementation((): never => undefined as never);
@@ -76,6 +87,27 @@ describe("registerShutdownHandlers", () => {
     expect(mockRedisQuit).toHaveBeenCalled();
     expect(mockDisconnectPrisma).toHaveBeenCalled();
     expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it("tears down in dependency order: server, workers, bus, queues, redis, prisma", async () => {
+    const close = vi.fn((cb: (err?: Error) => void) => cb());
+    const server = { close } as unknown as Server;
+    const handlers = await registerAndCapture(() => server);
+
+    handlers.get("SIGINT")?.();
+    await vi.waitFor(() => expect(process.exit).toHaveBeenCalledWith(0));
+
+    const order = [
+      close,
+      mockStopWorkers,
+      mockCloseProgressBus,
+      mockQueueClose,
+      mockMaintenanceClose,
+      mockRedisQuit,
+      mockDisconnectPrisma,
+    ].map((fn) => fn.mock.invocationCallOrder[0]);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(new Set(order).size).toBe(order.length);
   });
 
   it("logs and exits 1 when server.close reports an error", async () => {
@@ -157,6 +189,7 @@ describe("registerShutdownHandlers", () => {
     expect(mockLogger.warn).toHaveBeenCalledWith(
       "Received SIGTERM during shutdown, ignoring",
     );
+    await vi.waitFor(() => expect(mockQueueClose).toHaveBeenCalled());
     expect(mockQueueClose).toHaveBeenCalledTimes(1);
   });
 

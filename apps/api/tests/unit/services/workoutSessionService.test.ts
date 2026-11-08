@@ -81,45 +81,6 @@ describe("WorkoutSessionService.createSession", () => {
     expect(createData().processingStatus).toBe(SessionStatus.PENDING);
   });
 
-  it("flattens videoMeta into individual columns", async () => {
-    givenUserAndExercise();
-
-    await workoutSessionService.createSession(USER_UUID, {
-      ...baseDto,
-      videoMeta: {
-        durationSec: 12,
-        fps: 30,
-        width: 1920,
-        height: 1080,
-        sizeBytes: 5_000_000,
-      },
-    });
-
-    expect(createData()).toMatchObject({
-      videoDurationSec: 12,
-      videoFps: 30,
-      videoWidth: 1920,
-      videoHeight: 1080,
-      videoSizeBytes: 5_000_000,
-    });
-  });
-
-  it("maps present video fields and nulls the rest of a partial videoMeta", async () => {
-    givenUserAndExercise();
-
-    await workoutSessionService.createSession(USER_UUID, {
-      ...baseDto,
-      videoMeta: { durationSec: 12, height: 1080 },
-    });
-
-    const data = createData();
-    expect(data.videoDurationSec).toBe(12);
-    expect(data.videoHeight).toBe(1080);
-    expect(data.videoFps).toBeNull();
-    expect(data.videoWidth).toBeNull();
-    expect(data.videoSizeBytes).toBeNull();
-  });
-
   it("rejects an unparseable performedAt", async () => {
     givenUserAndExercise();
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { Stack } from "expo-router";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Stack, useRouter } from "expo-router";
 
 import { ScreenHeader, SwitchRow } from "@repo/ui";
 
@@ -10,6 +10,7 @@ import { baseColors } from "@src/theme/colors";
 
 const Settings: React.FC = () => {
   const { currentTheme, toggleTheme, colors } = useTheme();
+  const router = useRouter();
 
   return (
     <>
@@ -52,6 +53,38 @@ const Settings: React.FC = () => {
                 </View>
               </View>
             </View>
+
+            {__DEV__ ? (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  Developer
+                </Text>
+
+                <View
+                  style={[
+                    styles.sectionBody,
+                    { backgroundColor: colors.background },
+                  ]}
+                >
+                  <Pressable
+                    style={styles.devRow}
+                    onPress={() => {
+                      router.push("/dev-pose-check");
+                    }}
+                  >
+                    <Text style={{ color: colors.text }}>Pose check</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.devRow}
+                    onPress={() => {
+                      router.push("/dev-pipeline-check");
+                    }}
+                  >
+                    <Text style={{ color: colors.text }}>Pipeline check</Text>
+                  </Pressable>
+                </View>
+              </View>
+            ) : null}
           </ScrollView>
         </View>
       </SafeAreaView>
@@ -89,6 +122,10 @@ const styles = StyleSheet.create({
   rowWrapper: {
     borderTopWidth: 1,
     borderColor: "#5f5f5f",
+  },
+  devRow: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
   },
   rowFirst: {
     borderTopWidth: 0,

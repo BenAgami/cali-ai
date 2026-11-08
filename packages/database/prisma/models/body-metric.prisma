@@ -5,7 +5,7 @@ model BodyMetric {
   userId Int  @map("user_id")
 
   heightCm Float @map("height_cm")
-  weightKg Float  @map("weight_kg")
+  weightKg Float @map("weight_kg")
 
   createdAt DateTime @default(now()) @map("created_at")
 

@@ -47,3 +47,10 @@ enum FindingSeverity {
   MEDIUM
   HIGH
 }
+
+enum AnalysisStage {
+  QUEUED
+  ANALYZING_REPS
+  WRITING_FEEDBACK
+  COMPLETED
+}

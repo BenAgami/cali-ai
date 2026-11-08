@@ -2,10 +2,12 @@ import type { Server } from "node:http";
 
 import { disconnectPrisma } from "@repo/db";
 
-import { videoAnalysisQueue } from "./queue";
+import { closeProgressBus } from "./progressBus";
+import { formAnalysisQueue, maintenanceQueue } from "./queue";
 import { redisConnection } from "./redis";
 import { logger } from "./logger";
 import { toError } from "../utils/toError";
+import { stopWorkers } from "../workers";
 
 let isShuttingDown = false;
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -37,7 +39,10 @@ const shutdown = async (
       });
     }
 
-    await videoAnalysisQueue.close();
+    await stopWorkers();
+    await closeProgressBus();
+    await formAnalysisQueue.close();
+    await maintenanceQueue.close();
     await redisConnection.quit();
     await disconnectPrisma();
 

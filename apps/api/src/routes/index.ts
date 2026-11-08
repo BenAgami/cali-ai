@@ -6,6 +6,7 @@ import healthRoutes from "./health";
 import authRoutes from "./auth";
 import userRoutes from "./user";
 import workoutSessionRoutes from "./workoutSession";
+import sessionRoutes from "./session";
 import exerciseRoutes from "./exercise";
 import workoutRoutes from "./workout";
 import openapiRoutes from "./openapi";
@@ -16,6 +17,7 @@ const registerPublicRoutes = (router: Router): void => {
   router.use("/exercises", exerciseRoutes);
   router.use("/workouts", workoutRoutes);
   router.use("/workout-sessions", workoutSessionRoutes);
+  router.use("/sessions", sessionRoutes);
 };
 
 const registerInternalRoutes = (router: Router): void => {

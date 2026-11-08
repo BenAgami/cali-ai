@@ -12,16 +12,6 @@ type ListWorkoutSessionsQuery = {
   exerciseCode?: string;
 };
 
-const serializeSession = <T extends { videoSizeBytes?: bigint | null }>(
-  session: T,
-) => ({
-  ...session,
-  videoSizeBytes:
-    session.videoSizeBytes === null || session.videoSizeBytes === undefined
-      ? null
-      : Number(session.videoSizeBytes),
-});
-
 /**
  * Create workout session
  * @route POST /api/sessions
@@ -36,7 +26,7 @@ export const createWorkoutSession = async (req: Request, res: Response) => {
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Workout session created successfully",
-    data: serializeSession(session),
+    data: session,
   });
 };
 
@@ -65,9 +55,6 @@ export const listWorkoutSessions = async (
   res.status(StatusCodes.OK).json({
     success: true,
     message: "Workout sessions retrieved successfully",
-    data: {
-      ...result,
-      items: result.items.map(serializeSession),
-    },
+    data: result,
   });
 };

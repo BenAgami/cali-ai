@@ -21,8 +21,7 @@ export const createApp = (): Application => {
       credentials: true,
     }),
   );
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.json({ limit: "100kb" }));
 
   app.use(pinoHttp({ logger, autoLogging: env.runtimeEnv !== "test" }));
 

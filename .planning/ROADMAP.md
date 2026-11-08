@@ -13,7 +13,7 @@ The project delivers its core value — AI-powered calisthenics form feedback �
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build
+- [x] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build (completed 2026-11-08)
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
@@ -34,10 +34,23 @@ Decimal phases appear between their surrounding integers in numeric order.
 1. A POST to the keypoint capture endpoint (`/api/sessions/:id/capture`) returns 202 with a job ID in under 500 ms for a typical set (~25-60 KB compressed)
 2. A BullMQ worker picks up the job and processes it asynchronously without blocking the HTTP handler
 3. The client receives SSE events as the job progresses from QUEUED through PROCESSING to COMPLETED or FAILED
-4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 10 minutes — it never stays stuck in PROCESSING indefinitely
-5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on both iOS and Android simulators without crashing
+4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 3 minutes — it never stays stuck in PROCESSING indefinitely
+5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on Android without crashing (pose pass runs on a test image or video), and the iOS simulator build compiles on EAS; iOS runtime verification is deferred
 6. MoveNet (and a 33-point alternative) is checked on real clips of the four core exercises (push-up down position, pull-up top position, dip, squat), and the result decides the pose model
-   **Plans**: TBD
+   **Plans:** 10/10 plans complete
+
+Plans:
+
+- [x] 01-01-PLAN.md — Prisma migration (PoseCapture, AnalysisStage columns, drop video columns), video-field removal, queue renamed to form-analysis
+- [x] 01-02-PLAN.md — Status-event contract + stage-to-percent mapping, analysis env config with retry-budget and 3-minute-ceiling checks (150 s stuck timeout, 15 s reaper tick), Redis pub/sub progress bus
+- [x] 01-03-PLAN.md — Dev-build gate: worklets-core + MoveNet pose-check screen, Android + iOS-simulator EAS builds, device verification
+- [x] 01-04-PLAN.md — Pose-model gate: offline evaluator, shot list, filmed clips, MoveNet vs 33-point decision (BlazePose Full chosen)
+- [x] 01-05-PLAN.md — Session state machine service (guarded transitions, reaper query) with unit + real-DB tests
+- [x] 01-06-PLAN.md — Capture payload schema + caps, gzip storage codec, withTimeout utility
+- [x] 01-07-PLAN.md — POST /api/sessions/:id/capture and /analysis/retry (202 + job id, 409/413 rules) with integration tests
+- [x] 01-08-PLAN.md — BullMQ analysis worker, retries/backoff, LLM-timeout seam, reaper job scheduler (every 15 s), startup/shutdown wiring
+- [x] 01-09-PLAN.md — GET /api/sessions/:id/status SSE stream via analysisStreamService (current state first, live pub/sub events, terminal close), thin controller
+- [x] 01-10-PLAN.md — Native sessions API (gzip upload), react-native-sse status hook, dev pipeline-check screen, end-to-end device check
 
 ### Phase 2: User Profile
 
@@ -150,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
-| 1. Infrastructure            | 0/TBD          | In progress | -          |
+| 1. Infrastructure            | 10/10          | Complete    | 2026-11-08 |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 0/TBD          | Not started | -          |

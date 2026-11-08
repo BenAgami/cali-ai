@@ -15,14 +15,17 @@ import {
   createWorkoutSessionSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
-  EXERCISE_TYPES,
   exerciseDetailSchema,
   workoutWithExercisesSchema,
   workoutLogResponseSchema,
   pageMetaSchema,
+  poseCapturePayloadSchema,
+  captureAcceptedResponseSchema,
+  analysisStatusEventSchema,
+  workoutSessionResponseSchema,
 } from "@repo/common";
 
-import { Role, GoalStatus, SessionStatus } from "@repo/db";
+import { Role, GoalStatus } from "@repo/db";
 
 // ── Primitive helpers ─────────────────────────────────────────────────────────
 
@@ -44,8 +47,6 @@ const RoleEnum = z.enum(enumValues(Role));
 const ExperienceLevelEnum = z.enum(EXPERIENCE_LEVELS);
 const GoalTypeEnum = z.enum(GOAL_TYPES);
 const GoalStatusEnum = z.enum(enumValues(GoalStatus));
-const ExerciseTypeEnum = z.enum(EXERCISE_TYPES);
-const SessionStatusEnum = z.enum(enumValues(SessionStatus));
 
 // ── Request bodies (reuse the shared @repo/common schemas) ────────────────────
 
@@ -80,6 +81,7 @@ export const CreateWorkoutSessionBody = registry.register(
   "CreateWorkoutSessionBody",
   createWorkoutSessionSchema,
 );
+registry.register("PoseCaptureBody", poseCapturePayloadSchema);
 
 // ── Response envelope ─────────────────────────────────────────────────────────
 
@@ -271,12 +273,6 @@ export const WorkoutLogResponse = registry.register(
 
 // ── Workout session responses ─────────────────────────────────────────────────
 
-const SessionExerciseRef = z.object({
-  code: z.string(),
-  displayName: z.string(),
-  exerciseType: ExerciseTypeEnum,
-});
-
 const AnalysisResultSummary = z.object({
   formScore: z.number().int(),
   analyzedAt: isoDateTime(),
@@ -285,27 +281,7 @@ const AnalysisResultSummary = z.object({
 
 export const WorkoutSessionResponse = registry.register(
   "WorkoutSession",
-  z.object({
-    id: z.number().int(),
-    userId: z.number().int(),
-    exerciseId: z.number().int(),
-    processingStatus: SessionStatusEnum,
-    notes: z.string().nullable(),
-    performedAt: isoDateTime(),
-    videoDurationSec: decimalString().nullable(),
-    videoFps: decimalString().nullable(),
-    videoWidth: z.number().int().nullable(),
-    videoHeight: z.number().int().nullable(),
-    videoSizeBytes: z.number().nullable(),
-    processingStartedAt: isoDateTime().nullable(),
-    processingFinishedAt: isoDateTime().nullable(),
-    failureReason: z.string().nullable(),
-    videoR2Key: z.string().nullable(),
-    bullmqJobId: z.string().nullable(),
-    createdAt: isoDateTime(),
-    updatedAt: isoDateTime(),
-    exercise: SessionExerciseRef,
-  }),
+  workoutSessionResponseSchema,
 );
 
 export const WorkoutSessionListItem = registry.register(
@@ -314,3 +290,10 @@ export const WorkoutSessionListItem = registry.register(
     analysisResult: AnalysisResultSummary.nullable(),
   }),
 );
+
+export const CaptureAccepted = registry.register(
+  "CaptureAccepted",
+  captureAcceptedResponseSchema,
+);
+
+registry.register("AnalysisStatusEvent", analysisStatusEventSchema);
