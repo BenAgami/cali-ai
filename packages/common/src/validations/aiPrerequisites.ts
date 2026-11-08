@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { ExperienceLevel } from "./user";
 
-export const AI_CONSENT_VERSION = "2026-11-04";
+export const AI_CONSENT_VERSION = "2026-11-08";
 
 export const aiConsentSchema = z.object({
   version: z.literal(AI_CONSENT_VERSION),

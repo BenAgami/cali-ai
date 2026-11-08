@@ -28,4 +28,4 @@ export const AI_GENERATING_TEXT =
 export const AI_ALREADY_SAVED_TEXT = "This plan is already saved.";
 
 export const AI_CONSENT_BODY_TEXT =
-  "To build your workout we send your fitness level, primary goal, height, weight and the goal you type to our AI provider, Anthropic (Claude). We don't send your name, email or photos. Generated plans are stored in your account.";
+  "To build your workouts and give form feedback we send your fitness level, primary goal, height, weight, the goal you type, and measurements computed from your pose keypoints (such as joint angles and rep timing) to our AI provider, Anthropic (Claude). Video never leaves your phone, and we don't send your name, email, photos or raw keypoints. Your recorded sets' keypoints, form results and generated plans are stored in your account.";

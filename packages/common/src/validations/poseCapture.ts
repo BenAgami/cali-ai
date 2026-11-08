@@ -35,7 +35,10 @@ export const poseCapturePayloadSchema = z
     fps: z.number().min(CAPTURE_LIMITS.minFps).max(CAPTURE_LIMITS.maxFps),
     frameCount: z.number().int().min(1).max(CAPTURE_LIMITS.maxFrames),
     durationSec: z.number().positive().max(CAPTURE_LIMITS.maxDurationSec),
+    // "side" | "front" | "back"
     cameraView: z.string().trim().max(20).optional(),
+    // width / height of the oriented image the landmarks are normalised to
+    aspectRatio: z.number().min(0.2).max(5).optional(),
     deviceModel: z.string().trim().max(80).optional(),
     appVersion: z.string().trim().max(40).optional(),
     frames: z.array(frameSchema).min(1).max(CAPTURE_LIMITS.maxFrames),
@@ -81,6 +84,22 @@ export const poseCapturePayloadSchema = z
   });
 
 export type PoseCapturePayload = z.infer<typeof poseCapturePayloadSchema>;
+
+const round = (value: number, decimals: number): number =>
+  Math.round(value * 10 ** decimals) / 10 ** decimals;
+
+export const quantizeCapture = (
+  payload: PoseCapturePayload,
+): PoseCapturePayload => ({
+  ...payload,
+  durationSec: round(payload.durationSec, 3),
+  frames: payload.frames.map((frame) => ({
+    timestampSec: round(frame.timestampSec, 3),
+    keypoints: frame.keypoints.map(
+      ([x, y, v]): Keypoint => [round(x, 3), round(y, 3), round(v, 2)],
+    ),
+  })),
+});
 
 export const captureAcceptedResponseSchema = z.object({
   sessionId: z.number().int(),
