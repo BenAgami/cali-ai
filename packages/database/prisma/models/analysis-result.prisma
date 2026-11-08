@@ -4,7 +4,9 @@ model AnalysisResult {
   session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   sessionId Int            @unique @map("session_id")
 
-  formScore Int @map("form_score") @db.SmallInt
+  outcome            AnalysisOutcome @default(SCORED)
+  formScore          Int?            @map("form_score") @db.SmallInt
+  untrackableReasons String[]        @default([]) @map("untrackable_reasons")
 
   scoreBreakdown  Json    @default("{}") @map("score_breakdown")
   summaryFeedback String? @map("summary_feedback")
