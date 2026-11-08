@@ -40,12 +40,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **FORM-01**: User selects an exercise before recording (push-up, pull-up, dip, squat)
 - [ ] **FORM-02**: User is offered the option to record a set for form analysis; the camera opens only when they accept, never automatically. Declining still lets them log the set normally. On-device pose estimation starts when recording starts
 - [ ] **FORM-03**: When a recorded set ends, the keypoints are automatically submitted and a job ID is returned — no manual upload step. Sets that were not recorded are never submitted
-- [ ] **FORM-04**: User receives a form band (5 levels, e.g. Excellent / Good / Fair / Needs work / Poor) per set after analysis completes. A 0–100 score is stored with each result for trend charts, labeling and relabeling, but is not shown per set
+- [x] **FORM-04**: User receives a form band (5 levels, e.g. Excellent / Good / Fair / Needs work / Poor) per set after analysis completes. A 0–100 score is stored with each result for trend charts, labeling and relabeling, but is not shown per set
 - [ ] **FORM-05**: Form band includes a breakdown by dimension (e.g. range of motion, core stability, symmetry)
-- [ ] **FORM-06**: User receives actionable text feedback referencing specific reps
+- [x] **FORM-06**: User receives actionable text feedback referencing specific reps
 - [ ] **FORM-07**: Feedback leads with positives before corrections; max 2 corrections per set
 - [ ] **FORM-08**: User is notified when analysis is complete (SSE progress → result)
-- [ ] **FORM-09**: When the body cannot be tracked reliably (low keypoint confidence), the user gets camera advice instead of feedback
+- [x] **FORM-09**: When the body cannot be tracked reliably (low keypoint confidence), the user gets camera advice instead of feedback
 
 ### Training Data
 
@@ -142,12 +142,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORM-01     | Phase 5 | Pending  |
 | FORM-02     | Phase 5 | Pending  |
 | FORM-03     | Phase 5 | Pending  |
-| FORM-04     | Phase 5 | Pending  |
+| FORM-04     | Phase 5 | Complete |
 | FORM-05     | Phase 5 | Pending  |
-| FORM-06     | Phase 5 | Pending  |
+| FORM-06     | Phase 5 | Complete |
 | FORM-07     | Phase 5 | Pending  |
 | FORM-08     | Phase 5 | Pending  |
-| FORM-09     | Phase 5 | Pending  |
+| FORM-09     | Phase 5 | Complete |
 | DATA-01     | Phase 5.1 | Pending  |
 | DATA-02     | Phase 5.1 | Pending  |
 | DATA-03     | Phase 5.1 | Pending  |
