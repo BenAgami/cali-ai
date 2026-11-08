@@ -132,7 +132,7 @@ Plans:
 - [ ] 05-01-PLAN.md — Wave 0 gate: on-device BlazePose spike (MediaPipe PoseLandmarker plugin, Android), PoseFrame contract, runtime decision
 - [ ] 05-02-PLAN.md — Rubric v0 document (tags, thresholds, ramps, bands, trackability, daily cap) and user approval (D-13)
 - [x] 05-03-PLAN.md — Prisma migration: WorkoutSession workoutId/setNumber, AnalysisOutcome, nullable formScore, untrackableReasons, finding repNumbers
-- [ ] 05-04-PLAN.md — @repo/common contracts: supported exercises, bands, dimensions, untrackable advice, result/recorded-set shapes, aspectRatio + quantizeCapture, consent version bump
+- [x] 05-04-PLAN.md — @repo/common contracts: supported exercises, bands, dimensions, untrackable advice, result/recorded-set shapes, aspectRatio + quantizeCapture, consent version bump
 - [ ] 05-05-PLAN.md — Skeleton fixtures from the 16 Phase 1 clips (dump script, manifest, loader)
 - [ ] 05-06-PLAN.md — Metrics foundation: types, geometry, preprocessing, rep segmentation, trackability preflight, synthetic skeletons
 - [ ] 05-07-PLAN.md — Session creation as recorded-set entry (supported exercises, workout link, consent gate), processingStatus filter, no formScore in lists
