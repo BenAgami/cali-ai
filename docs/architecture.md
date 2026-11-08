@@ -42,7 +42,8 @@ flowchart TD
 
 - Camera capture with `react-native-vision-camera`
 - A frame processor runs the pose model on each frame via
-  `react-native-fast-tflite` (MoveNet)
+  `react-native-fast-tflite` (BlazePose Full, 33 keypoints; see
+  `.planning/phases/01-infrastructure/01-POSE-MODEL-DECISION.md`)
 - Keypoints are buffered with timestamps; no video file is recorded
 - A quality gate checks framing and keypoint confidence before the set starts
 - Sends the keypoints to the API when the set ends, then listens for progress
@@ -162,8 +163,5 @@ The LLM is the scorer at launch. Meanwhile:
 # 8. Open Decisions
 
 - Pricing model and the cost cap per analysis
-- Pose model: MoveNet versus a 33-point model, checked on the core
-  exercises (push-up down position, pull-up top position, dip, squat)
-- Keypoint payload format (gzip JSON versus quantized binary)
 - Retention period and sampling of consented sets
 - Consent wording, minimum age and legal review

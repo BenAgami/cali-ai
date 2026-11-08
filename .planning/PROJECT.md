@@ -61,6 +61,7 @@ Users can record themselves doing calisthenics exercises and get actionable AI f
 | LLM scores sets at launch; own model trained later from its labels   | Cuts cost over time. The model can match the LLM but not exceed it. Needs opt-in consent.     | — Pending |
 | Store raw keypoints only for users who consent to training use      | Data minimization; non-consented sets keep only the result                                   | — Pending |
 | Advanced skills get researched rubrics, not trained models           | Too little data per skill; definitions are data in @repo/common                              | — Pending |
+| Pose model: BlazePose Full (33 points) | Passes 4/4 exercises (MoveNet Lightning and Thunder pass 1/4, squat only); push-up and dip scored near side only; provisional, one person; see phases/01-infrastructure/01-POSE-MODEL-DECISION.md | ✓ Good |
 
 ## Evolution
 
