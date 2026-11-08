@@ -52,6 +52,13 @@
           "enableAndroidGpuLibraries": false
         }
       ],
+      [
+        "react-native-mediapipe-posedetection",
+        {
+          "assetsPaths": ["./assets/models/"]
+        }
+      ],
+      "expo-screen-orientation",
       "@react-native-community/datetimepicker",
       "expo-notifications",
       [
