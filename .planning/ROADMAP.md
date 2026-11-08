@@ -13,7 +13,7 @@ The project delivers its core value — AI-powered calisthenics form feedback �
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build
+- [x] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build (completed 2026-11-08)
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
@@ -37,7 +37,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 4. A WorkoutSession that enters PROCESSING state advances to COMPLETED or rolls back to FAILED within 3 minutes — it never stays stuck in PROCESSING indefinitely
 5. react-native-vision-camera and react-native-fast-tflite run in a custom Expo dev build on Android without crashing (pose pass runs on a test image or video), and the iOS simulator build compiles on EAS; iOS runtime verification is deferred
 6. MoveNet (and a 33-point alternative) is checked on real clips of the four core exercises (push-up down position, pull-up top position, dip, squat), and the result decides the pose model
-   **Plans:** 10 plans
+   **Plans:** 10/10 plans complete
 
 Plans:
 
@@ -163,7 +163,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
-| 1. Infrastructure            | 9/10           | In progress | -          |
+| 1. Infrastructure            | 10/10          | Complete    | 2026-11-08 |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 0/TBD          | Not started | -          |
