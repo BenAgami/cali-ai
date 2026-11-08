@@ -84,6 +84,10 @@ Recent decisions affecting current work:
 - [Phase 01]: Capture/retry served at /api/sessions/:id/capture and /analysis/retry; retry reuses stored capture with a new job id; failed enqueue (5s timeout) fails the run ENQUEUE_FAILED and returns 503
 - [Phase 01]: SSE stream orchestration lives in analysisStreamService (subscribe-then-read, monotonic filter, terminal close); 404/409 thrown before headers, post-flush errors logged and stream closed
 
+### Roadmap Evolution
+
+- Phase 8 added: Designing the user UI and UX
+
 ### Pending Todos
 
 None yet.
