@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build (completed 2026-11-08)
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
-- [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
+- [x] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output (completed 2026-11-04)
 - [ ] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback
 - [ ] **Phase 5.1: Training Data & Labeling** (INSERTED) - Consent, retention, form labels, spot-check tool; foundation for training an own model
 - [ ] **Phase 6: Real-Time Form Cues** (DEFERRED — future milestone, not in v1) - Live audio/visual coaching cues from on-device pose estimation
@@ -180,7 +180,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 1. Infrastructure            | 10/10          | Complete    | 2026-11-08 |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
-| 4. AI Workout Generation     | 0/11           | Planned     | -          |
+| 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
 | 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
@@ -195,3 +195,15 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 8 to break down)
+
+## Backlog
+
+### Phase 999.1: Rerun the Haiku workout-generation eval (BACKLOG)
+
+**Goal:** Rerun `yarn workspace api eval:workouts` to separate provider flakiness from plan quality (5 of 12 Haiku calls timed out or were unavailable in the 2026-11-04 run). Revisit making Haiku the primary model (about 19x cheaper, roughly $0.005 saved per generation) only if real traffic makes generation cost meaningful. See `.planning/phases/04-ai-workout-generation/04-EVAL-RESULTS.md`.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (promote with /gsd:review-backlog when ready)
