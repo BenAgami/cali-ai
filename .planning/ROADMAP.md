@@ -125,7 +125,28 @@ Plans:
 4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
 5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
 6. When the body cannot be tracked reliably, the user sees camera advice instead of feedback
-   **Plans**: TBD
+   **Plans:** 18 plans
+
+Plans:
+
+- [ ] 05-01-PLAN.md — Wave 0 gate: on-device BlazePose spike (MediaPipe PoseLandmarker plugin, Android), PoseFrame contract, runtime decision
+- [ ] 05-02-PLAN.md — Rubric v0 document (tags, thresholds, ramps, bands, trackability, daily cap) and user approval (D-13)
+- [ ] 05-03-PLAN.md — Prisma migration: WorkoutSession workoutId/setNumber, AnalysisOutcome, nullable formScore, untrackableReasons, finding repNumbers
+- [ ] 05-04-PLAN.md — @repo/common contracts: supported exercises, bands, dimensions, untrackable advice, result/recorded-set shapes, aspectRatio + quantizeCapture, consent version bump
+- [ ] 05-05-PLAN.md — Skeleton fixtures from the 16 Phase 1 clips (dump script, manifest, loader)
+- [ ] 05-06-PLAN.md — Metrics foundation: types, geometry, preprocessing, rep segmentation, trackability preflight, synthetic skeletons
+- [ ] 05-07-PLAN.md — Session creation as recorded-set entry (supported exercises, workout link, consent gate), processingStatus filter, no formScore in lists
+- [ ] 05-08-PLAN.md — Native endpoints/query hooks, global AnalysisTrackerContext with SSE watchers and completion banner
+- [ ] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
+- [ ] 05-10-PLAN.md — LLM form feedback: provider method, versioned prompt, validator + repair, typed timeout codes
+- [ ] 05-11-PLAN.md — Capture consent gate + daily cap; GET /sessions/:id/analysis and /workouts/:id/recorded-sets
+- [ ] 05-12-PLAN.md — Result UI: band badge, dimension rows, feedback blocks, camera advice, analysis-result screen, Recorded sets section
+- [ ] 05-13-PLAN.md — Recording engine: pure setup check + payload builder, pose source, useRecordedSet state machine
+- [ ] 05-14-PLAN.md — Scoring, finding selection, computeFormMetrics with golden fixture tests
+- [ ] 05-15-PLAN.md — Record offer in workout run, record-set screen with framing guide, shared AI prerequisite steps
+- [ ] 05-16-PLAN.md — Worker pipeline: metrics -> LLM (AbortSignal) -> guarded idempotent persist; end-to-end integration tests
+- [ ] 05-17-PLAN.md — Rubric calibration on the 16 clips with the user, rubric-v1
+- [ ] 05-18-PLAN.md — CI gates, docs, STATE updates, Android device UAT
 
 ### Phase 5.1: Training Data & Labeling (INSERTED)
 
@@ -181,7 +202,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
-| 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
+| 5. Post-Set AI Form Analysis | 0/18           | Planned     | -          |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
