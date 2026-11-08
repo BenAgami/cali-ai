@@ -1,0 +1,17 @@
+model WorkoutGeneration {
+  id            Int              @id @default(autoincrement())
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        Int              @map("user_id")
+  status        GenerationStatus @default(PENDING)
+  goalText      String           @map("goal_text") @db.VarChar(500)
+  model         String?          @db.VarChar(80)
+  promptVersion String           @map("prompt_version") @db.VarChar(40)
+  attempts      Int              @default(0)
+  errorCode     String?          @map("error_code") @db.VarChar(40)
+  createdAt     DateTime         @default(now()) @map("created_at")
+  completedAt   DateTime?        @map("completed_at")
+  workout       Workout?
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_workout_generations_user_created_at_desc")
+  @@map("workout_generations")
+}

@@ -39,3 +39,6 @@ yarn-error.log*
 
 # claude
 .claude/settings.local.json
+
+# workout eval output
+apps/api/scripts/workout-eval/results/

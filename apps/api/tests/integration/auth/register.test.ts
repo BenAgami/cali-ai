@@ -1,10 +1,10 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
 import {
-  RegisterUserDto,
+  type RegisterUserDto,
   RegisterUserBuilder,
 } from "../builders/registerUserBuilder";
 

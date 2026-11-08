@@ -1,8 +1,8 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { randomUUID } from "crypto";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient, ExerciseType } from "@repo/db";
+import { type getPrismaClient, ExerciseType } from "@repo/db";
 
 import {
   setupIntegrationTest,

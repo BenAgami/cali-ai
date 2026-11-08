@@ -2,7 +2,7 @@ import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 
 export type AuthRememberRowProps = {
-  rememberMe: boolean;
+  shouldRememberMe: boolean;
   onToggleRemember: () => void;
   onForgotPassword: () => void;
 };
@@ -10,7 +10,7 @@ export type AuthRememberRowProps = {
 const CheckIcon = () => <Text style={styles.checkIcon}>✓</Text>;
 
 export const AuthRememberRow: React.FC<AuthRememberRowProps> = ({
-  rememberMe,
+  shouldRememberMe,
   onToggleRemember,
   onForgotPassword,
 }) => {
@@ -21,8 +21,10 @@ export const AuthRememberRow: React.FC<AuthRememberRowProps> = ({
         onPress={onToggleRemember}
         activeOpacity={0.7}
       >
-        <View style={[styles.checkbox, rememberMe && styles.checkboxActive]}>
-          {rememberMe && <CheckIcon />}
+        <View
+          style={[styles.checkbox, shouldRememberMe && styles.checkboxActive]}
+        >
+          {shouldRememberMe && <CheckIcon />}
         </View>
         <Text style={styles.rememberMeText}>Remember me</Text>
       </TouchableOpacity>

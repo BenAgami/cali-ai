@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Alert } from "react-native";
 import { router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { userApi, ApiError, userKeys } from "@src/api";
 import { useProfile } from "@src/hooks/queries/useProfile";
+import { useBodyMetricsForm } from "@src/hooks/useBodyMetricsForm";
 import type { GoalDraft } from "@src/types/user";
 import type { ExperienceLevel } from "@repo/common";
 
@@ -20,7 +21,7 @@ export const useProfileEdit = () => {
   const [charCount, setCharCount] = useState(0);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [experienceLevel, setExperienceLevel] =
-    useState<ExperienceLevel>("BEGINNER");
+    useState<ExperienceLevel | null>(null);
   const [initialGoal, setInitialGoal] = useState<GoalDraft | null>(null);
   const [goalDraft, setGoalDraft] = useState<GoalDraft>({
     goalType: "STRENGTH",
@@ -32,6 +33,19 @@ export const useProfileEdit = () => {
   const seededRef = useRef(false);
 
   const { data, isLoading } = useProfile();
+
+  const initialBodyMetric = useMemo(
+    () =>
+      data?.bodyMetric
+        ? {
+            heightCm: data.bodyMetric.heightCm,
+            weightKg: data.bodyMetric.weightKg,
+          }
+        : null,
+    [data?.bodyMetric],
+  );
+  const bodyMetricsForm = useBodyMetricsForm(initialBodyMetric);
+  const [bodyMetricsError, setBodyMetricsError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data || seededRef.current) return;
@@ -57,7 +71,7 @@ export const useProfileEdit = () => {
     mutationFn: async () => {
       await userApi.updateProfile({
         username: username.trim(),
-        experienceLevel,
+        ...(experienceLevel ? { experienceLevel } : {}),
       });
 
       const hasGoalChanged =
@@ -75,6 +89,16 @@ export const useProfileEdit = () => {
             : {}),
           ...(goalDraft.targetUnit ? { targetUnit: goalDraft.targetUnit } : {}),
         });
+      }
+
+      if (!bodyMetricsForm.isEmpty) {
+        const validated = bodyMetricsForm.validate();
+        if (
+          validated.isValid &&
+          bodyMetricsForm.isChangedFrom(initialBodyMetric)
+        ) {
+          await userApi.saveBodyMetrics(validated.data);
+        }
       }
     },
     onSuccess: () => {
@@ -173,18 +197,28 @@ export const useProfileEdit = () => {
       return;
     }
     setUsernameError(null);
+    if (!bodyMetricsForm.isEmpty) {
+      const validated = bodyMetricsForm.validate();
+      if (!validated.isValid) {
+        setBodyMetricsError(validated.message);
+        return;
+      }
+    }
+    setBodyMetricsError(null);
     saveMutation.mutate();
   };
 
   return {
-    loading: isLoading,
-    saving: saveMutation.isPending,
+    isLoading,
+    isSaving: saveMutation.isPending,
     username,
     usernameError,
     charCount,
     avatarUri,
     experienceLevel,
     goalDraft,
+    bodyMetricsForm,
+    bodyMetricsError,
     isAvatarPickerVisible,
     setExperienceLevel,
     setGoalDraft,

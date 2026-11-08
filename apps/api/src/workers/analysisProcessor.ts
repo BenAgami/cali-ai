@@ -99,12 +99,12 @@ export const processAnalysisJob = async (
     "LLM_TIMEOUT",
   );
 
-  const completed = await analysisStateService.completeRun(
+  const isCompleted = await analysisStateService.completeRun(
     sessionId,
     jobId,
     log,
   );
-  if (!completed) {
+  if (!isCompleted) {
     log.warn("Run state changed during processing; completion discarded");
   }
 };

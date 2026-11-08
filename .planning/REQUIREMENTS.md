@@ -22,7 +22,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PROF-03**: User can set fitness level (beginner / intermediate / advanced)
 - [x] **PROF-04**: User can set a primary goal (e.g. "build strength", "learn handstand", "lose weight")
 - [x] **PROF-05**: User can view and edit their profile
-- [ ] **PROF-06**: User must provide their height (cm) and weight (kg), both together, before using any AI feature (workout generation or form analysis); they can update them later, and each submission is kept as a new `body_metrics` entry (the latest is the current value)
+- [x] **PROF-06**: User must provide their height (cm) and weight (kg), both together, before using any AI feature (workout generation or form analysis); they can update them later, and each submission is kept as a new `body_metrics` entry (the latest is the current value)
 - [ ] **PROF-07**: The latest height and weight are included in the LLM context for workout generation and form feedback. The privacy notice states that profile data is sent to the LLM provider
 
 ### Workout Builder
@@ -31,9 +31,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **WKT-02**: User can create a named workout by selecting exercises and setting sets, reps, and rest
 - [x] **WKT-03**: User can edit and delete their saved workouts
 - [x] **WKT-04**: User can start a workout session from a saved workout
-- [ ] **WKT-05**: User can generate a workout from a natural language goal description (AI-generated)
-- [ ] **WKT-06**: AI-generated workouts are validated against the exercise catalog (no hallucinated exercise names)
-- [ ] **WKT-07**: AI-generated workouts respect user fitness level and goal from profile
+- [x] **WKT-05**: User can generate a workout from a natural language goal description (AI-generated)
+- [x] **WKT-06**: AI-generated workouts are validated against the exercise catalog (no hallucinated exercise names)
+- [x] **WKT-07**: AI-generated workouts respect user fitness level and goal from profile
 
 ### AI Form Analysis — Post-Set
 
@@ -130,15 +130,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROF-03     | Phase 2 | Complete |
 | PROF-04     | Phase 2 | Complete |
 | PROF-05     | Phase 2 | Complete |
-| PROF-06     | Phase 4 | Pending  |
+| PROF-06     | Phase 4 | Complete |
 | PROF-07     | Phase 5 | Pending  |
 | WKT-01      | Phase 3 | Complete |
 | WKT-02      | Phase 3 | Complete |
 | WKT-03      | Phase 3 | Complete |
 | WKT-04      | Phase 3 | Complete |
-| WKT-05      | Phase 4 | Pending  |
-| WKT-06      | Phase 4 | Pending  |
-| WKT-07      | Phase 4 | Pending  |
+| WKT-05      | Phase 4 | Complete |
+| WKT-06      | Phase 4 | Complete |
+| WKT-07      | Phase 4 | Complete |
 | FORM-01     | Phase 5 | Pending  |
 | FORM-02     | Phase 5 | Pending  |
 | FORM-03     | Phase 5 | Pending  |

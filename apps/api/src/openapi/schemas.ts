@@ -23,6 +23,11 @@ import {
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
   workoutSessionResponseSchema,
+  bodyMetricInputSchema,
+  aiConsentSchema,
+  saveBodyMetricResponseSchema,
+  generateWorkoutSchema,
+  workoutGenerationPreviewSchema,
 } from "@repo/common";
 
 import { Role, GoalStatus } from "@repo/db";
@@ -65,6 +70,14 @@ export const UpsertGoalBody = registry.register(
   "UpsertGoalBody",
   upsertGoalSchema,
 );
+export const BodyMetricBody = registry.register(
+  "BodyMetricBody",
+  bodyMetricInputSchema,
+);
+export const AiConsentBody = registry.register(
+  "AiConsentBody",
+  aiConsentSchema,
+);
 export const CreateWorkoutBody = registry.register(
   "CreateWorkoutBody",
   createWorkoutSchema,
@@ -72,6 +85,10 @@ export const CreateWorkoutBody = registry.register(
 export const UpdateWorkoutBody = registry.register(
   "UpdateWorkoutBody",
   updateWorkoutSchema,
+);
+export const GenerateWorkoutBody = registry.register(
+  "GenerateWorkoutBody",
+  generateWorkoutSchema,
 );
 export const WorkoutLogBody = registry.register(
   "WorkoutLogBody",
@@ -155,7 +172,7 @@ const LoginUser = z.object({
   fullName: z.string(),
   role: RoleEnum,
   avatarUrl: z.string().nullable(),
-  experienceLevel: ExperienceLevelEnum,
+  experienceLevel: ExperienceLevelEnum.nullable(),
   createdAt: isoDateTime(),
   updatedAt: isoDateTime(),
 });
@@ -205,11 +222,33 @@ export const UserProfileResponse = registry.register(
     fullName: z.string(),
     username: z.string(),
     avatarUrl: z.string().nullable(),
-    experienceLevel: ExperienceLevelEnum,
+    experienceLevel: ExperienceLevelEnum.nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
     role: RoleEnum,
     goals: z.array(GoalSummary),
+    bodyMetric: z
+      .object({
+        heightCm: z.number(),
+        weightKg: z.number(),
+        createdAt: isoDateTime(),
+      })
+      .nullable(),
+    aiConsentVersion: z.string().nullable(),
+    aiConsentAt: isoDateTime().nullable(),
+  }),
+);
+
+export const SaveBodyMetricResponse = registry.register(
+  "SaveBodyMetricResponse",
+  saveBodyMetricResponseSchema,
+);
+
+export const AiConsentResponse = registry.register(
+  "AiConsentResponse",
+  z.object({
+    aiConsentAt: isoDateTime(),
+    aiConsentVersion: z.string(),
   }),
 );
 
@@ -221,7 +260,7 @@ export const UpdateProfileResponse = registry.register(
     email: z.email(),
     fullName: z.string(),
     avatarUrl: z.string().nullable(),
-    experienceLevel: ExperienceLevelEnum,
+    experienceLevel: ExperienceLevelEnum.nullable(),
     createdAt: isoDateTime(),
     updatedAt: isoDateTime(),
     role: RoleEnum,
@@ -264,6 +303,11 @@ export const ExerciseResponse = registry.register(
 export const WorkoutResponse = registry.register(
   "Workout",
   workoutWithExercisesSchema,
+);
+
+export const WorkoutGenerationPreviewResponse = registry.register(
+  "WorkoutGenerationPreview",
+  workoutGenerationPreviewSchema,
 );
 
 export const WorkoutLogResponse = registry.register(

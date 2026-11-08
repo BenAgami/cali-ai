@@ -7,6 +7,9 @@ model Workout {
   updatedAt DateTime @updatedAt @map("updated_at")
   exercises WorkoutExercise[]
   logs      WorkoutLog[]
+  aiModel      String?            @map("ai_model") @db.VarChar(80)
+  generation   WorkoutGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  generationId Int?               @unique @map("generation_id")
   @@index([userId, updatedAt(sort: Desc)], map: "idx_workouts_user_updated_at")
   @@map("workouts")
 }

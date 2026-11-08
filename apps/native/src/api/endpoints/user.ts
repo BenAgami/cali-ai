@@ -1,7 +1,10 @@
-import type {
-  UserProfile,
-  UpdateProfileValues,
-  UpsertGoalValues,
+import {
+  AI_CONSENT_VERSION,
+  type BodyMetricInput,
+  type SaveBodyMetricResponse,
+  type UserProfile,
+  type UpdateProfileValues,
+  type UpsertGoalValues,
 } from "@repo/common";
 
 import { apiClient } from "../client";
@@ -43,4 +46,10 @@ export const userApi = {
 
   upsertGoal: (data: UpsertGoalValues): Promise<void> =>
     apiClient.post(USER_ROUTES.goals, data),
+
+  saveBodyMetrics: (data: BodyMetricInput): Promise<SaveBodyMetricResponse> =>
+    apiClient.post<SaveBodyMetricResponse>(USER_ROUTES.bodyMetrics, data),
+
+  acceptAiConsent: (): Promise<void> =>
+    apiClient.post(USER_ROUTES.aiConsent, { version: AI_CONSENT_VERSION }),
 };

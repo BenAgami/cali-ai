@@ -2,7 +2,11 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { getPrismaClient } from "@repo/db";
-import { UpdateProfileValues, UpsertGoalValues } from "@repo/common";
+import type {
+  AiConsentValues,
+  UpdateProfileValues,
+  UpsertGoalValues,
+} from "@repo/common";
 
 import { ConflictError, NotFoundError } from "../errors";
 
@@ -34,6 +38,8 @@ export class UserService {
         createdAt: true,
         updatedAt: true,
         role: true,
+        aiConsentAt: true,
+        aiConsentVersion: true,
         goals: {
           where: { status: "ACTIVE" },
           orderBy: { createdAt: "desc" },
@@ -46,6 +52,11 @@ export class UserService {
             targetUnit: true,
           },
         },
+        bodyMetrics: {
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+          take: 1,
+          select: { heightCm: true, weightKg: true, createdAt: true },
+        },
       },
     });
 
@@ -53,7 +64,9 @@ export class UserService {
       throw new NotFoundError("User not found");
     }
 
-    return user;
+    const { bodyMetrics, ...rest } = user;
+
+    return { ...rest, bodyMetric: bodyMetrics[0] ?? null };
   }
 
   async getUserByEmail(email: string) {
@@ -133,6 +146,14 @@ export class UserService {
       key,
       publicUrl: `https://${env.r2.publicDomain}/${key}`,
     };
+  }
+
+  async recordAiConsent(uuid: string, data: AiConsentValues) {
+    return this.prisma.user.update({
+      where: { uuid },
+      data: { aiConsentAt: new Date(), aiConsentVersion: data.version },
+      select: { aiConsentAt: true, aiConsentVersion: true },
+    });
   }
 
   async createGoal(uuid: string, data: UpsertGoalValues) {

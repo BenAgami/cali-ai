@@ -33,6 +33,13 @@ const exercises = [
     description:
       "Core stability hold focusing on full-body tension and posture.",
   },
+  {
+    code: "dip",
+    displayName: "Dip",
+    exerciseType: ExerciseType.DYNAMIC,
+    description:
+      "Upper body push exercise on parallel bars focusing on chest, triceps, and shoulders.",
+  },
 ];
 
 const main = async () => {

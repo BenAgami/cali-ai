@@ -1,5 +1,7 @@
 import type {
   CreateWorkoutValues,
+  GenerateWorkoutValues,
+  WorkoutGenerationPreview,
   UpdateWorkoutValues,
   WorkoutLogValues,
   WorkoutWithExercises,
@@ -9,6 +11,8 @@ import type {
 
 import { apiClient } from "../client";
 import { WORKOUT_ROUTES } from "@src/constants/routes";
+
+const GENERATE_TIMEOUT_MS = 75_000;
 
 export const workoutApi = {
   list: (params?: {
@@ -30,6 +34,11 @@ export const workoutApi = {
 
   create: (data: CreateWorkoutValues): Promise<WorkoutWithExercises> =>
     apiClient.post<WorkoutWithExercises>(WORKOUT_ROUTES.list, data),
+
+  generate: (data: GenerateWorkoutValues): Promise<WorkoutGenerationPreview> =>
+    apiClient.post<WorkoutGenerationPreview>(WORKOUT_ROUTES.generate, data, {
+      timeoutMs: GENERATE_TIMEOUT_MS,
+    }),
 
   update: (
     id: number,

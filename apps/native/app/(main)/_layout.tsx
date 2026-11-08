@@ -14,6 +14,15 @@ const MainLayout: React.FC = () => {
         options={{ headerShown: true, title: "Edit Profile" }}
       />
       <Stack.Screen
+        name="onboarding-body-metrics"
+        options={{
+          headerShown: true,
+          title: "About you",
+          headerBackVisible: false,
+          gestureEnabled: false,
+        }}
+      />
+      <Stack.Screen
         name="exercise-catalog"
         options={{ headerShown: true, title: "Exercises" }}
       />
@@ -36,6 +45,10 @@ const MainLayout: React.FC = () => {
       <Stack.Screen
         name="workout-builder"
         options={{ headerShown: true, title: "Build workout" }}
+      />
+      <Stack.Screen
+        name="workout-generate"
+        options={{ headerShown: true, title: "Generate with AI" }}
       />
       <Stack.Screen
         name="dev-pose-check"

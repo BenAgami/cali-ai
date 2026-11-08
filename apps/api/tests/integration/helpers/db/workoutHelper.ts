@@ -1,4 +1,4 @@
-import { getPrismaClient } from "@repo/db";
+import type { getPrismaClient } from "@repo/db";
 
 type CreateWorkoutFixtureInput = {
   userId: number;

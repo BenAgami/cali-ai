@@ -38,6 +38,10 @@ const WorkoutsTab: React.FC = () => {
     });
   };
 
+  const handleGeneratePress = () => {
+    router.push("/workout-generate");
+  };
+
   const handleCreatePress = () => {
     router.push("/workout-builder");
   };
@@ -80,12 +84,25 @@ const WorkoutsTab: React.FC = () => {
                 You haven't created any workouts yet.
               </Text>
               <Text style={[styles.emptySubtext, { color: colors.text }]}>
-                Tap + to create your first one.
+                Tap + to build one, or Generate with AI.
               </Text>
             </View>
           }
         />
       )}
+
+      <Pressable
+        onPress={handleGeneratePress}
+        style={({ pressed }) => [
+          styles.generatePill,
+          { opacity: pressed ? 0.85 : 1 },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Generate workout with AI"
+      >
+        <Ionicons name="sparkles-outline" size={18} color="#FFFFFF" />
+        <Text style={styles.generateText}>Generate with AI</Text>
+      </Pressable>
 
       <Pressable
         onPress={handleCreatePress}
@@ -118,6 +135,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 8,
   },
+  generatePill: {
+    position: "absolute",
+    right: 24,
+    bottom: 96,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    height: 40,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#007AFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+  },
+  generateText: { color: "#FFFFFF", fontSize: 14, fontWeight: "600" },
   fab: {
     position: "absolute",
     right: 24,

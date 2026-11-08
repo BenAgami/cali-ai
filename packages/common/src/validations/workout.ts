@@ -14,6 +14,7 @@ const workoutExerciseInputSchema = z.object({
 export const createWorkoutSchema = z.object({
   name: z.string().trim().min(1).max(100),
   exercises: z.array(workoutExerciseInputSchema).min(1).max(50),
+  generationId: z.number().int().positive().optional(),
 });
 
 export const updateWorkoutSchema = z.object({
@@ -56,6 +57,8 @@ export const workoutWithExercisesSchema = z.object({
   name: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  aiModel: z.string().nullable(),
+  generationId: z.number().int().nullable(),
   exercises: z.array(workoutExerciseHydratedSchema),
 });
 

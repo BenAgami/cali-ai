@@ -1,7 +1,7 @@
-import { Application } from "express";
+import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, SessionStatus } from "@repo/db";
 
 import { formAnalysisQueue } from "../../../src/lib/queue";
 

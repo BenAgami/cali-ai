@@ -32,8 +32,8 @@ const Stepper: React.FC<StepperProps> = ({
     if (next !== value) onChange(next);
   };
   const display = format ? format(value) : String(value);
-  const atMin = value <= min;
-  const atMax = value >= max;
+  const isAtMin = value <= min;
+  const isAtMax = value >= max;
 
   return (
     <View style={styles.row}>
@@ -41,12 +41,12 @@ const Stepper: React.FC<StepperProps> = ({
       <View style={styles.controlRow}>
         <Pressable
           onPress={decrement}
-          disabled={atMin}
+          disabled={isAtMin}
           style={({ pressed }) => [
             styles.button,
             {
               backgroundColor: colors.surface,
-              opacity: atMin ? 0.4 : pressed ? 0.7 : 1,
+              opacity: isAtMin ? 0.4 : pressed ? 0.7 : 1,
             },
           ]}
           accessibilityRole="button"
@@ -65,12 +65,12 @@ const Stepper: React.FC<StepperProps> = ({
         </Text>
         <Pressable
           onPress={increment}
-          disabled={atMax}
+          disabled={isAtMax}
           style={({ pressed }) => [
             styles.button,
             {
               backgroundColor: colors.surface,
-              opacity: atMax ? 0.4 : pressed ? 0.7 : 1,
+              opacity: isAtMax ? 0.4 : pressed ? 0.7 : 1,
             },
           ]}
           accessibilityRole="button"

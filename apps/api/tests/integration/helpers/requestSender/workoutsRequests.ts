@@ -1,4 +1,4 @@
-import { Application } from "express";
+import type { Application } from "express";
 import supertest from "supertest";
 
 const withAuth = (req: supertest.Test, token?: string) => {
@@ -18,6 +18,19 @@ export const createWorkout = async (
       .set("Content-Type", "application/json"),
     token,
   ).send(data);
+
+export const postGenerateWorkout = async (
+  app: Application,
+  body: object,
+  token?: string,
+) =>
+  withAuth(
+    supertest
+      .agent(app)
+      .post("/api/workouts/generate")
+      .set("Content-Type", "application/json"),
+    token,
+  ).send(body);
 
 export const listWorkouts = async (
   app: Application,

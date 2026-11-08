@@ -69,7 +69,7 @@ describe("listExercises", () => {
     expect(exerciseService.listExercises).toHaveBeenCalledWith({
       limit: 20,
       offset: 0,
-      includeInactive: false,
+      shouldIncludeInactive: false,
     });
   });
 
@@ -88,7 +88,7 @@ describe("listExercises", () => {
     );
 
     expect(exerciseService.listExercises).toHaveBeenCalledWith(
-      expect.objectContaining({ includeInactive: true }),
+      expect.objectContaining({ shouldIncludeInactive: true }),
     );
     expect(res.status).toHaveBeenCalledWith(StatusCodes.OK);
   });

@@ -75,11 +75,12 @@ export const usePipelineCheck = () => {
     }
   }, [sessionId]);
 
-  const terminal = event?.status === "COMPLETED" || event?.status === "FAILED";
-  const busy =
+  const isTerminal =
+    event?.status === "COMPLETED" || event?.status === "FAILED";
+  const isBusy =
     phase === "creating" ||
     phase === "uploading" ||
-    (phase === "watching" && !terminal);
+    (phase === "watching" && !isTerminal);
 
   return {
     phase,
@@ -90,7 +91,7 @@ export const usePipelineCheck = () => {
     errorMessage,
     run,
     retry,
-    busy,
+    isBusy,
     canRetry: event?.status === "FAILED",
   };
 };

@@ -14,9 +14,11 @@
     "check-types": "tsc --noEmit",
     "build": "tsc --noEmit && tsup",
     "lint": "eslint .",
+    "eval:workouts": "tsx scripts/workout-eval/run.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
     "@asteasolutions/zod-to-openapi": "^8.5.0",
     "@aws-sdk/client-s3": "^3.1019.0",
     "@aws-sdk/s3-request-presigner": "^3.1019.0",

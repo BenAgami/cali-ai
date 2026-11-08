@@ -3,6 +3,7 @@ import z from "zod";
 
 import {
   createWorkoutSchema,
+  generateWorkoutSchema,
   updateWorkoutSchema,
   workoutLogSchema,
 } from "@repo/common";
@@ -14,6 +15,7 @@ import {
   listWorkouts,
   getWorkoutById,
   createWorkout,
+  generateWorkout,
   updateWorkout,
   deleteWorkout,
   startWorkout,
@@ -50,6 +52,17 @@ router.post(
   authenticateToken,
   validateSchema(z.object({ body: createWorkoutSchema })),
   createWorkout,
+);
+
+/**
+ * POST /generate
+ * Generate an AI workout preview (registered before /:id routes)
+ */
+router.post(
+  "/generate",
+  authenticateToken,
+  validateSchema(z.object({ body: generateWorkoutSchema })),
+  generateWorkout,
 );
 
 /**

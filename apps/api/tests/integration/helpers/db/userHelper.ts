@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import bcrypt from "bcrypt";
-import { getPrismaClient, Role } from "@repo/db";
+import { type getPrismaClient, Role } from "@repo/db";
 
 import generateJwtToken from "../../../../src/utils/generateJwtToken";
 

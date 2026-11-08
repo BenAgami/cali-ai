@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import DateTimePicker, {
-  DateTimePickerEvent,
+  type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 
 import { useTheme } from "@src/context/ThemeContext";
@@ -27,7 +27,7 @@ const formatTime = (hour: number, minute: number): string => {
 
 type Props = {
   pickerDate: Date;
-  showPicker: boolean;
+  isPickerVisible: boolean;
   selectedDays: DayOfWeek[];
   onTimeChange: (event: DateTimePickerEvent, date?: Date) => void;
   onShowPicker: () => void;
@@ -38,7 +38,7 @@ type Props = {
 
 const ReminderPicker: React.FC<Props> = ({
   pickerDate,
-  showPicker,
+  isPickerVisible,
   selectedDays,
   onTimeChange,
   onShowPicker,
@@ -50,7 +50,7 @@ const ReminderPicker: React.FC<Props> = ({
 
   return (
     <View style={styles.container}>
-      {Platform.OS === "android" && !showPicker && (
+      {Platform.OS === "android" && !isPickerVisible && (
         <Pressable
           style={({ pressed }) => [
             styles.timeDisplay,
@@ -63,7 +63,7 @@ const ReminderPicker: React.FC<Props> = ({
           </Text>
         </Pressable>
       )}
-      {showPicker && (
+      {isPickerVisible && (
         <DateTimePicker
           value={pickerDate}
           mode="time"
@@ -75,15 +75,17 @@ const ReminderPicker: React.FC<Props> = ({
 
       <View style={styles.daysRow}>
         {WEEKDAY_VALUES.map((weekday, idx) => {
-          const active = selectedDays.includes(weekday);
+          const isActive = selectedDays.includes(weekday);
           return (
             <Pressable
               key={weekday}
               style={({ pressed }) => [
                 styles.dayButton,
                 {
-                  backgroundColor: active ? baseColors.blue : colors.surface,
-                  borderColor: active ? baseColors.blue : baseColors.grayLight,
+                  backgroundColor: isActive ? baseColors.blue : colors.surface,
+                  borderColor: isActive
+                    ? baseColors.blue
+                    : baseColors.grayLight,
                   opacity: pressed ? 0.7 : 1,
                 },
               ]}
@@ -92,7 +94,7 @@ const ReminderPicker: React.FC<Props> = ({
               <Text
                 style={[
                   styles.dayLabel,
-                  { color: active ? baseColors.white : baseColors.grayDark },
+                  { color: isActive ? baseColors.white : baseColors.grayDark },
                 ]}
               >
                 {DAY_LABELS[idx]}

@@ -17,10 +17,10 @@ Users can record themselves doing calisthenics exercises and get actionable AI f
 - ✓ Workout sessions (create, list with pagination) — existing
 - ✓ User profile — display name, avatar, fitness level, goal, workout reminders (validated in Phase 2)
 - ✓ Workout builder (manual) — pick exercises, set reps/sets/rest, save as named workout, edit, delete, start a session (validated in Phase 3)
+- ✓ Workout builder (AI-generated) — describe your goal, AI builds a catalog-valid workout; height/weight body metrics and AI consent (validated in Phase 4)
 
 ### Active
 
-- [ ] Workout builder (AI-generated) — describe your goal, AI builds the workout
 - [ ] AI form analysis — user can record a set; automatic analysis of the captured keypoints when the set ends
 - [ ] Progress tracking — session history, form scores over time, trend visualization
 - [ ] Core exercise AI coverage — push-ups, pull-ups, dips, squats (expandable)
@@ -84,4 +84,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-10-21 after architecture decisions (on-device pose, keypoints-only server) and Phase 3 reconciliation_
+_Last updated: 2026-11-04 after Phase 4 (AI workout generation)_

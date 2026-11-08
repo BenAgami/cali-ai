@@ -45,17 +45,18 @@ const parseJson = async (res: Response): Promise<Record<string, unknown>> => {
 const sendRequest = async (
   path: string,
   init: RequestInit,
-  withAuth: boolean,
+  shouldAttachAuth: boolean,
+  timeoutMs: number = TIMEOUT_MS,
 ): Promise<Response> => {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const headers: Record<string, string> = {
       ...(init.headers as Record<string, string>),
     };
 
-    if (withAuth) {
+    if (shouldAttachAuth) {
       const token = await tokenStore.getAccessToken();
       if (token) headers["Authorization"] = `Bearer ${token}`;
     }
@@ -88,6 +89,7 @@ const parseResponse = async <T>(res: Response): Promise<T> => {
     throw new ApiError(
       res.status,
       resolveMessage(res.status, json.message as string | undefined),
+      typeof json.code === "string" ? json.code : undefined,
     );
   }
   return json.data as T;
@@ -96,6 +98,7 @@ const parseResponse = async <T>(res: Response): Promise<T> => {
 const tryRefreshAndRetry = async <T>(
   path: string,
   init: RequestInit,
+  timeoutMs?: number,
 ): Promise<T> => {
   const refreshToken = await tokenStore.getRefreshToken();
   if (refreshToken) {
@@ -119,7 +122,7 @@ const tryRefreshAndRetry = async <T>(
               : undefined,
           );
 
-          const retryRes = await sendRequest(path, init, true);
+          const retryRes = await sendRequest(path, init, true, timeoutMs);
           return parseResponse<T>(retryRes);
         }
       }
@@ -136,10 +139,16 @@ const tryRefreshAndRetry = async <T>(
   );
 };
 
-const request = async <T>(path: string, init: RequestInit): Promise<T> => {
-  const res = await sendRequest(path, init, true);
+type RequestOptions = { timeoutMs?: number };
+
+const request = async <T>(
+  path: string,
+  init: RequestInit,
+  options?: RequestOptions,
+): Promise<T> => {
+  const res = await sendRequest(path, init, true, options?.timeoutMs);
   if (res.status === StatusCode.UNAUTHORIZED) {
-    return tryRefreshAndRetry<T>(path, init);
+    return tryRefreshAndRetry<T>(path, init, options?.timeoutMs);
   }
   return parseResponse<T>(res);
 };
@@ -147,8 +156,8 @@ const request = async <T>(path: string, init: RequestInit): Promise<T> => {
 export const apiClient = {
   get: <T>(path: string) => request<T>(path, { method: "GET" }),
 
-  post: <T>(path: string, body: unknown) =>
-    request<T>(path, { method: "POST", body: JSON.stringify(body) }),
+  post: <T>(path: string, body: unknown, options?: RequestOptions) =>
+    request<T>(path, { method: "POST", body: JSON.stringify(body) }, options),
 
   postGzipJson: <T>(path: string, body: unknown) =>
     request<T>(path, {

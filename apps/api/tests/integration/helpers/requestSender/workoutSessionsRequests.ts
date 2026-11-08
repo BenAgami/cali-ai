@@ -1,7 +1,7 @@
-import { Application } from "express";
+import type { Application } from "express";
 import supertest from "supertest";
 
-import { CreateWorkoutSessionValues } from "@repo/common";
+import type { CreateWorkoutSessionValues } from "@repo/common";
 
 export const createWorkoutSession = async (
   app: Application,

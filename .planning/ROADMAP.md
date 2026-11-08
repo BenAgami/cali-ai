@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Infrastructure** - Async job pipeline, keypoint capture endpoint, SSE, session state machine, and custom Expo dev build (completed 2026-11-08)
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
-- [ ] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output
+- [x] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output (completed 2026-11-04)
 - [ ] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback
 - [ ] **Phase 5.1: Training Data & Labeling** (INSERTED) - Consent, retention, form labels, spot-check tool; foundation for training an own model
 - [ ] **Phase 6: Real-Time Form Cues** (DEFERRED — future milestone, not in v1) - Live audio/visual coaching cues from on-device pose estimation
@@ -96,7 +96,21 @@ Plans:
 2. Every exercise in the AI-generated plan exists in the exercise catalog — no hallucinated exercise names are accepted
 3. The generated workout visibly adapts to the user's fitness level and primary goal from their profile (a beginner gets a different plan than an advanced user for the same goal)
 4. A disclaimer is shown on every AI-generated plan before the user starts it
-   **Plans**: TBD
+   **Plans:** 11 plans
+
+Plans:
+
+- [x] 04-01-PLAN.md — Prisma migration (nullable level, AI consent, WorkoutGeneration, Workout provenance), dip seed, ApiError code + 428/429 errors, LLM/generation env vars
+- [x] 04-02-PLAN.md — Shared @repo/common contracts (body metrics, AI prerequisites/consent, generation preview, workout provenance) and nullable-level ripple
+- [x] 04-03-PLAN.md — bodyMetricService (append-only, skip unchanged), shared AI prerequisite gate, POST /me/body-metrics and /me/ai-consent, extended GET /me
+- [x] 04-04-PLAN.md — LlmProvider interface, Anthropic structured-output adapter with error normalization, versioned prompt builder
+- [x] 04-05-PLAN.md — validateGeneratedPlan + workoutGenerationService (gate, daily cap, in-flight guard, Haiku/Haiku/Sonnet ladder, generation row)
+- [x] 04-06-PLAN.md — POST /api/workouts/generate, save-with-provenance on POST /api/workouts, OpenAPI, integration tests
+- [x] 04-07-PLAN.md — Native ApiError code + timeouts, shared BodyMetricsForm with region units, onboarding step, profile-edit height/weight
+- [x] 04-08-PLAN.md — Native Generate with AI screen: inline prerequisites, privacy notice, goal chips, preview with disclaimer, Save/Regenerate
+- [x] 04-09-PLAN.md — Golden-set eval of Haiku vs Sonnet (D-22), latency/token spike, model default decision
+- [x] 04-10-PLAN.md — Edit-in-builder hand-off keeping AI provenance, disclaimer on Start for AI workouts
+- [x] 04-11-PLAN.md — Full CI gates, docs update, on-device verification checkpoint
 
 ### Phase 5: AI Form Analysis (Camera + Post-Set)
 
@@ -166,7 +180,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 1. Infrastructure            | 10/10          | Complete    | 2026-11-08 |
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
-| 4. AI Workout Generation     | 0/TBD          | Not started | -          |
+| 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
 | 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
@@ -181,3 +195,15 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 8 to break down)
+
+## Backlog
+
+### Phase 999.1: Rerun the Haiku workout-generation eval (BACKLOG)
+
+**Goal:** Rerun `yarn workspace api eval:workouts` to separate provider flakiness from plan quality (5 of 12 Haiku calls timed out or were unavailable in the 2026-11-04 run). Revisit making Haiku the primary model (about 19x cheaper, roughly $0.005 saved per generation) only if real traffic makes generation cost meaningful. See `.planning/phases/04-ai-workout-generation/04-EVAL-RESULTS.md`.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (promote with /gsd:review-backlog when ready)

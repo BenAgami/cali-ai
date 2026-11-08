@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 import { UnauthorizedError, ForbiddenError } from "../../errors";
 
-import MyJwtPayload from "../../types/myJwtPayload";
+import type MyJwtPayload from "../../types/myJwtPayload";
 import { env } from "../../config/env";
 
 const authenticateToken = (req: Request, _: Response, next: NextFunction) => {

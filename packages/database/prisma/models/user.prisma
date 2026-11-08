@@ -11,7 +11,10 @@ model User {
 
   avatarUrl String? @map("avatar_url")
 
-  experienceLevel ExperienceLevel @default(BEGINNER) @map("experience_level")
+  experienceLevel ExperienceLevel? @map("experience_level")
+
+  aiConsentAt      DateTime? @map("ai_consent_at")
+  aiConsentVersion String?   @map("ai_consent_version") @db.VarChar(20)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -23,6 +26,7 @@ model User {
   workouts        Workout[]
   workoutLogs     WorkoutLog[]
   refreshTokens   RefreshToken[]
+  workoutGenerations WorkoutGeneration[]
 
   @@map("users")
 }

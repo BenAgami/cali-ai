@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { Role } from "@repo/db";
@@ -33,7 +33,7 @@ export const listExercises = async (
   const result = await exerciseService.listExercises({
     limit,
     offset,
-    includeInactive: shouldIncludeInactive,
+    shouldIncludeInactive,
   });
 
   res.status(StatusCodes.OK).json({

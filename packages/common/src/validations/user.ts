@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { bodyMetricSchema } from "./bodyMetric";
+
 export const EXPERIENCE_LEVELS = [
   "BEGINNER",
   "INTERMEDIATE",
@@ -52,8 +54,11 @@ export const userProfileSchema = z.object({
   email: z.email(),
   fullName: z.string(),
   avatarUrl: z.url().nullable(),
-  experienceLevel: z.enum(EXPERIENCE_LEVELS),
+  experienceLevel: z.enum(EXPERIENCE_LEVELS).nullable(),
   goals: z.array(goalSchema),
+  bodyMetric: bodyMetricSchema.nullable(),
+  aiConsentVersion: z.string().nullable(),
+  aiConsentAt: z.string().nullable(),
 });
 
 export type UserProfile = z.infer<typeof userProfileSchema>;

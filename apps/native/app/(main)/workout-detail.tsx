@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
+import AiDisclaimer from "@src/components/AiDisclaimer";
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useDeleteWorkout } from "@src/hooks/mutations/useDeleteWorkout";
@@ -123,6 +124,11 @@ const WorkoutDetailScreen: React.FC = () => {
               ))}
             </View>
 
+            {data.aiModel !== null && (
+              <View style={styles.aiDisclaimer}>
+                <AiDisclaimer />
+              </View>
+            )}
             <Pressable
               onPress={handleStart}
               style={({ pressed }) => [
@@ -130,7 +136,11 @@ const WorkoutDetailScreen: React.FC = () => {
                 { backgroundColor: pressed ? "#006EE6" : "#007AFF" },
               ]}
               accessibilityRole="button"
-              accessibilityLabel="Start workout"
+              accessibilityLabel={
+                data.aiModel !== null
+                  ? "Start AI-generated workout"
+                  : "Start workout"
+              }
             >
               <Text style={styles.primaryCtaText}>Start</Text>
             </Pressable>
@@ -192,6 +202,7 @@ const styles = StyleSheet.create({
   },
   rowName: { fontSize: 16, fontWeight: "600" },
   rowMeta: { fontSize: 13, opacity: 0.7, marginTop: 4 },
+  aiDisclaimer: { marginTop: 24 },
   primaryCta: {
     marginTop: 24,
     paddingVertical: 16,

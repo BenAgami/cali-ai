@@ -1,6 +1,6 @@
-import { Application } from "express";
+import type { Application } from "express";
 
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, SessionStatus } from "@repo/db";
 
 import { ConflictError } from "../../../src/errors";
 import { redisConnection } from "../../../src/lib/redis";

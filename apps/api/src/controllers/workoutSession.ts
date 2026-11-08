@@ -1,7 +1,7 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { CreateWorkoutSessionValues } from "@repo/common";
+import type { CreateWorkoutSessionValues } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import workoutSessionService from "../services/workoutSessionService";

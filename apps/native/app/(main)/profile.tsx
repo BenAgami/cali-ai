@@ -17,8 +17,8 @@ import { useLogout } from "@src/hooks/useLogout";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import { ApiError } from "@src/api";
 
-const formatExperienceLevel = (level: string): string =>
-  level.charAt(0) + level.slice(1).toLowerCase();
+const formatExperienceLevel = (level: string | null): string =>
+  !level ? "Not set" : level.charAt(0) + level.slice(1).toLowerCase();
 
 const ProfileScreen: React.FC = () => {
   const { colors } = useTheme();
@@ -81,6 +81,36 @@ const ProfileScreen: React.FC = () => {
               >
                 <Text style={[styles.badgeText, { color: colors.text }]}>
                   {formatExperienceLevel(user.experienceLevel)}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.cardLabel, { color: colors.text }]}>
+                Height
+              </Text>
+              <View
+                style={[styles.badge, { backgroundColor: colors.background }]}
+              >
+                <Text style={[styles.badgeText, { color: colors.text }]}>
+                  {user.bodyMetric
+                    ? `${user.bodyMetric.heightCm} cm`
+                    : "Not set"}
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.card, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.cardLabel, { color: colors.text }]}>
+                Weight
+              </Text>
+              <View
+                style={[styles.badge, { backgroundColor: colors.background }]}
+              >
+                <Text style={[styles.badgeText, { color: colors.text }]}>
+                  {user.bodyMetric
+                    ? `${user.bodyMetric.weightKg} kg`
+                    : "Not set"}
                 </Text>
               </View>
             </View>

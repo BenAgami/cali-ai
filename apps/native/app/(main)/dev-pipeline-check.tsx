@@ -17,7 +17,7 @@ const DevPipelineCheck: React.FC = () => {
     errorMessage,
     run,
     retry,
-    busy,
+    isBusy,
     canRetry,
   } = usePipelineCheck();
 
@@ -26,11 +26,11 @@ const DevPipelineCheck: React.FC = () => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Pressable
-        disabled={busy}
+        disabled={isBusy}
         style={[
           styles.button,
           { backgroundColor: baseColors.blue },
-          busy && styles.disabled,
+          isBusy && styles.disabled,
         ]}
         onPress={() => {
           void run();

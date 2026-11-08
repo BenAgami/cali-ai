@@ -39,7 +39,7 @@ const WorkoutExerciseRow: React.FC<WorkoutExerciseRowProps> = ({
   isActive,
 }) => {
   const { colors } = useTheme();
-  const [expanded, setExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const isStatic = exerciseType === "STATIC_HOLD";
 
   return (
@@ -65,10 +65,10 @@ const WorkoutExerciseRow: React.FC<WorkoutExerciseRowProps> = ({
           />
         </Pressable>
         <Pressable
-          onPress={() => setExpanded((v) => !v)}
+          onPress={() => setIsExpanded((v) => !v)}
           style={styles.headerLabel}
           accessibilityRole="button"
-          accessibilityLabel={`${expanded ? "Collapse" : "Expand"} ${exerciseDisplayName}`}
+          accessibilityLabel={`${isExpanded ? "Collapse" : "Expand"} ${exerciseDisplayName}`}
         >
           <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
             {exerciseDisplayName}
@@ -92,7 +92,7 @@ const WorkoutExerciseRow: React.FC<WorkoutExerciseRowProps> = ({
         </Pressable>
       </View>
 
-      {expanded && (
+      {isExpanded && (
         <View style={[styles.body, { borderTopColor: colors.background }]}>
           <Stepper
             label="Sets"

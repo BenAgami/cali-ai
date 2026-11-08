@@ -1,6 +1,10 @@
 import { getPrismaClient } from "@repo/db";
 
-import { NotFoundError, BadRequestError } from "../../../src/errors";
+import {
+  NotFoundError,
+  BadRequestError,
+  ConflictError,
+} from "../../../src/errors";
 
 import {
   asPrismaClient,
@@ -200,6 +204,93 @@ describe("WorkoutService.createWorkout", () => {
         restSecs: 60,
       },
     ]);
+  });
+});
+
+describe("WorkoutService.createWorkout provenance", () => {
+  const save = (generationId?: number) =>
+    workoutService.createWorkout(USER_UUID, {
+      name: "Push",
+      exercises: [exerciseInput()],
+      ...(generationId === undefined ? {} : { generationId }),
+    });
+
+  beforeEach(() => {
+    prisma.user.findUnique.mockResolvedValue({ id: 42 });
+    prisma.exercise.findMany.mockResolvedValue([{ id: 1 }]);
+    prisma.workout.create.mockResolvedValue({ id: WORKOUT_ID });
+  });
+
+  it("omits aiModel and generationId for a manual workout", async () => {
+    await save();
+
+    expect(prisma.workoutGeneration.findFirst).not.toHaveBeenCalled();
+    const data = prisma.workout.create.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty("aiModel");
+    expect(data).not.toHaveProperty("generationId");
+  });
+
+  it("stores the model and link from an owned succeeded generation", async () => {
+    prisma.workoutGeneration.findFirst.mockResolvedValue({
+      id: 12,
+      model: "claude-haiku-5-5",
+    });
+
+    await save(12);
+
+    expect(prisma.workoutGeneration.findFirst).toHaveBeenCalledWith({
+      where: { id: 12, userId: 42, status: "SUCCEEDED" },
+      select: { id: true, model: true },
+    });
+    expect(prisma.workout.create.mock.calls[0][0].data).toMatchObject({
+      aiModel: "claude-haiku-5-5",
+      generationId: 12,
+    });
+  });
+
+  it.for<[string, unknown]>([
+    ["is not found", null],
+    ["has no model", { id: 12, model: null }],
+  ])("rejects when the generation %s", async ([_label, row]) => {
+    prisma.workoutGeneration.findFirst.mockResolvedValue(row);
+
+    await expect(save(12)).rejects.toThrow(
+      new NotFoundError("Generation not found"),
+    );
+    expect(prisma.workout.create).not.toHaveBeenCalled();
+  });
+
+  it("maps a unique violation to GENERATION_ALREADY_SAVED", async () => {
+    prisma.workoutGeneration.findFirst.mockResolvedValue({
+      id: 12,
+      model: "claude-haiku-5-5",
+    });
+    prisma.workout.create.mockRejectedValue({ code: "P2002" });
+
+    await expect(save(12)).rejects.toThrow(
+      new ConflictError(
+        "This generated workout was already saved",
+        "GENERATION_ALREADY_SAVED",
+      ),
+    );
+  });
+
+  it("rethrows other create failures", async () => {
+    prisma.workout.create.mockRejectedValue(new Error("boom"));
+
+    await expect(save()).rejects.toThrow("boom");
+  });
+
+  it("never touches aiModel or generationId on update", async () => {
+    prisma.workout.findFirst.mockResolvedValue({ id: WORKOUT_ID });
+    prisma.workout.findUnique.mockResolvedValue({ id: WORKOUT_ID });
+
+    await workoutService.updateWorkout(USER_UUID, WORKOUT_ID, {
+      name: "Pull",
+    });
+
+    const data = prisma.workout.update.mock.calls[0][0].data;
+    expect(data).toEqual({ name: "Pull" });
   });
 });
 

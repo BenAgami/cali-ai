@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Notifications from "expo-notifications";
 
-import { DayOfWeek, type ReminderConfig } from "@src/types/reminder";
+import type { DayOfWeek, ReminderConfig } from "@src/types/reminder";
 
 const REMINDER_IDS_KEY = "workoutReminderIds";
 const REMINDER_CONFIG_KEY = "workoutReminderConfig";
@@ -120,7 +120,7 @@ export const useNotificationReminder = () => {
 
   return {
     reminderConfig,
-    loading: isLoading,
+    isLoading,
     scheduleReminder,
     cancelReminder,
   };

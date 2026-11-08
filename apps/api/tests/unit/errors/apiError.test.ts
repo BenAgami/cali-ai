@@ -7,7 +7,9 @@ import {
   ForbiddenError,
   InternalError,
   NotFoundError,
+  PreconditionRequiredError,
   ServiceUnavailableError,
+  TooManyRequestsError,
   UnauthorizedError,
 } from "../../../src/errors";
 
@@ -102,5 +104,36 @@ describe.for(subclasses)("%s", ([name, Ctor, status, defaultMessage]) => {
 
   it("reports its own class name", () => {
     expect(new Ctor().name).toBe(name);
+  });
+});
+
+describe("ApiError codes", () => {
+  it("leaves code undefined by default", () => {
+    expect(new ApiError("x").code).toBeUndefined();
+    expect(new ConflictError().code).toBeUndefined();
+  });
+
+  it("PreconditionRequiredError carries status 428 and code", () => {
+    const error = new PreconditionRequiredError("msg", "BODY_METRICS_REQUIRED");
+    expect(error.status).toBe(StatusCodes.PRECONDITION_REQUIRED);
+    expect(error.statusCode).toBe(StatusCodes.PRECONDITION_REQUIRED);
+    expect(error.code).toBe("BODY_METRICS_REQUIRED");
+    expect(error.name).toBe("PreconditionRequiredError");
+    expect(error).toBeInstanceOf(ApiError);
+  });
+
+  it("TooManyRequestsError carries status 429 and code", () => {
+    const error = new TooManyRequestsError("msg", "DAILY_LIMIT_REACHED");
+    expect(error.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
+    expect(error.code).toBe("DAILY_LIMIT_REACHED");
+  });
+
+  it("ConflictError and ServiceUnavailableError forward code", () => {
+    expect(new ConflictError("msg", "GENERATION_IN_PROGRESS").code).toBe(
+      "GENERATION_IN_PROGRESS",
+    );
+    expect(new ServiceUnavailableError("msg", "GENERATION_FAILED").code).toBe(
+      "GENERATION_FAILED",
+    );
   });
 });

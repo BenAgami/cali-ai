@@ -15,18 +15,21 @@ import { useTheme } from "@src/context/ThemeContext";
 import { useProfileEdit } from "@src/hooks/useProfileEdit";
 import AvatarDisplay from "@src/components/AvatarDisplay";
 import AvatarPickerModal from "@src/components/AvatarPickerModal";
+import BodyMetricsForm from "@src/components/BodyMetricsForm";
 
 const ProfileEditScreen: React.FC = () => {
   const { colors } = useTheme();
   const {
-    loading,
-    saving,
+    isLoading,
+    isSaving,
     username,
     usernameError,
     charCount,
     avatarUri,
     experienceLevel,
     goalDraft,
+    bodyMetricsForm,
+    bodyMetricsError,
     isAvatarPickerVisible,
     setExperienceLevel,
     setGoalDraft,
@@ -46,7 +49,7 @@ const ProfileEditScreen: React.FC = () => {
     },
   ];
 
-  if (loading) {
+  if (isLoading) {
     return (
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: colors.background }]}
@@ -119,15 +122,15 @@ const ProfileEditScreen: React.FC = () => {
           </Text>
           <View style={styles.segmentRow}>
             {EXPERIENCE_LEVELS.map((level) => {
-              const active = experienceLevel === level;
+              const isActive = experienceLevel === level;
               return (
                 <Pressable
                   key={level}
                   style={({ pressed }) => [
                     styles.segmentButton,
                     {
-                      backgroundColor: active ? "#007AFF" : colors.surface,
-                      borderColor: active ? "#007AFF" : colors.text + "33",
+                      backgroundColor: isActive ? "#007AFF" : colors.surface,
+                      borderColor: isActive ? "#007AFF" : colors.text + "33",
                       opacity: pressed ? 0.8 : 1,
                     },
                   ]}
@@ -136,7 +139,7 @@ const ProfileEditScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.segmentText,
-                      { color: active ? "#FFFFFF" : colors.text },
+                      { color: isActive ? "#FFFFFF" : colors.text },
                     ]}
                   >
                     {level.charAt(0) + level.slice(1).toLowerCase()}
@@ -160,15 +163,15 @@ const ProfileEditScreen: React.FC = () => {
             style={styles.goalTypeRow}
           >
             {GOAL_TYPES.map((gt) => {
-              const active = goalDraft.goalType === gt;
+              const isActive = goalDraft.goalType === gt;
               return (
                 <Pressable
                   key={gt}
                   style={({ pressed }) => [
                     styles.goalTypeButton,
                     {
-                      backgroundColor: active ? "#007AFF" : colors.surface,
-                      borderColor: active ? "#007AFF" : colors.text + "33",
+                      backgroundColor: isActive ? "#007AFF" : colors.surface,
+                      borderColor: isActive ? "#007AFF" : colors.text + "33",
                       opacity: pressed ? 0.8 : 1,
                     },
                   ]}
@@ -179,7 +182,7 @@ const ProfileEditScreen: React.FC = () => {
                   <Text
                     style={[
                       styles.goalTypeText,
-                      { color: active ? "#FFFFFF" : colors.text },
+                      { color: isActive ? "#FFFFFF" : colors.text },
                     ]}
                   >
                     {gt.charAt(0) + gt.slice(1).toLowerCase()}
@@ -229,16 +232,25 @@ const ProfileEditScreen: React.FC = () => {
           </View>
         </View>
 
+        {/* Body */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: colors.text }]}>Body</Text>
+          <BodyMetricsForm form={bodyMetricsForm} />
+          {bodyMetricsError && (
+            <Text style={styles.fieldError}>{bodyMetricsError}</Text>
+          )}
+        </View>
+
         {/* Actions */}
         <Pressable
           style={({ pressed }) => [
             styles.saveButton,
-            { backgroundColor: saving || pressed ? "#007AFF88" : "#007AFF" },
+            { backgroundColor: isSaving || pressed ? "#007AFF88" : "#007AFF" },
           ]}
           onPress={handleSave}
-          disabled={saving}
+          disabled={isSaving}
         >
-          {saving ? (
+          {isSaving ? (
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <Text style={styles.saveButtonText}>Save</Text>
@@ -262,7 +274,7 @@ const ProfileEditScreen: React.FC = () => {
       </ScrollView>
 
       <AvatarPickerModal
-        visible={isAvatarPickerVisible}
+        isVisible={isAvatarPickerVisible}
         onClose={() => setIsAvatarPickerVisible(false)}
         onPickLibrary={() => {
           void handlePickImage(false);

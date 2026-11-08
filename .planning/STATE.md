@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase-complete
-stopped_at: Phase 01 complete; next is Phase 4 (AI Workout Generation)
-last_updated: "2026-11-08T13:00:00.000Z"
+status: unknown
+stopped_at: Completed 04-11-PLAN.md
+last_updated: "2026-11-04T16:57:51.852Z"
 progress:
-  total_phases: 8
+  total_phases: 9
   completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 21
+  completed_plans: 20
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Users can record themselves doing calisthenics exercises and get actionable AI feedback on their form — what they did well and what to fix.
-**Current focus:** Phase 04 — AI workout generation (Phase 01 closed 2026-11-08)
+**Current focus:** Phase 05 — ai-form-analysis (Phase 04 complete)
 
 ## Current Position
 
-Phase: 01 (infrastructure) — COMPLETE (2026-11-08)
-Next: Phase 04 (AI workout generation); Phase 05 integrates BlazePose on device
+Phase: 08
+Plan: Not started
 
 ## Performance Metrics
 
@@ -57,6 +57,15 @@ _Updated after each plan completion_
 | Phase 01 P07 | 30min | 3 tasks | 18 files |
 | Phase 01 P09 | 30min | 3 tasks | 12 files |
 | Phase 01 P10 | multi-session | 3 tasks | 11 files |
+| Phase 04 P01 | 20min | 3 tasks | 20 files |
+| Phase 04 P07 | 25min | 3 tasks | 13 files |
+| Phase 04 P03 | 20min | 3 tasks | 13 files |
+| Phase 04 P04 | 20min | 2 tasks | 8 files |
+| Phase 04 P05 | 20min | 2 tasks | 5 files |
+| Phase 04 P08 | 20min | 3 tasks | 13 files |
+| Phase 04 P10 | 10min | 2 tasks | 6 files |
+| Phase 04 P06 | 20min | 3 tasks | 9 files |
+| Phase 04 P11 | n/a | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -83,6 +92,15 @@ Recent decisions affecting current work:
 - [Phase 01]: Workers run in the API process on dedicated Redis connections; session FAILED only on final attempt, capture errors are UnrecoverableError; reaper is a BullMQ job scheduler
 - [Phase 01]: Capture/retry served at /api/sessions/:id/capture and /analysis/retry; retry reuses stored capture with a new job id; failed enqueue (5s timeout) fails the run ENQUEUE_FAILED and returns 503
 - [Phase 01]: SSE stream orchestration lives in analysisStreamService (subscribe-then-read, monotonic filter, terminal close); 404/409 thrown before headers, post-flush errors logged and stream closed
+- [Phase 04]: Saved workout is AI-generated iff aiModel non-null; ANTHROPIC_API_KEY required only in production
+- [Phase 04]: BodyMetricsForm reports stored metric until edited so imperial rounding never counts as a change
+- [Phase 04]: Shared assertAiPrerequisites gate throws 428 with first missing code; body metrics compared after 1-decimal rounding
+- [Phase 04]: LLM calls use SDK signal+timeout with maxRetries 0; vendor errors normalized to five LlmError codes
+- [Phase 04]: Plan validator re-checks numeric ranges server-side; failed generations count toward the daily cap; a shared AbortController deadline replaces withTimeout
+- [Phase 04]: Generate screen derives its step from getMissingAiPrerequisites; a 428 refetches the profile; consent copy lives in aiMessages.ts
+- [Phase 04]: Edited AI plans stay flagged: builder sends generationId on create only; disclaimer shows on Start when aiModel is non-null
+- [Phase 04]: Generation save: foreign/failed generationId is 404, double save 409 GENERATION_ALREADY_SAVED; edits never clear aiModel
+- [Phase 04]: Sonnet (claude-sonnet-5-5, effort medium) is primary per D-22 eval; fallback rung is Sonnet at high effort. Haiku missed thresholds (58% catalogValid, 33% levelDiffers) with timeouts/UNAVAILABLE.
 
 ### Roadmap Evolution
 
@@ -98,11 +116,12 @@ None yet.
 - Open decisions: pricing model and per-analysis cost cap; keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
 - RESOLVED (plan 01-04, roadmap criterion 6, 2026-11-08): pose model is BlazePose Full (33 points), passing 4/4 exercises vs 1/4 for MoveNet Lightning and Thunder; see `phases/01-infrastructure/01-POSE-MODEL-DECISION.md`. Phase 5 must integrate BlazePose on device (no official fast-tflite recipe) and recheck low light (pull-up has no dim take).
 - CONCERN (Phase 5, not started): `withTimeout` in `apps/api/src/utils/withTimeout.ts` only stops waiting; it cannot cancel the inner work, so a timed-out LLM call keeps running and is paid for, and only the guarded writes make its late result harmless. When the real LLM call replaces the `feedbackService` stub, change `withTimeout` to take `(signal) => Promise<T>` and pass an `AbortSignal` to the SDK request; keep the guarded writes either way. Also type `TimeoutError.code` as a union of the known codes (`ENQUEUE_TIMEOUT`, `LLM_TIMEOUT`) so a typo cannot silently never match.
+- Production deploys must run `yarn workspace @repo/db db:seed` after `db:migrate:deploy` so the `dip` exercise (Phase 4, D-14) exists; the seed is an idempotent upsert.
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
 ## Session Continuity
 
-Last session: 2026-11-08
-Stopped at: Phase 01 complete (verification passed, UAT 3/3)
+Last session: 2026-11-04T16:55:57.827Z
+Stopped at: Completed 04-11-PLAN.md
 Resume file: None
