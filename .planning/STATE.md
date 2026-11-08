@@ -7,7 +7,7 @@ stopped_at: Completed 04-11-PLAN.md
 last_updated: "2026-11-04T16:57:51.852Z"
 progress:
   total_phases: 9
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 21
   completed_plans: 20
 ---
@@ -113,8 +113,8 @@ None yet.
 ### Blockers/Concerns
 
 - INFRA-05 (gate passed 2026-10-22, plan 01-03): the Android dev build runs the MoveNet pose pass in a vision-camera frame processor (user-verified; device, keypoint count and mean score not reported), and the EAS iOS `development-simulator` build compiles. iOS runtime verification remains an accepted, deferred risk (no Mac or Apple developer account).
-- Open decisions: pricing model and per-analysis cost cap; pose model (MoveNet vs 33-point); keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
-- OPEN BLOCKER (plan 01-04, roadmap criterion 6): the pose-model decision (MoveNet vs 33-point) is postponed because the developer is injured and cannot film the 16 shot-list clips. Task 1 (offline evaluator in `scripts/pose-eval/`) is done; Tasks 2 and 3 (clips, evaluation, `01-POSE-MODEL-DECISION.md`, Key Decisions row in PROJECT.md, `docs/architecture.md`) are pending. Phase 1 cannot be marked complete until this closes, and the decision must land before Phase 5 planning. Nothing else in Phase 1 depends on it; MoveNet Lightning stays the bundled default. Check that the capture schema does not cap keypoints at 17 before relying on that. Options if filming stays out of reach: have someone else perform the exercises, run a partial evaluation, or accept MoveNet Lightning explicitly as an override of D-21.
+- Open decisions: pricing model and per-analysis cost cap; keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
+- RESOLVED (plan 01-04, roadmap criterion 6, 2026-11-08): pose model is BlazePose Full (33 points), passing 4/4 exercises vs 1/4 for MoveNet Lightning and Thunder; see `phases/01-infrastructure/01-POSE-MODEL-DECISION.md`. Phase 5 must integrate BlazePose on device (no official fast-tflite recipe) and recheck low light (pull-up has no dim take).
 - CONCERN (Phase 5, not started): `withTimeout` in `apps/api/src/utils/withTimeout.ts` only stops waiting; it cannot cancel the inner work, so a timed-out LLM call keeps running and is paid for, and only the guarded writes make its late result harmless. When the real LLM call replaces the `feedbackService` stub, change `withTimeout` to take `(signal) => Promise<T>` and pass an `AbortSignal` to the SDK request; keep the guarded writes either way. Also type `TimeoutError.code` as a union of the known codes (`ENQUEUE_TIMEOUT`, `LLM_TIMEOUT`) so a typo cannot silently never match.
 - Production deploys must run `yarn workspace @repo/db db:seed` after `db:migrate:deploy` so the `dip` exercise (Phase 4, D-14) exists; the seed is an idempotent upsert.
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
