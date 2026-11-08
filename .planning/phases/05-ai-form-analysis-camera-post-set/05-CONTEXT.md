@@ -39,6 +39,13 @@ Roadmap-fixed (not re-asked): 5-level band; 0-100 score stored but never shown p
 - **D-15:** Bands are level-agnostic: the same bar for everyone, so the stored 0-100 score stays comparable over time. Feedback wording may adapt to fitness level.
 - **D-16:** Consent reuses the Phase 4 AI consent gate (`assertAiPrerequisites`, 428) and notice, with form-analysis wording added: pose keypoints and height/weight go to the LLM provider; no video leaves the phone (PROF-07).
 
+### Post-research amendments (2026-11-08)
+- **D-17:** Symmetry is only assessable from a front/back view. The result keeps the three dimension rows (D-06); for side-on exercises (push-up, dip, squat) the symmetry row reads "Not assessed from this angle".
+- **D-18:** Pull-ups are filmed front/back (enables symmetry); push-up, dip and squat are filmed side-on.
+- **D-19:** Amends D-16: only server-derived measurements (angles, rep metrics) plus height/weight are sent to the LLM, never raw keypoints. The consent wording states exactly this. Scoring and band are computed deterministically on the server; the LLM only phrases the (at most 2) corrections the server selected.
+- **D-20:** Recorded-set results appear in a "Recorded sets" section on the workout detail screen (a recorded set has no existing link to a workout; the schema gains the link, see RESEARCH.md).
+- **D-21:** No UI-SPEC.md for this phase; planning works from D-01..D-20.
+
 ### Claude's Discretion
 - Countdown length, confidence thresholds for the live setup check, framing-guide visuals
 - Exact banner/toast mechanics and badge styling
