@@ -18,4 +18,11 @@ export const getLlmProvider = (): LlmProvider => {
 };
 
 export { LlmError } from "./types";
-export type { LlmProvider, WorkoutPlanDraft, WorkoutPlanResult } from "./types";
+export type {
+  FormFeedbackDraft,
+  FormFeedbackRequest,
+  FormFeedbackResult,
+  LlmProvider,
+  WorkoutPlanDraft,
+  WorkoutPlanResult,
+} from "./types";
