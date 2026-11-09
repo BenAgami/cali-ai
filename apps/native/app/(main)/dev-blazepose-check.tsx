@@ -14,7 +14,9 @@ import { baseColors } from "@src/theme/colors";
 import { useMediaPipePose } from "@src/pose/useMediaPipePose";
 import type { PoseFrame } from "@src/pose/types";
 
-const TARGET_FPS = 15;
+// runAtTargetFps drops frames when the target is near half the camera rate
+// (15 on a 30 fps camera delivered ~12); 60 means unthrottled.
+const TARGET_FPS = 60;
 const VISIBILITY_THRESHOLD = 0.5;
 const LEFT_CHAIN = [11, 13, 15, 23, 27];
 const RIGHT_CHAIN = [12, 14, 16, 24, 28];
@@ -81,6 +83,7 @@ const DevBlazePoseCheck: React.FC = () => {
   const pose = useMediaPipePose({
     isActive: true,
     cameraPosition: position,
+    isPortrait: !isLandscape,
     targetFps: TARGET_FPS,
     onFrame,
   });
@@ -192,7 +195,13 @@ const DevBlazePoseCheck: React.FC = () => {
           pose.cameraHandlers.onOutputOrientationChanged
         }
       />
-      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {/* Landmarks are upright and unmirrored. The front preview is mirrored, so
+          front dots flip x. Dots use `left`, which RN swaps on RTL phones, so
+          this layer is pinned to LTR. */}
+      <View
+        style={[StyleSheet.absoluteFill, { direction: "ltr" }]}
+        pointerEvents="none"
+      >
         {dots.map((dot) => (
           <View
             key={dot.index}

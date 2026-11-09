@@ -22,7 +22,12 @@ export type PoseSource = {
 export type UsePoseSourceOptions = {
   isActive: boolean;
   cameraPosition: "front" | "back";
-  /** 15 for recording */
+  /** The plugin returns sensor-frame (landscape) landmarks; portrait needs a 90 degree turn. */
+  isPortrait: boolean;
+  /**
+   * runAtTargetFps throttle. A value near half the camera rate (15 on a 30 fps
+   * camera) quantises to ~10-12 fps; use 60 for unthrottled.
+   */
   targetFps: number;
   /** Invoked on the JS thread. */
   onFrame: (frame: PoseFrame) => void;
