@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { SESSION_STATUSES } from "@repo/common";
+
 import { registry } from "../registry";
 import {
   CreateWorkoutSessionBody,
@@ -26,9 +28,12 @@ registry.registerPath({
   },
   responses: {
     201: successResponse(WorkoutSessionResponse, "Workout session created"),
-    400: errorResponse("Validation error"),
+    400: errorResponse("Validation error or unsupported exercise"),
     401: errorResponse("Unauthorized"),
-    404: errorResponse("Exercise not found"),
+    404: errorResponse("Exercise or workout not found"),
+    428: errorResponse(
+      "AI prerequisites missing (PROFILE_INCOMPLETE, BODY_METRICS_REQUIRED or AI_CONSENT_REQUIRED)",
+    ),
     500: errorResponse("Internal server error"),
   },
 });
@@ -56,7 +61,11 @@ registry.registerPath({
         .openapi({ description: "Number of items to skip", example: 0 }),
       exerciseCode: z.string().optional().openapi({
         description: "Filter by exercise code",
-        example: "push-up",
+        example: "push_up",
+      }),
+      processingStatus: z.enum(SESSION_STATUSES).optional().openapi({
+        description: "Filter by processing status",
+        example: "PROCESSING",
       }),
     }),
   },

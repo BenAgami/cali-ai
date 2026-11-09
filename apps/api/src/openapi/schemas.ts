@@ -23,6 +23,7 @@ import {
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
   workoutSessionResponseSchema,
+  workoutSessionListItemSchema,
   bodyMetricInputSchema,
   aiConsentSchema,
   saveBodyMetricResponseSchema,
@@ -317,12 +318,6 @@ export const WorkoutLogResponse = registry.register(
 
 // ── Workout session responses ─────────────────────────────────────────────────
 
-const AnalysisResultSummary = z.object({
-  formScore: z.number().int(),
-  analyzedAt: isoDateTime(),
-  summaryFeedback: z.string().nullable(),
-});
-
 export const WorkoutSessionResponse = registry.register(
   "WorkoutSession",
   workoutSessionResponseSchema,
@@ -330,9 +325,7 @@ export const WorkoutSessionResponse = registry.register(
 
 export const WorkoutSessionListItem = registry.register(
   "WorkoutSessionListItem",
-  WorkoutSessionResponse.extend({
-    analysisResult: AnalysisResultSummary.nullable(),
-  }),
+  workoutSessionListItemSchema,
 );
 
 export const CaptureAccepted = registry.register(
