@@ -24,6 +24,8 @@ export const unitEnv = {
   LLM_MAX_TOKENS: "2000",
   AI_GENERATION_DAILY_CAP: "10",
   AI_GENERATION_DEADLINE_MS: "60000",
+  FORM_ANALYSIS_DAILY_CAP: "15",
+  FORM_ANALYSIS_EXERCISE_WORKOUT_CAP: "2",
   R2_ACCOUNT_ID: "unit-account-id",
   R2_ACCESS_KEY_ID: "unit-access-key-id",
   R2_SECRET_ACCESS_KEY: "unit-secret-access-key",

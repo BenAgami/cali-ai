@@ -40,6 +40,10 @@ registry.registerPath({
     404: errorResponse("Session not found"),
     409: errorResponse("Session is not PENDING"),
     413: errorResponse("Compressed body exceeds 1 MiB"),
+    428: errorResponse("AI prerequisites missing"),
+    429: errorResponse(
+      "Daily or per-exercise-per-workout form-analysis limit reached (DAILY_ANALYSIS_LIMIT_REACHED, EXERCISE_ANALYSIS_LIMIT_REACHED)",
+    ),
     503: errorResponse("Queue unavailable"),
     500: errorResponse("Internal server error"),
   },
@@ -57,6 +61,7 @@ registry.registerPath({
     401: errorResponse("Unauthorized"),
     404: errorResponse("Session not found"),
     409: errorResponse("Session is not FAILED or has no stored capture"),
+    428: errorResponse("AI prerequisites missing"),
     503: errorResponse("Queue unavailable"),
     500: errorResponse("Internal server error"),
   },
