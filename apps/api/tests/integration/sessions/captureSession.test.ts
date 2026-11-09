@@ -20,6 +20,7 @@ import {
   submitRawCapture,
 } from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
@@ -41,14 +42,20 @@ describe("POST /api/sessions/:id/capture", () => {
   };
 
   const registerToken = async (): Promise<string> => {
-    const res = await registerUser(app, new RegisterUserBuilder().build());
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
     return res.body.data.token as string;
   };
 
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
     token = await registerToken();
-    exerciseCode = (await createExercise(prisma)).code;
+    exerciseCode = (await createExercise(prisma, { code: "push_up" })).code;
   });
 
   beforeEach(async () => {
