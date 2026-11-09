@@ -137,7 +137,7 @@ Plans:
 - [x] 05-06-PLAN.md — Metrics foundation: types, geometry, preprocessing, rep segmentation, trackability preflight, synthetic skeletons
 - [x] 05-07-PLAN.md — Session creation as recorded-set entry (supported exercises, workout link, consent gate), processingStatus filter, no formScore in lists
 - [x] 05-08-PLAN.md — Native endpoints/query hooks, global AnalysisTrackerContext with SSE watchers and completion banner
-- [ ] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
+- [x] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
 - [x] 05-10-PLAN.md — LLM form feedback: provider method, versioned prompt, validator + repair, typed timeout codes
 - [x] 05-11-PLAN.md — Capture consent gate + daily cap (15) and per-exercise-per-workout cap (2); GET /sessions/:id/analysis and /workouts/:id/recorded-sets
 - [x] 05-12-PLAN.md — Result UI: band badge, dimension rows, feedback blocks, camera advice, analysis-result screen, Recorded sets section
