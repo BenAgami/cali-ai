@@ -125,7 +125,7 @@ Plans:
 4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
 5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
 6. When the body cannot be tracked reliably, the user sees camera advice instead of feedback
-   **Plans:** 6/18 plans executed
+   **Plans:** 8/18 plans executed
 
 Plans:
 
@@ -134,7 +134,7 @@ Plans:
 - [x] 05-03-PLAN.md — Prisma migration: WorkoutSession workoutId/setNumber, AnalysisOutcome, nullable formScore, untrackableReasons, finding repNumbers
 - [x] 05-04-PLAN.md — @repo/common contracts: supported exercises, bands, dimensions, untrackable advice, result/recorded-set shapes, aspectRatio + quantizeCapture, consent version bump
 - [x] 05-05-PLAN.md — Skeleton fixtures from the 16 Phase 1 clips (dump script, manifest, loader)
-- [ ] 05-06-PLAN.md — Metrics foundation: types, geometry, preprocessing, rep segmentation, trackability preflight, synthetic skeletons
+- [x] 05-06-PLAN.md — Metrics foundation: types, geometry, preprocessing, rep segmentation, trackability preflight, synthetic skeletons
 - [x] 05-07-PLAN.md — Session creation as recorded-set entry (supported exercises, workout link, consent gate), processingStatus filter, no formScore in lists
 - [x] 05-08-PLAN.md — Native endpoints/query hooks, global AnalysisTrackerContext with SSE watchers and completion banner
 - [ ] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
@@ -202,7 +202,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
-| 5. Post-Set AI Form Analysis | 6/18 | In Progress|  |
+| 5. Post-Set AI Form Analysis | 8/18 | In Progress|  |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
