@@ -6,7 +6,6 @@ import { pushUpRubric } from "./pushUp";
 import { squatRubric } from "./squat";
 import type { ExerciseRubric } from "./types";
 
-/** @public Stamped on every FormMetrics (05-14). */
 export const RUBRIC_VERSION = "rubric-v0";
 
 const RUBRICS: Record<FormAnalysisExercise, ExerciseRubric> = {
@@ -16,6 +15,5 @@ const RUBRICS: Record<FormAnalysisExercise, ExerciseRubric> = {
   pull_up: pullUpRubric,
 };
 
-/** @public Consumed by 05-14 computeFormMetrics. */
 export const getRubric = (code: FormAnalysisExercise): ExerciseRubric =>
   RUBRICS[code];

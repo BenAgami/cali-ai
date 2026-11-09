@@ -5,7 +5,6 @@ import type {
   UntrackableReason,
 } from "@repo/common";
 
-/** @public Consumed by 05-14 computeFormMetrics. */
 export const METRICS_VERSION = "metrics-v1";
 
 export type Point = readonly [x: number, y: number];
@@ -127,5 +126,4 @@ export type UntrackableFormMetrics = {
   rubricVersion: string;
 };
 
-/** @public Consumed by 05-14 and 05-16. */
 export type FormMetrics = ScoredFormMetrics | UntrackableFormMetrics;
