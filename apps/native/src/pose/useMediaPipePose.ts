@@ -40,9 +40,29 @@ const toUpright = (
   y: number,
   isFront: boolean,
   isPortrait: boolean,
+  isLandscapeFlipped: boolean,
 ): [x: number, y: number] => {
-  if (!isPortrait) return [x, y];
+  if (!isPortrait) return isLandscapeFlipped ? [1 - x, 1 - y] : [x, y];
   return isFront ? [y, 1 - x] : [1 - y, x];
+};
+
+/**
+ * The raw landscape frame is upright in one landscape direction only: the back
+ * sensor matches "landscape-left", the front sensor "landscape-right" (the
+ * sensors sit 180 degrees apart). Held the other way the frame is upside down,
+ * which is a pure 180 degree turn. Until the camera reports an orientation the
+ * frame is assumed to match. Orientation names follow vision-camera; the
+ * mapping is checked on device in the 05-18 UAT.
+ */
+const isLandscapeFlippedFor = (
+  orientation: Orientation | null,
+  isFront: boolean,
+): boolean => {
+  if (orientation === null) return false;
+  if (orientation === "landscape-left" || orientation === "landscape-right") {
+    return orientation !== (isFront ? "landscape-right" : "landscape-left");
+  }
+  return false;
 };
 
 const emptyKeypoints = (): PoseKeypoint[] =>
@@ -73,6 +93,7 @@ export const useMediaPipePose = (
   cameraPositionRef.current = cameraPosition;
   const isPortraitRef = useRef(isPortrait);
   isPortraitRef.current = isPortrait;
+  const orientationRef = useRef<Orientation | null>(null);
   const isActiveRef = useRef(isActive);
   isActiveRef.current = isActive;
 
@@ -83,6 +104,10 @@ export const useMediaPipePose = (
     hasReceivedResult.current = true;
     const landmarks = bundle.results[0]?.landmarks[0];
     const isFront = cameraPositionRef.current === "front";
+    const isLandscapeFlipped = isLandscapeFlippedFor(
+      orientationRef.current,
+      isFront,
+    );
     const keypoints: PoseKeypoint[] =
       landmarks && landmarks.length === KEYPOINT_COUNT
         ? landmarks.map((landmark): PoseKeypoint => {
@@ -91,6 +116,7 @@ export const useMediaPipePose = (
               clamp01(landmark.y),
               isFront,
               isPortraitRef.current,
+              isLandscapeFlipped,
             );
             return [x, y, clamp01(landmark.visibility ?? 0)];
           })
@@ -135,15 +161,24 @@ export const useMediaPipePose = (
     },
   );
 
+  const { cameraOrientationChangedHandler } = solution;
+  const onOutputOrientationChanged = useCallback(
+    (orientation: Orientation) => {
+      orientationRef.current = orientation;
+      cameraOrientationChangedHandler(orientation);
+    },
+    [cameraOrientationChangedHandler],
+  );
+
   const cameraHandlers = useMemo(
     () => ({
       onLayout: solution.cameraViewLayoutChangeHandler,
-      onOutputOrientationChanged: solution.cameraOrientationChangedHandler,
+      onOutputOrientationChanged,
       onDeviceChange: solution.cameraDeviceChangeHandler,
     }),
     [
       solution.cameraViewLayoutChangeHandler,
-      solution.cameraOrientationChangedHandler,
+      onOutputOrientationChanged,
       solution.cameraDeviceChangeHandler,
     ],
   );
