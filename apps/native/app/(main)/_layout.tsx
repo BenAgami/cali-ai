@@ -60,6 +60,10 @@ const MainLayout: React.FC = () => {
           options={{ headerShown: true, title: "Generate with AI" }}
         />
         <Stack.Screen
+          name="record-set"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
           name="dev-pose-check"
           options={{ headerShown: true, title: "Pose check" }}
         />
