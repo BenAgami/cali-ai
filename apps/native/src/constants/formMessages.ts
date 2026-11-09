@@ -12,22 +12,21 @@ export const RETRY = "Retry";
 export const NEW_BADGE = "New";
 export const QUEUED_LABEL = "Queued";
 export const UNTRACKABLE_ROW_TEXT = "Couldn't track you";
-export const FAILURE_FALLBACK_MESSAGE =
+const FAILURE_FALLBACK_MESSAGE =
   "Something went wrong while analysing this set.";
 export const FEEDBACK_NOT_READY_TEXT = "Your feedback is still being prepared.";
 export const FEEDBACK_LOAD_ERROR_TEXT = "Couldn't load feedback.";
 export const FEEDBACK_SCREEN_TITLE = "Form feedback";
 export const MAX_CORRECTIONS_SHOWN = 2;
 
-export const ANALYSIS_FAILURE_MESSAGES: Record<AnalysisFailureReason, string> =
-  {
-    TIMEOUT: "The analysis took too long.",
-    LLM_TIMEOUT: "Writing your feedback took too long.",
-    ENQUEUE_FAILED: "We couldn't start the analysis.",
-    CAPTURE_MISSING: "The recording couldn't be read.",
-    CAPTURE_INVALID: "The recording couldn't be read.",
-    ANALYSIS_ERROR: FAILURE_FALLBACK_MESSAGE,
-  };
+const ANALYSIS_FAILURE_MESSAGES: Record<AnalysisFailureReason, string> = {
+  TIMEOUT: "The analysis took too long.",
+  LLM_TIMEOUT: "Writing your feedback took too long.",
+  ENQUEUE_FAILED: "We couldn't start the analysis.",
+  CAPTURE_MISSING: "The recording couldn't be read.",
+  CAPTURE_INVALID: "The recording couldn't be read.",
+  ANALYSIS_ERROR: FAILURE_FALLBACK_MESSAGE,
+};
 
 // CAPTURE_* failures offer "Record again" instead of a retry.
 export const RETRYABLE_FAILURES: ReadonlySet<string> = new Set<string>([

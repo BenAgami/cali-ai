@@ -12,6 +12,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
 import AiDisclaimer from "@src/components/AiDisclaimer";
+import RecordedSetCard from "@src/components/form/RecordedSetCard";
+import { RECORDED_SETS_TITLE } from "@src/constants/formMessages";
+import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useDeleteWorkout } from "@src/hooks/mutations/useDeleteWorkout";
@@ -41,6 +44,14 @@ const WorkoutDetailScreen: React.FC = () => {
   const id = params.id ? Number(params.id) : undefined;
   const { data, isLoading, error } = useWorkoutDetail(id);
   const deleteMutation = useDeleteWorkout();
+  const recorded = useWorkoutRecordedSets(id);
+
+  const handleOpenResult = (sessionId: number) => {
+    router.push({
+      pathname: "/analysis-result",
+      params: { sessionId: String(sessionId) },
+    });
+  };
 
   const handleStart = () => {
     if (!id) return;
@@ -124,6 +135,23 @@ const WorkoutDetailScreen: React.FC = () => {
               ))}
             </View>
 
+            {recorded.items.length > 0 && (
+              <View style={styles.list}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {RECORDED_SETS_TITLE}
+                </Text>
+                {recorded.items.map((item) => (
+                  <RecordedSetCard
+                    key={item.sessionId}
+                    item={item}
+                    onOpen={handleOpenResult}
+                    onRetry={(sessionId) => void recorded.retrySet(sessionId)}
+                    isRetrying={recorded.retryingIds.has(item.sessionId)}
+                  />
+                ))}
+              </View>
+            )}
+
             {data.aiModel !== null && (
               <View style={styles.aiDisclaimer}>
                 <AiDisclaimer />
@@ -195,6 +223,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 28, fontWeight: "700" },
   subtle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
   list: { marginTop: 24 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8 },
   row: {
     padding: 14,
     borderRadius: 10,
