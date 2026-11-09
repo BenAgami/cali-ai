@@ -1,15 +1,17 @@
 import { z } from "zod";
 
 import { ANALYSIS_STAGES, SESSION_STATUSES } from "./analysis";
-import { ANALYSIS_OUTCOMES } from "./formAnalysis";
+import { ANALYSIS_OUTCOMES, FORM_ANALYSIS_EXERCISES } from "./formAnalysis";
 import { EXERCISE_TYPES } from "./exercise";
 import { paginatedSchema } from "./pagination";
 
-const exerciseCodeSchema = z.string().trim().min(1).max(40);
-
 export const createWorkoutSessionSchema = z
   .object({
-    exerciseCode: exerciseCodeSchema,
+    exerciseCode: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(z.enum(FORM_ANALYSIS_EXERCISES)),
     notes: z.string().trim().max(2000).optional(),
     performedAt: z.iso.datetime().optional(),
     workoutId: z.number().int().positive().optional(),
