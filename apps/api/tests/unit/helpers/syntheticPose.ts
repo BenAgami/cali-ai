@@ -31,13 +31,13 @@ export type SyntheticOptions = {
   trunkLeanDeg?: number;
   /** pull_up: mouth height below the bar at peak, in torso units (negative = above) */
   mouthBelowBar?: number;
-  /** pull_up: left elbow flares outward by this angle */
+  /** pull_up: the left elbow angle is this many degrees below the right */
   elbowAsymmetryDeg?: number;
   /** pull_up: shoulder line tilt */
   shoulderTiltDeg?: number;
   /** squat: heel lift */
   heelRiseDeg?: number;
-  /** pull_up: lateral hip sway amplitude in torso units */
+  /** pull_up / dip: lateral hip sway amplitude in torso units (one full sine per rep, so peak-to-peak is twice this) */
   hipSwayRatio?: number;
   /** uniform noise amplitude in isotropic units */
   noise?: number;
@@ -100,6 +100,23 @@ const repProgress = (
   return u < repSec ? (1 - Math.cos((2 * Math.PI * u) / repSec)) / 2 : 0;
 };
 
+/** Fraction (0-1) of the current rep elapsed; 0 outside a rep. */
+const repPhase = (
+  t: number,
+  lead: number,
+  repSec: number,
+  restSec: number,
+  reps: number,
+): number => {
+  const local = t - lead;
+  if (local < 0) return 0;
+  const period = repSec + restSec;
+  const k = Math.floor(local / period);
+  if (k >= reps) return 0;
+  const u = local - k * period;
+  return u < repSec ? u / repSec : 0;
+};
+
 type Skeleton = Map<number, { point: P; isFar: boolean }>;
 
 export const buildSyntheticCapture = (
@@ -150,7 +167,7 @@ export const buildSyntheticCapture = (
   const sideOn = exercise !== "pull_up";
 
   /** Near-side chain keyed by LEFT landmark index. */
-  const nearChain = (p: number): Map<number, P> => {
+  const nearChain = (p: number, phase: number): Map<number, P> => {
     const chain = new Map<number, P>();
     const angle = lockoutDeg - p * (lockoutDeg - depthDeg);
     if (exercise === "push_up" || exercise === "dip") {
@@ -181,7 +198,21 @@ export const buildSyntheticCapture = (
         chain.set(BLAZEPOSE.LEFT_KNEE, lerp(hip, ankle, 0.5));
         chain.set(BLAZEPOSE.LEFT_ANKLE, ankle);
       } else {
-        const hip = add(shoulder, scaleBy(rot(down, trunkLeanDeg), torso));
+        // Anchor the shoulder over the bars so only deliberate sway moves the hips.
+        const anchor: P = [cx - shoulder[0], 0];
+        for (const index of [
+          BLAZEPOSE.LEFT_WRIST,
+          BLAZEPOSE.LEFT_ELBOW,
+          BLAZEPOSE.LEFT_SHOULDER,
+        ]) {
+          chain.set(index, add(chain.get(index)!, anchor));
+        }
+        const anchoredShoulder = chain.get(BLAZEPOSE.LEFT_SHOULDER)!;
+        const swayX = hipSwayRatio * torso * Math.sin(2 * Math.PI * phase);
+        const hip = add(
+          anchoredShoulder,
+          add(scaleBy(rot(down, trunkLeanDeg), torso), [swayX, 0]),
+        );
         const knee = add(hip, [0.04 * scale, 0.11 * scale]);
         const ankle = add(knee, [-0.03 * scale, 0.11 * scale]);
         chain.set(BLAZEPOSE.LEFT_HIP, hip);
@@ -210,9 +241,9 @@ export const buildSyntheticCapture = (
     return chain;
   };
 
-  const sideOnSkeleton = (p: number): Skeleton => {
+  const sideOnSkeleton = (p: number, phase: number): Skeleton => {
     const skeleton: Skeleton = new Map();
-    const chain = nearChain(p);
+    const chain = nearChain(p, phase);
     const isRightNear = side === "right";
     for (const [leftIndex, point] of chain) {
       const nearIndex = isRightNear ? leftIndex + 1 : leftIndex;
@@ -265,13 +296,13 @@ export const buildSyntheticCapture = (
     return skeleton;
   };
 
-  const pullUpSkeleton = (p: number, t: number): Skeleton => {
+  const pullUpSkeleton = (p: number, phase: number): Skeleton => {
     const skeleton: Skeleton = new Map();
     const barY = 0.15;
     const hangY = barY + 1.2 * torso;
     const peakY = barY + mouthBelowBar * torso;
     const mouthY = hangY + (peakY - hangY) * p;
-    const sway = hipSwayRatio * torso * Math.sin((2 * Math.PI * t) / repSec);
+    const sway = hipSwayRatio * torso * Math.sin(2 * Math.PI * phase);
     const tilt = Math.sin(shoulderTiltDeg * DEG) * (shoulderSpread / 2);
     const set = (index: number, point: P): void => {
       skeleton.set(index, { point, isFar: false });
@@ -300,7 +331,7 @@ export const buildSyntheticCapture = (
       const wrist: P = [cx + sign * shoulderSpread * 0.75, barY];
       const flare =
         sign === -1
-          ? Math.sin(elbowAsymmetryDeg * DEG) *
+          ? Math.tan((elbowAsymmetryDeg * DEG) / 2) *
             0.5 *
             Math.hypot(shoulder[0] - wrist[0], shoulder[1] - wrist[1])
           : 0;
@@ -323,7 +354,10 @@ export const buildSyntheticCapture = (
   for (let i = 0; i < frameCount; i += 1) {
     const t = i / fps;
     const p = repProgress(t, leadSec, repSec, restSec, reps);
-    const skeleton = sideOn ? sideOnSkeleton(p) : pullUpSkeleton(p, t);
+    const phase = repPhase(t, leadSec, repSec, restSec, reps);
+    const skeleton = sideOn
+      ? sideOnSkeleton(p, phase)
+      : pullUpSkeleton(p, phase);
     const isDropped = dropoutFrames.some(
       ([start, end]) => i >= start && i <= end,
     );
