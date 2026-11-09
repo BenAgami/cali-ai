@@ -1,5 +1,8 @@
-import { BLAZEPOSE, FORM_KEY_JOINTS } from "./formAnalysis";
-import type { FormAnalysisExercise } from "./formAnalysis";
+import {
+  BLAZEPOSE,
+  FORM_KEY_JOINTS,
+  type FormAnalysisExercise,
+} from "./formAnalysis";
 import {
   CAPTURE_LIMITS,
   quantizeCapture,
@@ -59,6 +62,9 @@ const meanVisibility = (
   return count === 0 ? 0 : sum / count;
 };
 
+const distance = (dx: number, dy: number): number =>
+  Math.sqrt(dx * dx + dy * dy);
+
 const median = (values: number[]): number => {
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
@@ -87,11 +93,8 @@ const shoulderToTorsoRatio = (
   const lh = frame.keypoints[BLAZEPOSE.LEFT_HIP];
   const rh = frame.keypoints[BLAZEPOSE.RIGHT_HIP];
   if (!ls || !rs || !lh || !rh) return null;
-  const shoulderWidth = Math.hypot(
-    (ls[0] - rs[0]) * aspectRatio,
-    ls[1] - rs[1],
-  );
-  const torso = Math.hypot(
+  const shoulderWidth = distance((ls[0] - rs[0]) * aspectRatio, ls[1] - rs[1]);
+  const torso = distance(
     ((ls[0] + rs[0]) / 2 - (lh[0] + rh[0]) / 2) * aspectRatio,
     (ls[1] + rs[1]) / 2 - (lh[1] + rh[1]) / 2,
   );
@@ -107,7 +110,7 @@ export const evaluateSetup = (input: {
 }): SetupCheckResult => {
   const { exerciseCode, aspectRatio, lumaMean } = input;
   const window = input.frames.slice(-SETUP_WINDOW_FRAMES);
-  const last = window.at(-1);
+  const last = window[window.length - 1];
   if (window.length < SETUP_WINDOW_FRAMES || !last) {
     return notReady("NOT_DETECTED");
   }
