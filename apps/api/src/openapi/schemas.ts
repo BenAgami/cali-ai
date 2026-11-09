@@ -22,6 +22,8 @@ import {
   poseCapturePayloadSchema,
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
+  formAnalysisResponseSchema,
+  recordedSetSchema,
   workoutSessionResponseSchema,
   workoutSessionListItemSchema,
   bodyMetricInputSchema,
@@ -334,3 +336,10 @@ export const CaptureAccepted = registry.register(
 );
 
 registry.register("AnalysisStatusEvent", analysisStatusEventSchema);
+
+export const FormAnalysisResponse = registry.register(
+  "FormAnalysisResponse",
+  formAnalysisResponseSchema,
+);
+
+export const RecordedSet = registry.register("RecordedSet", recordedSetSchema);
