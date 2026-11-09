@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { router } from "expo-router";
 import { StatusCodes } from "http-status-codes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { ApiError, userApi, userKeys } from "@src/api";
-import { useProfile } from "@src/hooks/queries/useProfile";
-import { useBodyMetricsForm } from "@src/hooks/useBodyMetricsForm";
-import { useAcceptAiConsent } from "@src/hooks/mutations/useAcceptAiConsent";
+import { ApiError } from "@src/api";
 import { useCreateWorkout } from "@src/hooks/mutations/useCreateWorkout";
 import { useGenerateWorkout } from "@src/hooks/mutations/useGenerateWorkout";
-import { useSaveBodyMetrics } from "@src/hooks/mutations/useSaveBodyMetrics";
+import {
+  useAiPrerequisiteSteps,
+  type AiPrerequisiteStep,
+} from "@src/hooks/useAiPrerequisiteSteps";
 import {
   AI_ALREADY_SAVED_TEXT,
   AI_ERROR_FALLBACK,
@@ -18,17 +17,12 @@ import {
 import { setGeneratedPlan } from "@src/state/generatedPlanStore";
 import {
   generateWorkoutSchema,
-  getMissingAiPrerequisites,
-  type AiPrerequisiteCode,
-  type ExperienceLevel,
-  type GoalType,
   type WorkoutGenerationPreview,
 } from "@repo/common";
 
-export type GenerateStep = AiPrerequisiteCode | "READY";
+export type GenerateStep = AiPrerequisiteStep;
 
 const GENERATION_ALREADY_SAVED = "GENERATION_ALREADY_SAVED";
-const PROFILE_ERROR = "Choose a level and enter a goal.";
 
 const formatPreviewRow = (
   ex: WorkoutGenerationPreview["exercises"][number],
@@ -43,66 +37,8 @@ const formatPreviewRow = (
 };
 
 export const useWorkoutGenerate = () => {
-  const queryClient = useQueryClient();
-  const { data: profile, isLoading, refetch } = useProfile();
-
-  const missing: AiPrerequisiteCode[] = profile
-    ? getMissingAiPrerequisites({
-        experienceLevel: profile.experienceLevel,
-        hasActiveGoal: profile.goals.length > 0,
-        hasBodyMetric: profile.bodyMetric !== null,
-        aiConsentVersion: profile.aiConsentVersion,
-      })
-    : [];
-  const step: GenerateStep = missing.at(0) ?? "READY";
-
-  const [levelDraft, setLevelDraft] = useState<ExperienceLevel | null>(null);
-  const [goalType, setGoalType] = useState<GoalType>("STRENGTH");
-  const [goalTitle, setGoalTitle] = useState("");
-  const [profileError, setProfileError] = useState<string | null>(null);
-  const experienceLevel = levelDraft ?? profile?.experienceLevel ?? null;
-  const isGoalMissing = !profile || profile.goals.length === 0;
-
-  const profileMutation = useMutation<void, Error, ExperienceLevel>({
-    mutationFn: async (level) => {
-      await userApi.updateProfile({ experienceLevel: level });
-      if (isGoalMissing) {
-        await userApi.upsertGoal({ goalType, title: goalTitle.trim() });
-      }
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: userKeys.all });
-    },
-    onError: () => setProfileError(AI_ERROR_FALLBACK),
-  });
-
-  const saveProfilePrerequisite = () => {
-    if (!experienceLevel || (isGoalMissing && goalTitle.trim().length === 0)) {
-      setProfileError(PROFILE_ERROR);
-      return;
-    }
-    setProfileError(null);
-    profileMutation.mutate(experienceLevel);
-  };
-
-  const bodyMetricsForm = useBodyMetricsForm(null);
-  const bodyMetricsMutation = useSaveBodyMetrics();
-  const [bodyMetricsError, setBodyMetricsError] = useState<string | null>(null);
-
-  const saveBodyMetrics = () => {
-    const result = bodyMetricsForm.validate();
-    if (!result.isValid) {
-      setBodyMetricsError(result.message);
-      return;
-    }
-    setBodyMetricsError(null);
-    bodyMetricsMutation.mutate(result.data, {
-      onError: () => setBodyMetricsError(AI_ERROR_FALLBACK),
-    });
-  };
-
-  const consentMutation = useAcceptAiConsent();
-  const acceptConsent = () => consentMutation.mutate();
+  const prerequisites = useAiPrerequisiteSteps();
+  const { step, refetch } = prerequisites;
 
   const [goalText, setGoalText] = useState("");
   const [preview, setPreview] = useState<WorkoutGenerationPreview | null>(null);
@@ -189,24 +125,8 @@ export const useWorkoutGenerate = () => {
   };
 
   return {
-    isLoading,
+    ...prerequisites,
     editInBuilder,
-    step,
-    experienceLevel,
-    goalType,
-    goalTitle,
-    profileError,
-    isSavingProfile: profileMutation.isPending,
-    setExperienceLevel: setLevelDraft,
-    setGoalType,
-    setGoalTitle,
-    saveProfilePrerequisite,
-    bodyMetricsForm,
-    bodyMetricsError,
-    isSavingBodyMetrics: bodyMetricsMutation.isPending,
-    saveBodyMetrics,
-    isAcceptingConsent: consentMutation.isPending,
-    acceptConsent,
     goalText,
     setGoalText,
     selectExample: setGoalText,
