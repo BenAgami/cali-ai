@@ -35,7 +35,7 @@ export type SyntheticOptions = {
   elbowAsymmetryDeg?: number;
   /** pull_up: shoulder line tilt */
   shoulderTiltDeg?: number;
-  /** squat: heel lift */
+  /** squat: heel lift at the bottom of each rep, as a heel-line angle */
   heelRiseDeg?: number;
   /** pull_up / dip: lateral hip sway amplitude in torso units (one full sine per rep, so peak-to-peak is twice this) */
   hipSwayRatio?: number;
@@ -224,7 +224,8 @@ export const buildSyntheticCapture = (
       const ankle: P = [cx, 0.85];
       const shin = 0.27 * scale;
       const thigh = 0.27 * scale;
-      const shinTilt = (180 - angle) * 0.35;
+      // Small shin lean so a ~85 deg knee puts the hip at knee height.
+      const shinTilt = (180 - angle) * 0.03;
       const knee = add(ankle, scaleBy(rot(up, shinTilt), shin));
       const toAnkle: P = [ankle[0] - knee[0], ankle[1] - knee[1]];
       const toAnkleUnit = scaleBy(toAnkle, 1 / shin);
@@ -285,12 +286,12 @@ export const buildSyntheticCapture = (
       const base = chain.get(BLAZEPOSE.LEFT_ANKLE)!;
       const lift =
         leftIndex === BLAZEPOSE.LEFT_HEEL
-          ? -0.1 * scale * Math.sin(heelRiseDeg * DEG)
+          ? -0.1 * scale * Math.sin(heelRiseDeg * DEG) * p
           : 0;
       const nearIndex = isRightNear ? leftIndex + 1 : leftIndex;
       const farIndex = isRightNear ? leftIndex : leftIndex + 1;
       const point = add(base, [offset[0], offset[1] + lift]);
-      skeleton.set(nearIndex, { point, isFar: view === "side" });
+      skeleton.set(nearIndex, { point, isFar: false });
       skeleton.set(farIndex, { point, isFar: view === "side" });
     }
     return skeleton;
