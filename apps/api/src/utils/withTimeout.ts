@@ -1,8 +1,10 @@
 import { toError } from "./toError";
 
+export type TimeoutCode = "ENQUEUE_TIMEOUT" | "LLM_TIMEOUT";
+
 export class TimeoutError extends Error {
   constructor(
-    readonly code: string,
+    readonly code: TimeoutCode,
     readonly timeoutMs: number,
   ) {
     super(`${code}: timed out after ${timeoutMs} ms`);
@@ -18,7 +20,7 @@ export class TimeoutError extends Error {
 export const withTimeout = <T>(
   promise: Promise<T>,
   timeoutMs: number,
-  code: string,
+  code: TimeoutCode,
 ): Promise<T> =>
   new Promise<T>((resolve, reject) => {
     const timer = setTimeout(
