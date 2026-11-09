@@ -130,7 +130,7 @@ Plans:
 Plans:
 
 - [x] 05-01-PLAN.md — Wave 0 gate: on-device BlazePose spike (MediaPipe PoseLandmarker plugin, Android), PoseFrame contract, runtime decision
-- [ ] 05-02-PLAN.md — Rubric v0 document (tags, thresholds, ramps, bands, trackability, daily cap) and user approval (D-13)
+- [x] 05-02-PLAN.md — Rubric v0 document (tags, thresholds, ramps, bands, trackability, daily cap 15, per-exercise-per-workout cap 2) and user approval (D-13)
 - [x] 05-03-PLAN.md — Prisma migration: WorkoutSession workoutId/setNumber, AnalysisOutcome, nullable formScore, untrackableReasons, finding repNumbers
 - [x] 05-04-PLAN.md — @repo/common contracts: supported exercises, bands, dimensions, untrackable advice, result/recorded-set shapes, aspectRatio + quantizeCapture, consent version bump
 - [ ] 05-05-PLAN.md — Skeleton fixtures from the 16 Phase 1 clips (dump script, manifest, loader)
@@ -139,7 +139,7 @@ Plans:
 - [ ] 05-08-PLAN.md — Native endpoints/query hooks, global AnalysisTrackerContext with SSE watchers and completion banner
 - [ ] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
 - [ ] 05-10-PLAN.md — LLM form feedback: provider method, versioned prompt, validator + repair, typed timeout codes
-- [ ] 05-11-PLAN.md — Capture consent gate + daily cap; GET /sessions/:id/analysis and /workouts/:id/recorded-sets
+- [ ] 05-11-PLAN.md — Capture consent gate + daily cap (15) and per-exercise-per-workout cap (2); GET /sessions/:id/analysis and /workouts/:id/recorded-sets
 - [ ] 05-12-PLAN.md — Result UI: band badge, dimension rows, feedback blocks, camera advice, analysis-result screen, Recorded sets section
 - [ ] 05-13-PLAN.md — Recording engine: pure setup check + payload builder, pose source, useRecordedSet state machine
 - [ ] 05-14-PLAN.md — Scoring, finding selection, computeFormMetrics with golden fixture tests

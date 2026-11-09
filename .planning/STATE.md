@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-01-PLAN.md
-last_updated: "2026-11-09T14:54:58.014Z"
+stopped_at: Completed 05-02-PLAN.md
+last_updated: "2026-11-09T15:38:19.085Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 39
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05 (ai-form-analysis-camera-post-set) — EXECUTING
-Plan: 4 of 18
+Plan: 5 of 18
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ _Updated after each plan completion_
 | Phase 05 P03 | 15min | 2 tasks | 7 files |
 | Phase 05 P04 | 25min | 2 tasks | 10 files |
 | Phase 05 P01 | multi-session | 3 tasks | 8 files |
+| Phase 05 P02 | 15min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Generation save: foreign/failed generationId is 404, double save 409 GENERATION_ALREADY_SAVED; edits never clear aiModel
 - [Phase 04]: Sonnet (claude-sonnet-5-5, effort medium) is primary per D-22 eval; fallback rung is Sonnet at high effort. Haiku missed thresholds (58% catalogValid, 33% levelDiffers) with timeouts/UNAVAILABLE.
 - [Phase 05]: Pose runtime is MediaPipe PoseLandmarker via react-native-mediapipe-posedetection 0.4.0 (GPU, about 30 fps with targetFps 60); Android returns raw landscape landmarks so the adapter rotates per camera in portrait; C4 squat 88% marginal, pull-up/dim-light unverified
+- [Phase 05]: Form analysis caps: 15 accepted captures/day and 2 per exercise per workout; retries count toward neither
 
 ### Roadmap Evolution
 
@@ -126,6 +128,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-09T14:54:58.007Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-11-09T15:38:19.079Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None

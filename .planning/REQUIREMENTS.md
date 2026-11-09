@@ -43,7 +43,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **FORM-04**: User receives a form band (5 levels, e.g. Excellent / Good / Fair / Needs work / Poor) per set after analysis completes. A 0–100 score is stored with each result for trend charts, labeling and relabeling, but is not shown per set
 - [x] **FORM-05**: Form band includes a breakdown by dimension (e.g. range of motion, core stability, symmetry)
 - [x] **FORM-06**: User receives actionable text feedback referencing specific reps
-- [ ] **FORM-07**: Feedback leads with positives before corrections; max 2 corrections per set
+- [x] **FORM-07**: Feedback leads with positives before corrections; max 2 corrections per set
 - [ ] **FORM-08**: User is notified when analysis is complete (SSE progress → result)
 - [x] **FORM-09**: When the body cannot be tracked reliably (low keypoint confidence), the user gets camera advice instead of feedback
 
@@ -145,7 +145,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORM-04     | Phase 5 | Complete |
 | FORM-05     | Phase 5 | Complete |
 | FORM-06     | Phase 5 | Complete |
-| FORM-07     | Phase 5 | Pending  |
+| FORM-07     | Phase 5 | Complete |
 | FORM-08     | Phase 5 | Pending  |
 | FORM-09     | Phase 5 | Complete |
 | DATA-01     | Phase 5.1 | Pending  |
