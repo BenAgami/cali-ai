@@ -50,9 +50,9 @@ type Stage =
   | "uploadError"
   | "submitted";
 
-export const COUNTDOWN_SECS = 8;
-export const AUTO_STOP_SEC = 175;
-export const RECORDING_TARGET_FPS = 15;
+const COUNTDOWN_SECS = 8;
+const AUTO_STOP_SEC = 175;
+const RECORDING_TARGET_FPS = 15;
 
 /** runAtTargetFps value that gives the camera's native ~30 fps (15 quantises to ~12). */
 const POSE_SOURCE_TARGET_FPS = 60;

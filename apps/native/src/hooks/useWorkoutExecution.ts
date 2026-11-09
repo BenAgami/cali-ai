@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 import { useCountdown } from "@src/hooks/useCountdown";
 import type {
@@ -15,6 +15,8 @@ export interface UseWorkoutExecutionResult {
   currentExercise: WorkoutExerciseHydrated | null;
   isLastSet: boolean;
   isLastExercise: boolean;
+  /** Epoch ms when this run began; recorded sets before it belong to earlier runs. */
+  startedAtMs: number;
   totalElapsedSecs: number;
   restSecondsLeft: number;
   restTotalSecs: number;
@@ -29,7 +31,7 @@ export const useWorkoutExecution = (
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [setNumber, setSetNumber] = useState(1);
   const [phase, setPhase] = useState<ExecutionPhase>("working");
-  const startedAtRef = useRef<number>(Date.now());
+  const [startedAtMs] = useState(() => Date.now());
   const [totalElapsed, setTotalElapsed] = useState(0);
 
   const currentExercise: WorkoutExerciseHydrated | null =
@@ -41,10 +43,10 @@ export const useWorkoutExecution = (
   useEffect(() => {
     if (phase === "complete") return;
     const interval = setInterval(() => {
-      setTotalElapsed(Math.floor((Date.now() - startedAtRef.current) / 1000));
+      setTotalElapsed(Math.floor((Date.now() - startedAtMs) / 1000));
     }, 1000);
     return () => clearInterval(interval);
-  }, [phase]);
+  }, [phase, startedAtMs]);
 
   useEffect(() => {
     if (phase !== "resting") return;
@@ -116,6 +118,7 @@ export const useWorkoutExecution = (
     currentExercise,
     isLastSet,
     isLastExercise,
+    startedAtMs,
     totalElapsedSecs: totalElapsed,
     restSecondsLeft: countdown.secondsLeft,
     restTotalSecs: restTotal,

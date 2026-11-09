@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,13 +9,17 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useWorkoutExecution } from "@src/hooks/useWorkoutExecution";
 import { useStartWorkout } from "@src/hooks/mutations/useStartWorkout";
 import RestTimer from "@src/components/RestTimer";
+import RecordedSetCard from "@src/components/form/RecordedSetCard";
+import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
+import { consumeRecordedSetDone } from "@src/state/recordedSetStore";
+import { isFormAnalysisExercise } from "@repo/common";
 
 type ExecuteParams = { id?: string };
 
@@ -51,6 +55,29 @@ const WorkoutExecuteScreen: React.FC = () => {
   const { data: workout, isLoading, error } = useWorkoutDetail(id);
   const execution = useWorkoutExecution(workout);
   const startMutation = useStartWorkout();
+  const recorded = useWorkoutRecordedSets(id);
+  const { phase, currentSet, completeSet, startedAtMs } = execution;
+
+  // Returning from a submitted recording completes the set and starts rest.
+  useFocusEffect(
+    useCallback(() => {
+      if (id === undefined || phase !== "working") return;
+      if (consumeRecordedSetDone({ workoutId: id, setNumber: currentSet })) {
+        completeSet();
+      }
+    }, [id, phase, currentSet, completeSet]),
+  );
+
+  const handleOpenResult = (sessionId: number) => {
+    router.push({
+      pathname: "/analysis-result",
+      params: { sessionId: String(sessionId) },
+    });
+  };
+
+  const thisRunSets = recorded.items.filter(
+    (item) => Date.parse(item.performedAt) >= startedAtMs,
+  );
 
   const handleDone = () => {
     if (!id || !workout) return;
@@ -221,6 +248,46 @@ const WorkoutExecuteScreen: React.FC = () => {
             <Text style={styles.completeButtonText}>Complete set</Text>
           </Pressable>
         )}
+
+        {execution.phase === "working" &&
+          isFormAnalysisExercise(ex.exercise.code) && (
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/record-set",
+                  params: {
+                    workoutId: String(id),
+                    setNumber: String(execution.currentSet),
+                    exerciseCode: ex.exercise.code,
+                    exerciseDisplayName: ex.exercise.displayName,
+                    source: "execute",
+                  },
+                })
+              }
+              style={({ pressed }) => [
+                styles.recordButton,
+                { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Record this set for form feedback"
+            >
+              <Text style={[styles.recordButtonText, { color: colors.text }]}>
+                Record this set
+              </Text>
+            </Pressable>
+          )}
+
+        <ScrollView style={styles.recordedRows}>
+          {thisRunSets.map((item) => (
+            <RecordedSetCard
+              key={item.sessionId}
+              item={item}
+              onOpen={handleOpenResult}
+              onRetry={(sessionId) => void recorded.retrySet(sessionId)}
+              isRetrying={recorded.retryingIds.has(item.sessionId)}
+            />
+          ))}
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -278,6 +345,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 24,
   },
+  recordButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  recordButtonText: { fontSize: 16, fontWeight: "600" },
+  recordedRows: { flex: 1, marginTop: 16 },
   completeButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
 
   summaryContainer: { padding: 32, paddingTop: 64, alignItems: "center" },

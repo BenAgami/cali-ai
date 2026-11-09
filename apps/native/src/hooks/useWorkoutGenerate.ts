@@ -5,10 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import { ApiError } from "@src/api";
 import { useCreateWorkout } from "@src/hooks/mutations/useCreateWorkout";
 import { useGenerateWorkout } from "@src/hooks/mutations/useGenerateWorkout";
-import {
-  useAiPrerequisiteSteps,
-  type AiPrerequisiteStep,
-} from "@src/hooks/useAiPrerequisiteSteps";
+import { useAiPrerequisiteSteps } from "@src/hooks/useAiPrerequisiteSteps";
 import {
   AI_ALREADY_SAVED_TEXT,
   AI_ERROR_FALLBACK,
@@ -19,8 +16,6 @@ import {
   generateWorkoutSchema,
   type WorkoutGenerationPreview,
 } from "@repo/common";
-
-export type GenerateStep = AiPrerequisiteStep;
 
 const GENERATION_ALREADY_SAVED = "GENERATION_ALREADY_SAVED";
 
