@@ -9,6 +9,7 @@ import type {
 } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
+import analysisResultQueryService from "../services/analysisResultQueryService";
 import workoutService from "../services/workoutService";
 import workoutGenerationService from "../services/workoutGenerationService";
 
@@ -66,6 +67,29 @@ export const getWorkoutById = async (
     success: true,
     message: "Workout retrieved successfully",
     data: workout,
+  });
+};
+
+/**
+ * List the recorded (form-analysed) sets of a workout
+ * @route GET /api/workouts/:id/recorded-sets
+ */
+export const listRecordedSets = async (
+  req: Request<WorkoutIdParam>,
+  res: Response,
+) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const data = await analysisResultQueryService.listRecordedSets(
+    userUuid,
+    Number(req.params.id),
+  );
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "Recorded sets retrieved",
+    data,
   });
 };
 

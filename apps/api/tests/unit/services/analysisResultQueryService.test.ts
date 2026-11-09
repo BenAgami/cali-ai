@@ -99,6 +99,73 @@ describe("AnalysisResultQueryService", () => {
     service = new AnalysisResultQueryService();
   });
 
+  describe("listRecordedSets", () => {
+    const row = (overrides: Record<string, unknown> = {}) => ({
+      id: 11,
+      workoutId: 9,
+      setNumber: 1,
+      performedAt: ANALYZED_AT,
+      processingStatus: SessionStatus.COMPLETED,
+      analysisStage: null,
+      analysisStageProgress: null,
+      failureReason: null,
+      bullmqJobId: "analysis-x",
+      exercise: { code: "push_up", displayName: "Push-up" },
+      analysisResult: { outcome: "SCORED", formScore: 91 },
+      ...overrides,
+    });
+
+    it("throws NotFoundError when the workout is not owned", async () => {
+      prisma.workout.findFirst.mockResolvedValue(null);
+
+      await expect(service.listRecordedSets(USER, 9)).rejects.toThrow(
+        new NotFoundError("Workout not found"),
+      );
+      expect(prisma.workoutSession.findMany).not.toHaveBeenCalled();
+    });
+
+    it("queries newest first, capped at 50, and maps band from the score", async () => {
+      prisma.workout.findFirst.mockResolvedValue({ id: 9 });
+      prisma.workoutSession.findMany.mockResolvedValue([
+        row(),
+        row({
+          id: 10,
+          processingStatus: SessionStatus.PROCESSING,
+          analysisStage: "ANALYZING_REPS",
+          analysisStageProgress: 0.5,
+          analysisResult: null,
+        }),
+        row({
+          id: 8,
+          analysisResult: { outcome: "UNTRACKABLE", formScore: null },
+        }),
+      ]);
+
+      const result = await service.listRecordedSets(USER, 9);
+
+      expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workoutId: 9, userId: USER_ID },
+          orderBy: [{ performedAt: "desc" }, { id: "desc" }],
+          take: 50,
+        }),
+      );
+      expect(
+        result.map((set) => [set.sessionId, set.outcome, set.band]),
+      ).toEqual([
+        [11, "SCORED", "EXCELLENT"],
+        [10, null, null],
+        [8, "UNTRACKABLE", null],
+      ]);
+      expect(result[1]).toMatchObject({
+        processingStatus: "PROCESSING",
+        analysisStage: "ANALYZING_REPS",
+        analysisStageProgress: 0.5,
+      });
+      expect(JSON.stringify(result)).not.toContain("formScore");
+    });
+  });
+
   describe("getSessionAnalysis", () => {
     it("maps a SCORED result to band, dimension chips, positives then corrections", async () => {
       prisma.workoutSession.findFirst.mockResolvedValue(session());

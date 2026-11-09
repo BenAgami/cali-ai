@@ -9,6 +9,7 @@ import {
   WorkoutLogBody,
   WorkoutResponse,
   WorkoutLogResponse,
+  RecordedSet,
   paginatedData,
   successResponse,
   errorResponse,
@@ -120,6 +121,24 @@ registry.registerPath({
   request: { params: workoutIdParam },
   responses: {
     200: successResponse(WorkoutResponse, "Workout"),
+    400: errorResponse("Invalid workout ID"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workouts/{id}/recorded-sets",
+  tags: ["Workouts"],
+  summary: "List the recorded sets of a workout",
+  description:
+    "Up to 50 sets, newest first, with processing status, stage, outcome and band. The raw score is never returned.",
+  security: [bearerAuth],
+  request: { params: workoutIdParam },
+  responses: {
+    200: successResponse(z.array(RecordedSet), "Recorded sets"),
     400: errorResponse("Invalid workout ID"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout not found"),

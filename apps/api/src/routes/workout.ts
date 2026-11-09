@@ -19,6 +19,7 @@ import {
   updateWorkout,
   deleteWorkout,
   startWorkout,
+  listRecordedSets,
 } from "../controllers/workout";
 
 const router: Router = Router();
@@ -111,6 +112,17 @@ router.post(
     z.object({ params: workoutIdParamSchema, body: workoutLogSchema }),
   ),
   startWorkout,
+);
+
+/**
+ * GET /:id/recorded-sets
+ * List the recorded sets of a workout with live analysis status
+ */
+router.get(
+  "/:id/recorded-sets",
+  authenticateToken,
+  validateSchema(z.object({ params: workoutIdParamSchema })),
+  listRecordedSets,
 );
 
 export default router;

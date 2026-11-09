@@ -2,10 +2,12 @@ import {
   bandFromScore,
   buildUntrackableAdvice,
   formAnalysisResponseSchema,
+  recordedSetListSchema,
   isFormAnalysisExercise,
   FORM_DIMENSIONS,
   UNTRACKABLE_REASONS,
   type FormAnalysisResponse,
+  type RecordedSet,
   type UntrackableReason,
 } from "@repo/common";
 import { getPrismaClient, SessionStatus } from "@repo/db";
@@ -16,6 +18,8 @@ import {
   storedRawFeedbackSchema,
   storedScoreBreakdownSchema,
 } from "../utils/storedAnalysis";
+
+const RECORDED_SETS_LIMIT = 50;
 
 const isUntrackableReason = (value: string): value is UntrackableReason =>
   (UNTRACKABLE_REASONS as readonly string[]).indexOf(value) !== -1;
@@ -152,6 +156,68 @@ export class AnalysisResultQueryService {
           repNumbers: finding.repNumbers,
         })),
     });
+  }
+
+  async listRecordedSets(
+    userUuid: string,
+    workoutId: number,
+  ): Promise<RecordedSet[]> {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+
+    const workout = await this.prisma.workout.findFirst({
+      where: { id: workoutId, userId },
+      select: { id: true },
+    });
+    if (!workout) {
+      throw new NotFoundError("Workout not found");
+    }
+
+    const sessions = await this.prisma.workoutSession.findMany({
+      where: { workoutId, userId },
+      orderBy: [{ performedAt: "desc" }, { id: "desc" }],
+      take: RECORDED_SETS_LIMIT,
+      select: {
+        id: true,
+        workoutId: true,
+        setNumber: true,
+        performedAt: true,
+        processingStatus: true,
+        analysisStage: true,
+        analysisStageProgress: true,
+        failureReason: true,
+        bullmqJobId: true,
+        exercise: { select: { code: true, displayName: true } },
+        analysisResult: { select: { outcome: true, formScore: true } },
+      },
+    });
+
+    const parsed = recordedSetListSchema.safeParse(
+      sessions.map((session) => {
+        const result = session.analysisResult;
+        return {
+          sessionId: session.id,
+          workoutId: session.workoutId,
+          setNumber: session.setNumber,
+          exerciseCode: session.exercise.code,
+          exerciseDisplayName: session.exercise.displayName,
+          performedAt: session.performedAt.toISOString(),
+          processingStatus: session.processingStatus,
+          analysisStage: session.analysisStage,
+          analysisStageProgress: session.analysisStageProgress,
+          failureReason: session.failureReason,
+          bullmqJobId: session.bullmqJobId,
+          outcome: result?.outcome ?? null,
+          band:
+            result?.outcome === "SCORED" && result.formScore !== null
+              ? bandFromScore(result.formScore)
+              : null,
+        };
+      }),
+    );
+    if (!parsed.success) {
+      throw new InternalError("Recorded sets are not readable");
+    }
+    return parsed.data;
   }
 
   /** Parsing strips anything extra and guarantees the shared shape. */
