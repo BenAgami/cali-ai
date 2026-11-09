@@ -125,7 +125,7 @@ Plans:
 4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
 5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
 6. When the body cannot be tracked reliably, the user sees camera advice instead of feedback
-   **Plans:** 11/18 plans executed
+   **Plans:** 12/18 plans executed
 
 Plans:
 
@@ -139,7 +139,7 @@ Plans:
 - [x] 05-08-PLAN.md — Native endpoints/query hooks, global AnalysisTrackerContext with SSE watchers and completion banner
 - [ ] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
 - [x] 05-10-PLAN.md — LLM form feedback: provider method, versioned prompt, validator + repair, typed timeout codes
-- [ ] 05-11-PLAN.md — Capture consent gate + daily cap (15) and per-exercise-per-workout cap (2); GET /sessions/:id/analysis and /workouts/:id/recorded-sets
+- [x] 05-11-PLAN.md — Capture consent gate + daily cap (15) and per-exercise-per-workout cap (2); GET /sessions/:id/analysis and /workouts/:id/recorded-sets
 - [x] 05-12-PLAN.md — Result UI: band badge, dimension rows, feedback blocks, camera advice, analysis-result screen, Recorded sets section
 - [x] 05-13-PLAN.md — Recording engine: pure setup check + payload builder, pose source, useRecordedSet state machine
 - [ ] 05-14-PLAN.md — Scoring, finding selection, computeFormMetrics with golden fixture tests
@@ -202,7 +202,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
-| 5. Post-Set AI Form Analysis | 11/18 | In Progress|  |
+| 5. Post-Set AI Form Analysis | 12/18 | In Progress|  |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
