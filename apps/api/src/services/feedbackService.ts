@@ -27,14 +27,6 @@ const BANNED_PATTERNS: RegExp[] = [
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export type FeedbackInput = {
-  frameCount: number;
-  keypointsPerFrame: number;
-  meanConfidence: number;
-};
-
-export type FeedbackDraft = { summary: string };
-
 export type ValidatedCorrection = {
   tag: string;
   dimension: FormDimension;
@@ -168,18 +160,7 @@ export const validateFormFeedback = (
   };
 };
 
-/**
- * Phase 1 seam. Phase 5 replaces the body with the Claude call (metrics +
- * rubric -> structured feedback). It is async and wrapped in withTimeout by the
- * worker so retry/timeout behaviour is already real.
- */
 class FeedbackService {
-  generateFeedback(input: FeedbackInput): Promise<FeedbackDraft> {
-    return Promise.resolve({
-      summary: `Analysis pipeline check: ${input.frameCount} frames, mean keypoint confidence ${input.meanConfidence.toFixed(2)}`,
-    });
-  }
-
   /**
    * The LLM only phrases the server-selected findings; validateFormFeedback
    * enforces FORM-06/07 and D-14, with one repair attempt.

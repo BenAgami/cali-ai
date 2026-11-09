@@ -1,6 +1,6 @@
 import { toError } from "./toError";
 
-export type TimeoutCode = "ENQUEUE_TIMEOUT" | "LLM_TIMEOUT";
+export type TimeoutCode = "ENQUEUE_TIMEOUT";
 
 export class TimeoutError extends Error {
   constructor(
