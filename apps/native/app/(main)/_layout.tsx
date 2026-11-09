@@ -3,6 +3,7 @@ import { Stack } from "expo-router";
 
 import AnalysisToast from "@src/components/form/AnalysisToast";
 import { AnalysisTrackerProvider } from "@src/context/AnalysisTrackerContext";
+import { FEEDBACK_SCREEN_TITLE } from "@src/constants/formMessages";
 
 const MainLayout: React.FC = () => {
   return (
@@ -37,6 +38,10 @@ const MainLayout: React.FC = () => {
         <Stack.Screen
           name="workout-detail"
           options={{ headerShown: true, title: "Workout" }}
+        />
+        <Stack.Screen
+          name="analysis-result"
+          options={{ headerShown: true, title: FEEDBACK_SCREEN_TITLE }}
         />
         <Stack.Screen
           name="workout-execute"
