@@ -44,7 +44,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **FORM-05**: Form band includes a breakdown by dimension (e.g. range of motion, core stability, symmetry)
 - [x] **FORM-06**: User receives actionable text feedback referencing specific reps
 - [x] **FORM-07**: Feedback leads with positives before corrections; max 2 corrections per set
-- [ ] **FORM-08**: User is notified when analysis is complete (SSE progress → result)
+- [x] **FORM-08**: User is notified when analysis is complete (SSE progress → result)
 - [x] **FORM-09**: When the body cannot be tracked reliably (low keypoint confidence), the user gets camera advice instead of feedback
 
 ### Training Data
@@ -70,7 +70,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Notifications
 
 - [x] **NOTF-01**: User can schedule local workout reminder notifications
-- [ ] **NOTF-02**: User receives an in-app notification when post-set analysis is complete
+- [x] **NOTF-02**: User receives an in-app notification when post-set analysis is complete
 
 ## v2 Requirements
 
@@ -146,7 +146,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FORM-05     | Phase 5 | Complete |
 | FORM-06     | Phase 5 | Complete |
 | FORM-07     | Phase 5 | Complete |
-| FORM-08     | Phase 5 | Pending  |
+| FORM-08     | Phase 5 | Complete |
 | FORM-09     | Phase 5 | Complete |
 | DATA-01     | Phase 5.1 | Pending  |
 | DATA-02     | Phase 5.1 | Pending  |
@@ -158,7 +158,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROG-03     | Phase 7 | Pending  |
 | PROG-04     | Phase 7 | Pending  |
 | NOTF-01     | Phase 2 | Complete |
-| NOTF-02     | Phase 5 | Pending  |
+| NOTF-02     | Phase 5 | Complete |
 
 **Coverage:**
 
