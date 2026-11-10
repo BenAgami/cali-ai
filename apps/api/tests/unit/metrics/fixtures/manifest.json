@@ -67,7 +67,7 @@
     "exercise": "pull_up",
     "clip": "hold_front",
     "kind": "hold",
-    "view": "side",
+    "view": "front",
     "light": "normal",
     "expectedReps": 0
   },

@@ -35,11 +35,11 @@ DIM_CLIPS = {("push_up", "side_2"), ("dip", "diag45_1"), ("squat", "side_2")}
 
 
 def clip_view(exercise: str, stem: str) -> str:
-    if stem.startswith("front"):
+    if "front" in stem:
         return "front"
-    if stem.startswith("back"):
+    if "back" in stem:
         return "back"
-    if stem.startswith("diag45"):
+    if "diag45" in stem:
         return "diag45"
     return "side"
 
