@@ -8,7 +8,7 @@ updated: 2026-11-10
 
 ## Current Test
 
-Rows 1-11, 13, 14 and 16 passed (user, 2026-11-10); row 12 fixed and awaiting re-test; rows 15, 17-20 pending.
+Rows 1-11, 13, 14 and 16 passed (user, 2026-11-10); row 12 fixed and awaiting re-test; rows 15, 17-22 pending (21-22 added for auto-stop).
 
 ## Setup
 
@@ -42,6 +42,8 @@ Rows 1-11, 13, 14 and 16 passed (user, 2026-11-10); row 12 fixed and awaiting re
 | 18  | Portrait                             | Record a squat in portrait. | The preview is upright, the setup check reaches the countdown and the result is plausible. Squat was marginal (88%) in the spike, so note tracking quality. The recorder draws no dots; the dev screen (Settings, Developer, BlazePose check, Portrait) shows them. |        |       |
 | 19  | Front and back camera                | Repeat a short recording with the front and then the back camera. | The preview is upright on both cameras and the result is plausible on both. Left/right labels and mirrored dots are only visible in the dev screen (BlazePose check). |        |       |
 | 20  | RTL (Hebrew) phone                   | Switch the phone to Hebrew (RTL) and open the recorder. | The framing guide, hint text and buttons are laid out correctly and not mirrored; the "Move left/right" messages still point the right way. |        |       |
+| 21  | Auto-stop: walk away | Record a set of 5 reps, then walk out of the frame and sit down; do not touch the phone. | Recording stops by itself about 5 s after you leave and uploads; the result scores your reps (a band, not "Couldn't track you"). Also check row 15 again. | | |
+| 22  | Auto-stop: stand still | Record a set, then stand still in frame for about 6 s after the last rep. Also pause 2-3 s between reps mid-set. | It stops about 6 s after you finish and not during the 2-3 s pauses; the result scores your reps. | | |
 
 ## Notes from the pose spike
 
@@ -51,10 +53,10 @@ Rows 1-11, 13, 14 and 16 passed (user, 2026-11-10); row 12 fixed and awaiting re
 
 ## Summary
 
-total: 22
+total: 24
 passed: 16
 issues: 1
-pending: 5
+pending: 7
 skipped: 0
 blocked: 0
 

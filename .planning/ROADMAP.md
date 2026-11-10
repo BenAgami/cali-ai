@@ -229,9 +229,9 @@ Plans:
 
 - [ ] TBD (promote with /gsd:review-backlog when ready)
 
-### Phase 999.2: Auto-detect end of motion for recorded sets (BACKLOG)
+### Phase 999.2: Auto-detect end of motion for recorded sets (DELIVERED in Phase 5)
 
-**Goal:** Stop a recorded set automatically when no movement is detected for a few seconds, instead of requiring a manual Stop tap. Deferred from the Phase 5 discussion (Phase 5 uses manual Stop, D-02); risk to weigh is cutting a slow set or ending early on a hold.
+**Goal:** Stop a recorded set automatically when no movement is detected for a few seconds, instead of requiring a manual Stop tap. Built during Phase 5 device UAT (D-23): stops after 5 s out of frame or 6 s of stillness after the set started, trims the idle tail, and keeps Stop and the 175 s cap as fallbacks.
 **Requirements:** TBD
 **Plans:** 0 plans
 
