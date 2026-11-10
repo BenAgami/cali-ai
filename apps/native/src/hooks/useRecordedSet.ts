@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useWindowDimensions } from "react-native";
 import Constants from "expo-constants";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -182,6 +183,15 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   useEffect(() => {
     onDeviceChange(device);
   }, [device, onDeviceChange]);
+
+  // The camera must only mount once the screen has actually turned: a Camera
+  // mounted while the window is still portrait ends up with a portrait-shaped
+  // preview inside the landscape screen.
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isOrientationReady =
+    FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
+      ? windowWidth > windowHeight
+      : windowHeight > windowWidth;
 
   // Lock orientation to the exercise's capture orientation.
   useEffect(() => {
@@ -385,6 +395,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     hasPermission,
     requestPermission,
     device,
+    isOrientationReady,
     cameraPosition,
     toggleCamera,
     frameProcessor: pose.frameProcessor,
