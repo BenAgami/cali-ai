@@ -245,6 +245,7 @@ const Recorder: React.FC<RecorderProps> = ({
           androidPreviewViewType="texture-view"
           outputOrientation="preview"
           frameProcessor={recorder.frameProcessor}
+          onPreviewStarted={recorder.onPreviewStarted}
           onLayout={cameraHandlers.onLayout}
           onOutputOrientationChanged={cameraHandlers.onOutputOrientationChanged}
         />
@@ -340,7 +341,10 @@ const Recorder: React.FC<RecorderProps> = ({
         </View>
       </SafeAreaView>
       {!recorder.isOrientationReady && (
-        <View style={[StyleSheet.absoluteFill, styles.cover]} />
+        <View style={[StyleSheet.absoluteFill, styles.cover]}>
+          <ActivityIndicator size="large" color={baseColors.white} />
+          <Text style={styles.pillText}>Preparing camera...</Text>
+        </View>
       )}
     </View>
   );
@@ -414,7 +418,12 @@ const styles = StyleSheet.create({
   primaryLabel: { color: baseColors.white, fontSize: 18, fontWeight: "700" },
   textButton: { paddingVertical: 12, alignItems: "center" },
   textButtonLabel: { fontSize: 16, fontWeight: "600" },
-  cover: { backgroundColor: baseColors.black },
+  cover: {
+    backgroundColor: baseColors.black,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 16,
+  },
   debug: { position: "absolute", bottom: 96, left: 8 },
   debugText: {
     color: "yellow",

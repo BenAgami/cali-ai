@@ -189,7 +189,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   // listener is registered, late in session configuration. A screen already
   // rotated when the Camera mounts therefore leaves the preview 90 degrees off
   // until the next rotation event. So the Camera mounts in portrait (matching
-  // that start value) and the screen is turned once frames are flowing, the
+  // that start value) and the screen is turned once the preview is streaming, the
   // same sequence as the BlazePose dev screen. The screen stays covered until
   // the window has the capture orientation (see record-set.tsx).
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -198,17 +198,20 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       ? windowWidth > windowHeight
       : windowHeight > windowWidth;
 
-  const isCameraStreaming = poseInfo !== null;
+  const [isPreviewStarted, setIsPreviewStarted] = useState(false);
+  const onPreviewStarted = useCallback(() => {
+    setIsPreviewStarted(true);
+  }, []);
   useEffect(() => {
     if (
-      isCameraStreaming &&
+      isPreviewStarted &&
       FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
     ) {
       void ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.LANDSCAPE,
       );
     }
-  }, [isCameraStreaming, exerciseCode]);
+  }, [isPreviewStarted, exerciseCode]);
   useEffect(
     () => () => {
       void ScreenOrientation.lockAsync(
@@ -407,6 +410,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     requestPermission,
     device,
     isOrientationReady,
+    onPreviewStarted,
     cameraPosition,
     toggleCamera,
     frameProcessor: pose.frameProcessor,
