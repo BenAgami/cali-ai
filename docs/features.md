@@ -21,6 +21,21 @@ The primary feature of CaliAI.
 - Advanced skills and static holds (front lever, planche, plank and others)
   are added later as researched exercise definitions.
 
+### Record offer and setup check
+
+- On a push-up, pull-up, dip or squat, the workout screen offers "Record this
+  set". Declining logs the set normally; the camera opens only on accept.
+- Before the first recording the user accepts an AI notice (profile data and
+  pose measurements go to the LLM provider).
+- A setup check with a framing guide shows whether the whole body is in frame,
+  the light is enough and the camera angle suits the exercise (side-on for
+  push-up, dip and squat; facing the camera for pull-up). Start unlocks when
+  the check passes; a short countdown follows, and pauses if the user leaves
+  the frame.
+- Stop ends the set and submits the keypoints automatically. If the upload
+  fails, "Retry upload" resends without re-recording. Recording auto-stops at
+  175 s.
+
 ## 1.2 AI Analysis
 
 Keypoints are turned into per-rep metrics, and an AI model evaluates them.
@@ -36,9 +51,18 @@ The system analyzes:
 
 After analysis, the user receives:
 
-- Form band (5 levels) per set. A 0–100 score is stored with each result for trend charts and training, but is not shown per set
+- Form band (5 levels) per set, on a result screen with three dimension rows
+  (symmetry reads "Not assessed from this angle" when filmed side-on). A 0–100 score is stored with each result for trend charts and training, but is not shown per set
 - At most 2 suggested corrections, after a positive observation
-- Camera advice instead of feedback when the body cannot be tracked reliably
+- Camera advice instead of feedback when the body cannot be tracked reliably,
+  with a "Record again" action
+- Feedback that cites specific reps and puts positives first
+- While a set is analysing, the workout shows an "Analysing" row and the rest
+  timer keeps running; when the result is ready an in-app banner ("Feedback
+  ready", with View feedback) appears on any screen, and the set shows a New
+  badge. A failed analysis shows Retry.
+- A "Recorded sets" section in the workout lists each recorded set with its
+  band and status
 - Visual indicators (future enhancement)
 - Historical comparison
 
