@@ -236,7 +236,7 @@ const Recorder: React.FC<RecorderProps> = ({
 
   return (
     <View style={styles.fill}>
-      {device !== undefined && recorder.isOrientationReady && (
+      {device !== undefined && (
         <Camera
           style={StyleSheet.absoluteFill}
           device={device}
@@ -339,6 +339,9 @@ const Recorder: React.FC<RecorderProps> = ({
           )}
         </View>
       </SafeAreaView>
+      {!recorder.isOrientationReady && (
+        <View style={[StyleSheet.absoluteFill, styles.cover]} />
+      )}
     </View>
   );
 };
@@ -411,6 +414,7 @@ const styles = StyleSheet.create({
   primaryLabel: { color: baseColors.white, fontSize: 18, fontWeight: "700" },
   textButton: { paddingVertical: 12, alignItems: "center" },
   textButtonLabel: { fontSize: 16, fontWeight: "600" },
+  cover: { backgroundColor: baseColors.black },
   debug: { position: "absolute", bottom: 96, left: 8 },
   debugText: {
     color: "yellow",

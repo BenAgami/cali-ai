@@ -184,28 +184,39 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     onDeviceChange(device);
   }, [device, onDeviceChange]);
 
-  // Mount the Camera only once the window has the capture orientation, so the
-  // user never sees a portrait preview first. The preview itself follows the
-  // display rotation through a texture view (see record-set.tsx).
+  // vision-camera's Android OrientationManager starts from ROTATION_0 and only
+  // learns the display rotation from change events that arrive after its
+  // listener is registered, late in session configuration. A screen already
+  // rotated when the Camera mounts therefore leaves the preview 90 degrees off
+  // until the next rotation event. So the Camera mounts in portrait (matching
+  // that start value) and the screen is turned once frames are flowing, the
+  // same sequence as the BlazePose dev screen. The screen stays covered until
+  // the window has the capture orientation (see record-set.tsx).
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isOrientationReady =
     FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
       ? windowWidth > windowHeight
       : windowHeight > windowWidth;
 
-  // Lock orientation to the exercise's capture orientation.
+  const isCameraStreaming = poseInfo !== null;
   useEffect(() => {
-    if (FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape") {
+    if (
+      isCameraStreaming &&
+      FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
+    ) {
       void ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.LANDSCAPE,
       );
     }
-    return () => {
+  }, [isCameraStreaming, exerciseCode]);
+  useEffect(
+    () => () => {
       void ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP,
       );
-    };
-  }, [exerciseCode]);
+    },
+    [],
+  );
 
   const isAwake =
     phase === "setup" ||
