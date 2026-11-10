@@ -76,6 +76,16 @@ describe("squat rubric", () => {
       expect(rep).toContain("SQ_SHALLOW_DEPTH:HIGH");
   });
 
+  it("scores a shallow squat clearly below a parallel one (calibration)", () => {
+    const base = { maxKneeDeg: 180, minKneeDeg: 80 };
+    const parallel = squatRubric.scoreRep({ ...base, hipBelowKnee: 0 });
+    const shallow = squatRubric.scoreRep({ ...base, hipBelowKnee: -0.1 });
+    const veryShallow = squatRubric.scoreRep({ ...base, hipBelowKnee: -0.2 });
+    expect(parallel.ROM).toBe(100);
+    expect(shallow.ROM).toBeLessThan(75);
+    expect(veryShallow.ROM).toBeLessThanOrEqual(50);
+  });
+
   it("also flags a knee angle above 110 even when the hip height is borderline", () => {
     const rule = squatRubric.repTags.find((r) => r.tag === "SQ_SHALLOW_DEPTH");
     expect(rule?.evaluate({ hipBelowKnee: 0, minKneeDeg: 115 })).toBe("MEDIUM");

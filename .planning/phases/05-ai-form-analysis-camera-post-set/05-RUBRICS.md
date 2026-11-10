@@ -1,12 +1,12 @@
 ---
-status: approved
+status: calibrated
 approved: 2026-11-09
-rubric_version: rubric-v0
+rubric_version: rubric-v1
 metrics_version: metrics-v1
 phase: 05-ai-form-analysis-camera-post-set
 ---
 
-# Phase 5 Rubrics (v0 approved)
+# Phase 5 Rubrics (v1 calibrated)
 
 Single source for plans 05-04, 05-06, 05-07, 05-09 and 05-14. All thresholds are provisional coaching-consensus values (confidence LOW-MEDIUM); plan 05-17 calibrates them against the Phase 1 clips.
 
@@ -104,7 +104,7 @@ Columns: tag | dimension | per-rep feature | MEDIUM when | HIGH when | label | c
 
 - push_up: ROM = mean(ramp(minElbowDeg, 90, 130), ramp(maxElbowDeg, 165, 140)); CORE = 0.85 x bodyLine + 0.15 x ramp(durationSec, 1.5, 0.6), where bodyLine = ramp(meanHipOffset, 0.03, 0.15) if offset >= 0 else ramp(-offset, 0.04, 0.16).
 - dip: ROM = mean(ramp(minElbowDeg, 95, 130), ramp(maxElbowDeg, 165, 140)); CORE = 0.6 x ramp(trunkLeanDeg, 30, 60) + 0.4 x ramp(hipSwayRatio, 0.10, 0.35).
-- squat: ROM = mean(ramp(hipBelowKnee, 0.0, -0.30), ramp(maxKneeDeg, 170, 150)); CORE = 0.7 x ramp(trunkLeanDeg - shinLeanDeg, 15, 40) + 0.3 x ramp(heelRiseDeg, 3, 15).
+- squat: ROM = mean(ramp(hipBelowKnee, 0.0, -0.15), ramp(maxKneeDeg, 170, 150)); CORE = 0.7 x ramp(trunkLeanDeg - shinLeanDeg, 15, 40) + 0.3 x ramp(heelRiseDeg, 3, 15).
 - pull_up: ROM = mean(ramp(mouthBelowBar, -0.05, 0.25), ramp(maxElbowDeg, 165, 140)); CORE = 0.7 x ramp(hipSwayRatio, 0.10, 0.40) + 0.3 x ramp(durationSec, 1.8, 0.8); SYMMETRY = mean(ramp(meanElbowDiffDeg, 5, 25), ramp(maxShoulderTiltDeg, 4, 15)).
 
 Set dimension score = round(0.85 x mean(rep scores) + 0.15 x min(rep scores)).
@@ -179,3 +179,6 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - 11 / retries: unchanged, retries do not count toward either cap.
 - 12 / checklist wording: daily cap 15 and per-exercise-per-workout cap 2.
 - Front matter: `rubric_version` rubric-v0-draft -> rubric-v0 (at the user's request; plan text suggested keeping the draft marker until 05-17).
+- Calibration 2026-11-10 (rubric-v0 -> rubric-v1): squat / ROM ramp hipBelowKnee: 0.0..-0.30 -> 0.0..-0.15 (calibration). Shallow side takes went 90/87 -> 80/76; the flag thresholds are unchanged.
+- Front matter: `status` approved -> calibrated, `rubric_version` rubric-v0 -> rubric-v1 (calibration).
+- All other thresholds, ramps and band cutoffs unchanged by calibration; push-up, dip and pull-up values confirmed against the user's verdicts (calibration).

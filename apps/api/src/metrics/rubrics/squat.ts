@@ -111,7 +111,7 @@ export const squatRubric: ExerciseRubric = {
   scoreRep: (f) =>
     definedScores({
       ROM: combine([
-        [ramp(f.hipBelowKnee, 0.0, -0.3), 1],
+        [ramp(f.hipBelowKnee, 0.0, -0.15), 1],
         [ramp(f.maxKneeDeg, 170, 150), 1],
       ]),
       CORE: combine([

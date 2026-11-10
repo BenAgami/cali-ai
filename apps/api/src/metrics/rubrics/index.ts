@@ -6,7 +6,7 @@ import { pushUpRubric } from "./pushUp";
 import { squatRubric } from "./squat";
 import type { ExerciseRubric } from "./types";
 
-export const RUBRIC_VERSION = "rubric-v0";
+export const RUBRIC_VERSION = "rubric-v1";
 
 const RUBRICS: Record<FormAnalysisExercise, ExerciseRubric> = {
   push_up: pushUpRubric,

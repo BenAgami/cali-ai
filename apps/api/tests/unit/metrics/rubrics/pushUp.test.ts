@@ -18,7 +18,7 @@ const repsWith = (depths: number[]): RepMetrics[] =>
 
 describe("push_up rubric", () => {
   it("is registered with the approved version and assessability", () => {
-    expect(RUBRIC_VERSION).toBe("rubric-v0");
+    expect(RUBRIC_VERSION).toBe("rubric-v1");
     expect(getRubric("push_up").exerciseCode).toBe("push_up");
     expect(pushUpRubric.assessed).toEqual({
       ROM: true,
