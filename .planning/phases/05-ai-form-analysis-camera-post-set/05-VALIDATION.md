@@ -1,9 +1,9 @@
 ---
 phase: 5
 slug: ai-form-analysis-camera-post-set
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: approved
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-11-08
 ---
 
@@ -38,15 +38,22 @@ created: 2026-11-08
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 5-XX-XX | TBD | TBD | FORM-01 | unit + integration | `yarn workspace api test:unit -t "supported exercise"` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | FORM-03 | unit + integration | `yarn workspace api test:integration -t "capture"` | ⚠️ partial | ⬜ pending |
-| 5-XX-XX | TBD | TBD | FORM-04 | unit | `yarn workspace api test:unit tests/unit/metrics/scoring.test.ts` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | FORM-05 | unit | `yarn workspace api test:unit tests/unit/metrics/computeFormMetrics.test.ts` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | FORM-06/07 | unit | `yarn workspace api test:unit tests/unit/services/feedbackService.test.ts` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | FORM-08 | integration | `yarn workspace api test:integration -t "analysis result"` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | FORM-09 | unit | `yarn workspace api test:unit tests/unit/metrics/trackability.test.ts` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | PROF-07 | unit | `yarn workspace api test:unit tests/unit/prompts/formFeedbackPrompt.test.ts` | ❌ W0 | ⬜ pending |
-| 5-XX-XX | TBD | TBD | cross | unit | `yarn workspace api test:unit tests/unit/metrics/segmentReps.test.ts` | ❌ W0 | ⬜ pending |
+| 5-04-01 | 05-04 | 1 | FORM-01/04/05/09 | unit | `yarn workspace api test:unit tests/unit/common/formAnalysis.test.ts` | ✅ | ✅ green |
+| 5-04-02 | 05-04 | 1 | PROF-07 | unit | `yarn workspace api test:unit tests/unit/prompts/formFeedbackPrompt.test.ts` | ✅ | ✅ green |
+| 5-05-01/02 | 05-05 | 2 | FORM-05/09 | unit | `yarn workspace api test:unit tests/unit/metrics/fixtures.test.ts` | ✅ | ✅ green |
+| 5-06-01/02 | 05-06 | 2 | FORM-05/06 | unit | `yarn workspace api test:unit tests/unit/metrics/segmentReps.test.ts` | ✅ | ✅ green |
+| 5-06-03 | 05-06 | 2 | FORM-09 | unit | `yarn workspace api test:unit tests/unit/metrics/trackability.test.ts` | ✅ | ✅ green |
+| 5-07-01..03 | 05-07 | 2 | FORM-01/04, PROF-07 | integration | `yarn workspace api test:integration tests/integration/workoutSessions` | ✅ | ✅ green |
+| 5-08-01/02 | 05-08 | 2 | FORM-08, NOTF-02 | type-check + manual | `yarn check-types` (banner: device UAT) | ✅ | ✅ green |
+| 5-09-01/02 | 05-09 | 3 | FORM-05/06 | unit | `yarn workspace api test:unit tests/unit/metrics/rubrics` | ✅ | ✅ green |
+| 5-10-01..03 | 05-10 | 3 | FORM-06/07, PROF-07 | unit | `yarn workspace api test:unit tests/unit/services/feedbackService.test.ts` | ✅ | ✅ green |
+| 5-11-01..03 | 05-11 | 3 | FORM-03/04/05/08/09 | unit + integration | `yarn workspace api test:integration -t "analysis result"` | ✅ | ✅ green |
+| 5-12-01..03 | 05-12 | 3 | FORM-04..09, NOTF-02 | type-check + manual | `yarn check-types` (screens: device UAT) | ✅ | ✅ green |
+| 5-13-01/02 | 05-13 | 3 | FORM-02/03 | unit + manual | `yarn workspace api test:unit tests/unit/common/formSetup.test.ts` (camera: device UAT) | ✅ | ✅ green |
+| 5-14-01/02 | 05-14 | 4 | FORM-04..07/09 | unit | `yarn workspace api test:unit tests/unit/metrics/computeFormMetrics.test.ts` | ✅ | ✅ green |
+| 5-15-01..03 | 05-15 | 4 | FORM-01/02/03/08, PROF-07 | type-check + manual | `yarn check-types` (record flow: device UAT) | ✅ | ✅ green |
+| 5-16-01..03 | 05-16 | 5 | FORM-03/04/06/07/08/09 | unit + integration | `yarn workspace api test:integration tests/integration/workers` | ✅ | ✅ green |
+| 5-17-01..03 | 05-17 | 5 | FORM-04/05/07 | unit | `yarn workspace api test:unit tests/unit/metrics/scoring.test.ts` | ✅ | ✅ green |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,11 +61,11 @@ created: 2026-11-08
 
 ## Wave 0 Requirements
 
-- [ ] `apps/api/tests/unit/metrics/*.test.ts` and `fixtures/` — quantized skeleton JSON from the 16 evaluation clips (skeleton only, no imagery)
-- [ ] `apps/api/tests/unit/helpers/syntheticPose.ts` — parametric push-up/squat/pull-up/dip generator (known angles, sag, noise, dropouts, non-square aspect)
-- [ ] Extend `apps/api/tests/unit/helpers/fakeLlmProvider.ts` for form feedback
-- [ ] Integration tests: result endpoint, consent gate at capture
-- [ ] New env vars (if any) added to `apps/api/tests/unit/helpers/unitEnv.ts`
+- [x] `apps/api/tests/unit/metrics/*.test.ts` and `fixtures/` — quantized skeleton JSON from the 16 evaluation clips (skeleton only, no imagery)
+- [x] `apps/api/tests/unit/helpers/syntheticPose.ts` — parametric push-up/squat/pull-up/dip generator (known angles, sag, noise, dropouts, non-square aspect)
+- [x] Extend `apps/api/tests/unit/helpers/fakeLlmProvider.ts` for form feedback
+- [x] Integration tests: result endpoint, consent gate at capture
+- [x] New env vars (if any) added to `apps/api/tests/unit/helpers/unitEnv.ts`
 
 ---
 
@@ -75,11 +82,11 @@ created: 2026-11-08
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 120s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 120s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** automated gates green (2026-11-10); device UAT tracked in `05-HUMAN-UAT.md`

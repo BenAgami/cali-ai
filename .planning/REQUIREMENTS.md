@@ -38,7 +38,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### AI Form Analysis — Post-Set
 
 - [x] **FORM-01**: User selects an exercise before recording (push-up, pull-up, dip, squat)
-- [x] **FORM-02**: User is offered the option to record a set for form analysis; the camera opens only when they accept, never automatically. Declining still lets them log the set normally. On-device pose estimation starts when recording starts
+- [ ] **FORM-02**: User is offered the option to record a set for form analysis; the camera opens only when they accept, never automatically. Declining still lets them log the set normally. On-device pose estimation starts when recording starts
 - [x] **FORM-03**: When a recorded set ends, the keypoints are automatically submitted and a job ID is returned — no manual upload step. Sets that were not recorded are never submitted
 - [x] **FORM-04**: User receives a form band (5 levels, e.g. Excellent / Good / Fair / Needs work / Poor) per set after analysis completes. A 0–100 score is stored with each result for trend charts, labeling and relabeling, but is not shown per set
 - [x] **FORM-05**: Form band includes a breakdown by dimension (e.g. range of motion, core stability, symmetry)
@@ -70,7 +70,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Notifications
 
 - [x] **NOTF-01**: User can schedule local workout reminder notifications
-- [x] **NOTF-02**: User receives an in-app notification when post-set analysis is complete
+- [ ] **NOTF-02**: User receives an in-app notification when post-set analysis is complete
 
 ## v2 Requirements
 
@@ -140,7 +140,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WKT-06      | Phase 4 | Complete |
 | WKT-07      | Phase 4 | Complete |
 | FORM-01     | Phase 5 | Complete |
-| FORM-02     | Phase 5 | Complete |
+| FORM-02     | Phase 5 | Pending (device UAT) |
 | FORM-03     | Phase 5 | Complete |
 | FORM-04     | Phase 5 | Complete |
 | FORM-05     | Phase 5 | Complete |
@@ -158,7 +158,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PROG-03     | Phase 7 | Pending  |
 | PROG-04     | Phase 7 | Pending  |
 | NOTF-01     | Phase 2 | Complete |
-| NOTF-02     | Phase 5 | Complete |
+| NOTF-02     | Phase 5 | Pending (device UAT) |
 
 **Coverage:**
 
