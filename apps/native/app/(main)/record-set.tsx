@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -11,6 +11,7 @@ import {
 import { Camera } from "react-native-vision-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
+import * as ScreenOrientation from "expo-screen-orientation";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import {
@@ -52,6 +53,35 @@ const toNumberOrNull = (value: string | undefined): number | null => {
   if (value === undefined) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+};
+
+/** Dev-only readout of the one rotation signal the preview follows. */
+const OrientationDebug: React.FC<{ cameraPosition: string }> = ({
+  cameraPosition,
+}) => {
+  const [orientation, setOrientation] = useState("");
+  useEffect(() => {
+    void ScreenOrientation.getOrientationAsync().then((value) => {
+      setOrientation(ScreenOrientation.Orientation[value]);
+    });
+    const subscription = ScreenOrientation.addOrientationChangeListener(
+      (event) => {
+        setOrientation(
+          ScreenOrientation.Orientation[event.orientationInfo.orientation],
+        );
+      },
+    );
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+  return (
+    <View style={styles.debug} pointerEvents="none">
+      <Text style={styles.debugText}>
+        {`screen ${orientation} | ${cameraPosition}`}
+      </Text>
+    </View>
+  );
 };
 
 interface RecorderProps {
@@ -212,11 +242,14 @@ const Recorder: React.FC<RecorderProps> = ({
           device={device}
           isActive
           pixelFormat="rgb"
+          androidPreviewViewType="texture-view"
+          outputOrientation="preview"
           frameProcessor={recorder.frameProcessor}
           onLayout={cameraHandlers.onLayout}
           onOutputOrientationChanged={cameraHandlers.onOutputOrientationChanged}
         />
       )}
+      {__DEV__ && <OrientationDebug cameraPosition={recorder.cameraPosition} />}
       <FramingGuide
         exerciseCode={exerciseCode}
         issue={recorder.setupIssue}
@@ -378,6 +411,12 @@ const styles = StyleSheet.create({
   primaryLabel: { color: baseColors.white, fontSize: 18, fontWeight: "700" },
   textButton: { paddingVertical: 12, alignItems: "center" },
   textButtonLabel: { fontSize: 16, fontWeight: "600" },
+  debug: { position: "absolute", bottom: 96, left: 8 },
+  debugText: {
+    color: "yellow",
+    backgroundColor: PILL_BACKDROP,
+    fontSize: 13,
+  },
   hud: { justifyContent: "space-between" },
   hudTop: {
     flexDirection: "row",

@@ -184,9 +184,9 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     onDeviceChange(device);
   }, [device, onDeviceChange]);
 
-  // The camera must only mount once the screen has actually turned: a Camera
-  // mounted while the window is still portrait ends up with a portrait-shaped
-  // preview inside the landscape screen.
+  // Mount the Camera only once the window has the capture orientation, so the
+  // user never sees a portrait preview first. The preview itself follows the
+  // display rotation through a texture view (see record-set.tsx).
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const isOrientationReady =
     FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
