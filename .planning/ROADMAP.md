@@ -145,7 +145,7 @@ Plans:
 - [x] 05-14-PLAN.md — Scoring, finding selection, computeFormMetrics with golden fixture tests
 - [x] 05-15-PLAN.md — Record offer in workout run, record-set screen with framing guide, shared AI prerequisite steps
 - [x] 05-16-PLAN.md — Worker pipeline: metrics -> LLM (AbortSignal) -> guarded idempotent persist; end-to-end integration tests
-- [ ] 05-17-PLAN.md — Rubric calibration on the 16 clips with the user, rubric-v1
+- [x] 05-17-PLAN.md — Rubric calibration on the 16 clips with the user, rubric-v1
 - [ ] 05-18-PLAN.md — CI gates, docs, STATE updates, Android device UAT
 
 ### Phase 5.1: Training Data & Labeling (INSERTED)

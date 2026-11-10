@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05-16-PLAN.md
-last_updated: "2026-11-09T21:16:05.330Z"
+stopped_at: Completed 05-17-PLAN.md
+last_updated: "2026-11-10T09:09:00.351Z"
 progress:
   total_phases: 11
   completed_phases: 2
   total_plans: 39
-  completed_plans: 37
+  completed_plans: 38
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05 (ai-form-analysis-camera-post-set) — EXECUTING
-Plan: 17 of 18
+Plan: 18 of 18
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ _Updated after each plan completion_
 | Phase 05 P15 | ~35min | 3 tasks | 10 files |
 | Phase 05 P14 | 25min | 2 tasks | 8 files |
 | Phase 05 P16 | n/a | 3 tasks | 12 files |
+| Phase 05 P17 | n/a | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,7 @@ Recent decisions affecting current work:
 - [Phase 05]: Pose runtime is MediaPipe PoseLandmarker via react-native-mediapipe-posedetection 0.4.0 (GPU, about 30 fps with targetFps 60); Android returns raw landscape landmarks so the adapter rotates per camera in portrait; C4 squat 88% marginal, pull-up/dim-light unverified
 - [Phase 05]: Form analysis caps: 15 accepted captures/day and 2 per exercise per workout; retries count toward neither
 - [Phase 05]: 05-14: band cutoffs already match approved rubric; no segmentation params changed
+- [Phase 05]: 05-17: fixed fixture dump rotation (180 deg tag), squat ROM ramp tightened, rubric-v1
 
 ### Roadmap Evolution
 
@@ -139,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-09T21:16:05.324Z
-Stopped at: Completed 05-16-PLAN.md
+Last session: 2026-11-10T09:09:00.344Z
+Stopped at: Completed 05-17-PLAN.md
 Resume file: None
