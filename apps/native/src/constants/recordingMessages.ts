@@ -15,8 +15,6 @@ export const SETUP_ISSUE_MESSAGES: Record<SetupIssue, string> = {
 /** Pull-ups face the camera, so the generic "side" advice would be wrong. */
 export const WRONG_ANGLE_PULL_UP_MESSAGE = FORM_VIEW_HINTS.pull_up;
 
-export const COUNTDOWN_PAUSED = "Step back into frame";
-
 export const UPLOAD_ERROR_MESSAGES = {
   UPLOAD_FAILED: "Upload failed. Check your connection and retry.",
   DAILY_LIMIT:
@@ -28,5 +26,5 @@ export const UPLOAD_ERROR_MESSAGES = {
 export type UploadErrorCode = keyof typeof UPLOAD_ERROR_MESSAGES;
 
 export const RETRY_UPLOAD = "Retry upload";
-export const START = "Start";
 export const STOP = "Stop";
+export const COUNTDOWN_HINT = "Hold this position";

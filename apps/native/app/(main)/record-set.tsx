@@ -20,9 +20,8 @@ import {
 import AiPrerequisiteSteps from "@src/components/AiPrerequisiteSteps";
 import FramingGuide from "@src/components/form/FramingGuide";
 import {
-  COUNTDOWN_PAUSED,
+  COUNTDOWN_HINT,
   RETRY_UPLOAD,
-  START,
   STOP,
 } from "@src/constants/recordingMessages";
 import { useTheme } from "@src/context/ThemeContext";
@@ -221,7 +220,7 @@ const Recorder: React.FC<RecorderProps> = ({
       <FramingGuide
         exerciseCode={exerciseCode}
         issue={recorder.setupIssue}
-        isReady={recorder.canStart}
+        isReady={recorder.isPlacementReady}
       />
       <SafeAreaView
         style={[StyleSheet.absoluteFill, styles.hud]}
@@ -243,7 +242,7 @@ const Recorder: React.FC<RecorderProps> = ({
             </Pressable>
             <View style={styles.pill}>
               <Text style={styles.pillText}>
-                {recorder.setupMessage ?? "Ready"}
+                {recorder.setupMessage ?? "Getting your position..."}
               </Text>
             </View>
             <Pressable
@@ -268,11 +267,9 @@ const Recorder: React.FC<RecorderProps> = ({
             <Text style={styles.countdownNumber}>
               {recorder.countdownSecondsLeft}
             </Text>
-            {recorder.isCountdownPaused && (
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>{COUNTDOWN_PAUSED}</Text>
-              </View>
-            )}
+            <View style={styles.pill}>
+              <Text style={styles.pillText}>{COUNTDOWN_HINT}</Text>
+            </View>
           </View>
         )}
 
@@ -288,16 +285,6 @@ const Recorder: React.FC<RecorderProps> = ({
         )}
 
         <View style={styles.hudBottom} pointerEvents="box-none">
-          {phase === "setup" && (
-            <Pressable
-              style={[styles.primary, !recorder.canStart && styles.disabled]}
-              onPress={recorder.start}
-              disabled={!recorder.canStart}
-              accessibilityRole="button"
-            >
-              <Text style={styles.primaryLabel}>{START}</Text>
-            </Pressable>
-          )}
           {phase === "countdown" && (
             <Pressable
               style={styles.secondary}
@@ -388,7 +375,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     alignItems: "center",
   },
-  disabled: { opacity: 0.4 },
   primaryLabel: { color: baseColors.white, fontSize: 18, fontWeight: "700" },
   textButton: { paddingVertical: 12, alignItems: "center" },
   textButtonLabel: { fontSize: 16, fontWeight: "600" },

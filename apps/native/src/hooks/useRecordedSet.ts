@@ -50,14 +50,14 @@ type Stage =
   | "uploadError"
   | "submitted";
 
-const COUNTDOWN_SECS = 8;
+/** Seconds of continuously good placement before recording starts by itself. */
+const COUNTDOWN_SECS = 5;
 const AUTO_STOP_SEC = 175;
 const RECORDING_TARGET_FPS = 15;
 
 /** runAtTargetFps value that gives the camera's native ~30 fps (15 quantises to ~12). */
 const POSE_SOURCE_TARGET_FPS = 60;
 const SETUP_EVAL_INTERVAL_MS = 250;
-const READY_HOLD_MS = 1000;
 const FRAME_STALE_MS = 1000;
 const WINDOW_FRAMES = SETUP_WINDOW_FRAMES * 2;
 const SECOND_MS = 1000;
@@ -108,7 +108,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
 
   const [stage, setStage] = useState<Stage>("setup");
   const [setupResult, setSetupResult] = useState<SetupCheckResult>(NOT_READY);
-  const [canStart, setCanStart] = useState(false);
   const [countdownSecondsLeft, setCountdownSecondsLeft] =
     useState(COUNTDOWN_SECS);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -145,7 +144,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   const bufferRef = useRef<PoseFrame[]>([]);
   const lastKeptSecRef = useRef(Number.NEGATIVE_INFINITY);
   const lastFrameAtRef = useRef(0);
-  const readySinceRef = useRef<number | null>(null);
   const aspectRatioRef = useRef(DEFAULT_ASPECT_RATIO);
   const payloadRef = useRef<PoseCapturePayload | null>(null);
   const sessionIdRef = useRef<number | null>(null);
@@ -228,15 +226,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
             // The pose plugin owns the frame processor, so no luma is available.
             lumaMean: null,
           });
-      if (result.isReady) {
-        readySinceRef.current ??= now;
-      } else {
-        readySinceRef.current = null;
-      }
-      const hasHeldReady =
-        readySinceRef.current !== null &&
-        now - readySinceRef.current >= READY_HOLD_MS;
-      setCanStart(hasHeldReady);
       setSetupResult((previous) =>
         previous.isReady === result.isReady && previous.issue === result.issue
           ? previous
@@ -246,21 +235,26 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     return () => clearInterval(timer);
   }, [isChecking, exerciseCode]);
 
-  const isCountdownPaused = phase === "countdown" && !setupResult.isReady;
+  const isPlacementReady = setupResult.isReady;
 
-  const start = useCallback(() => {
-    if (phaseRef.current !== "setup") return;
-    setCountdownSecondsLeft(COUNTDOWN_SECS);
-    setStage("countdown");
-  }, []);
+  // Hands-free start: the user is away from the phone, so good placement
+  // starts the countdown and losing it cancels the countdown.
+  useEffect(() => {
+    if (phase === "setup" && isPlacementReady) {
+      setCountdownSecondsLeft(COUNTDOWN_SECS);
+      setStage("countdown");
+    } else if (phase === "countdown" && !isPlacementReady) {
+      setStage("setup");
+    }
+  }, [phase, isPlacementReady]);
 
   useEffect(() => {
-    if (phase !== "countdown" || isCountdownPaused) return;
+    if (phase !== "countdown") return;
     const timer = setInterval(() => {
       setCountdownSecondsLeft((seconds) => Math.max(0, seconds - 1));
     }, SECOND_MS);
     return () => clearInterval(timer);
-  }, [phase, isCountdownPaused]);
+  }, [phase]);
 
   useEffect(() => {
     if (phase !== "countdown" || countdownSecondsLeft > 0) return;
@@ -368,9 +362,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
 
   const toggleCamera = useCallback(() => {
     windowRef.current = [];
-    readySinceRef.current = null;
     lastKeptSecRef.current = Number.NEGATIVE_INFINITY;
-    setCanStart(false);
     setSetupResult(NOT_READY);
     setCameraPosition((position) => (position === "front" ? "back" : "front"));
   }, []);
@@ -401,10 +393,8 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     latestFrameRef,
     setupIssue,
     setupMessage,
-    canStart,
-    start,
+    isPlacementReady,
     countdownSecondsLeft,
-    isCountdownPaused,
     elapsedSec,
     stop,
     discard,

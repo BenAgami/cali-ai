@@ -29,9 +29,10 @@ The primary feature of CaliAI.
   pose measurements go to the LLM provider).
 - A setup check with a framing guide shows whether the whole body is in frame,
   the light is enough and the camera angle suits the exercise (side-on for
-  push-up, dip and squat; facing the camera for pull-up). Start unlocks when
-  the check passes; a short countdown follows, and pauses if the user leaves
-  the frame.
+  push-up, dip and squat; facing the camera for pull-up). There is no Start
+  button: when placement is good, a large 5 second countdown appears in the
+  middle of the screen and recording starts by itself. If the user leaves the
+  frame the countdown cancels and starts again once placement is good.
 - Stop ends the set and submits the keypoints automatically. If the upload
   fails, "Retry upload" resends without re-recording. Recording auto-stops at
   175 s.

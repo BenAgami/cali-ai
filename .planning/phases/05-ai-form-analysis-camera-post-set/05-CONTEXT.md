@@ -45,6 +45,7 @@ Roadmap-fixed (not re-asked): 5-level band; 0-100 score stored but never shown p
 - **D-19:** Amends D-16: only server-derived measurements (angles, rep metrics) plus height/weight are sent to the LLM, never raw keypoints. The consent wording states exactly this. Scoring and band are computed deterministically on the server; the LLM only phrases the (at most 2) corrections the server selected.
 - **D-20:** Recorded-set results appear in a "Recorded sets" section on the workout detail screen (a recorded set has no existing link to a workout; the schema gains the link, see RESEARCH.md).
 - **D-21:** No UI-SPEC.md for this phase; planning works from D-01..D-20.
+- **D-22:** Amends D-03/D-04 (user, 2026-11-10, found during device UAT): there is no Start button, because the user is away from the phone when positioned. When the live check passes, a large 5 s countdown appears in the middle of the screen and recording starts by itself; if placement is lost the countdown cancels and restarts once placement is good again.
 
 ### Claude's Discretion
 - Countdown length, confidence thresholds for the live setup check, framing-guide visuals
