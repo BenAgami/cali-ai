@@ -206,7 +206,7 @@ const Recorder: React.FC<RecorderProps> = ({
 
   return (
     <View style={styles.fill}>
-      {device !== undefined && recorder.isOrientationReady && (
+      {device !== undefined && (
         <Camera
           style={StyleSheet.absoluteFill}
           device={device}

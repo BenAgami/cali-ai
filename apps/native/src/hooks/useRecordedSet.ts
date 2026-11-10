@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useWindowDimensions } from "react-native";
 import Constants from "expo-constants";
 import { activateKeepAwakeAsync, deactivateKeepAwake } from "expo-keep-awake";
 import * as ScreenOrientation from "expo-screen-orientation";
@@ -184,28 +183,31 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     onDeviceChange(device);
   }, [device, onDeviceChange]);
 
-  // The camera must only mount once the screen has actually turned: a Camera
-  // mounted while the window is still portrait ends up with a portrait-shaped
-  // preview inside the landscape screen.
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
-  const isOrientationReady =
-    FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
-      ? windowWidth > windowHeight
-      : windowHeight > windowWidth;
-
-  // Lock orientation to the exercise's capture orientation.
+  // Turn the screen only once the camera is delivering frames, as the BlazePose
+  // dev screen does (verified on device). vision-camera's Android
+  // OrientationManager starts from ROTATION_0 and only learns the display
+  // rotation from change events after its listener is registered, which
+  // happens late in session configuration. A screen turned before that (while
+  // the Camera mounts, or earlier) leaves the preview rotated 90 degrees.
+  const isCameraStreaming = poseInfo !== null;
   useEffect(() => {
-    if (FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape") {
+    if (
+      isCameraStreaming &&
+      FORM_CAPTURE_SETUP[exerciseCode].orientation === "landscape"
+    ) {
       void ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.LANDSCAPE,
       );
     }
-    return () => {
+  }, [isCameraStreaming, exerciseCode]);
+  useEffect(
+    () => () => {
       void ScreenOrientation.lockAsync(
         ScreenOrientation.OrientationLock.PORTRAIT_UP,
       );
-    };
-  }, [exerciseCode]);
+    },
+    [],
+  );
 
   const isAwake =
     phase === "setup" ||
@@ -395,7 +397,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     hasPermission,
     requestPermission,
     device,
-    isOrientationReady,
     cameraPosition,
     toggleCamera,
     frameProcessor: pose.frameProcessor,
