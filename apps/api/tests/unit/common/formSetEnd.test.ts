@@ -1,0 +1,122 @@
+import { evaluateSetEnd, type SetupFrame } from "@repo/common";
+
+import { buildSyntheticCapture } from "../helpers/syntheticPose";
+
+const FPS = 15;
+
+const setFrames = (reps = 5): SetupFrame[] =>
+  buildSyntheticCapture({ exercise: "push_up", reps, scale: 1, fps: FPS })
+    .frames;
+
+/** Appends `secs` of frames copied from the last one. */
+const withTail = (
+  frames: SetupFrame[],
+  secs: number,
+  mutate: (frame: SetupFrame) => SetupFrame = (frame) => frame,
+): SetupFrame[] => {
+  const last = frames[frames.length - 1];
+  if (!last) throw new Error("no frames");
+  const tail = Array.from(
+    { length: Math.round(secs * FPS) },
+    (_, index): SetupFrame =>
+      mutate({
+        timestampSec: last.timestampSec + (index + 1) / FPS,
+        keypoints: last.keypoints.map((point): [number, number, number] => [
+          ...point,
+        ]),
+      }),
+  );
+  return [...frames, ...tail];
+};
+
+const hide = (frame: SetupFrame): SetupFrame => ({
+  ...frame,
+  keypoints: frame.keypoints.map(([x, y]): [number, number, number] => [
+    x,
+    y,
+    0.1,
+  ]),
+});
+
+describe("evaluateSetEnd", () => {
+  it("is not over with no frames", () => {
+    expect(evaluateSetEnd({ frames: [], exerciseCode: "push_up" })).toEqual({
+      isOver: false,
+    });
+  });
+
+  it("is never over while the reps are still going", () => {
+    const frames = setFrames();
+    const lastRepFrame = frames.length - 1 - 2 * FPS;
+    for (let end = FPS * 3; end <= lastRepFrame; end += FPS) {
+      expect(
+        evaluateSetEnd({
+          frames: frames.slice(0, end),
+          exerciseCode: "push_up",
+        }).isOver,
+      ).toBe(false);
+    }
+  });
+
+  it("ends when the body leaves the frame and keeps only the set", () => {
+    const frames = setFrames();
+    const verdict = evaluateSetEnd({
+      frames: withTail(frames, 8, hide),
+      exerciseCode: "push_up",
+    });
+    expect(verdict).toEqual({ isOver: true, keepCount: frames.length });
+  });
+
+  it("does not end on a brief loss of tracking", () => {
+    expect(
+      evaluateSetEnd({
+        frames: withTail(setFrames(), 3, hide),
+        exerciseCode: "push_up",
+      }).isOver,
+    ).toBe(false);
+  });
+
+  it("ends when the body stands still after the set and drops the idle tail", () => {
+    const frames = setFrames();
+    const total = withTail(frames, 8);
+    const verdict = evaluateSetEnd({
+      frames: total,
+      exerciseCode: "push_up",
+    });
+    expect(verdict.isOver).toBe(true);
+    if (verdict.isOver) {
+      expect(verdict.keepCount).toBeGreaterThanOrEqual(frames.length);
+      expect(verdict.keepCount).toBeLessThan(total.length);
+    }
+  });
+
+  it("does not end on stillness before any movement", () => {
+    const first = setFrames()[0];
+    if (!first) throw new Error("no frames");
+    expect(
+      evaluateSetEnd({
+        frames: withTail([first], 15),
+        exerciseCode: "push_up",
+      }).isOver,
+    ).toBe(false);
+  });
+
+  it("does not end when the body was never tracked", () => {
+    expect(
+      evaluateSetEnd({
+        frames: setFrames().map(hide),
+        exerciseCode: "push_up",
+      }).isOver,
+    ).toBe(false);
+  });
+
+  it("does not cut a recording that was tracked for only a moment", () => {
+    const short = setFrames().slice(0, 2 * FPS);
+    expect(
+      evaluateSetEnd({
+        frames: withTail(short, 10, hide),
+        exerciseCode: "push_up",
+      }).isOver,
+    ).toBe(false);
+  });
+});

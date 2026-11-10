@@ -10,4 +10,5 @@ export * from "./validations/bodyMetric";
 export * from "./validations/aiPrerequisites";
 export * from "./validations/workoutGeneration";
 export * from "./validations/formAnalysis";
+export * from "./validations/formSetEnd";
 export * from "./validations/formSetup";

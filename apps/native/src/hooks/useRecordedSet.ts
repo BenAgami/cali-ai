@@ -10,6 +10,7 @@ import {
 import {
   buildPoseCapturePayload,
   CAPTURE_LIMITS,
+  evaluateSetEnd,
   evaluateSetup,
   FORM_CAPTURE_SETUP,
   getMissingAiPrerequisites,
@@ -354,27 +355,36 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     workoutId,
   ]);
 
+  // keepCount drops the idle tail after the set (see evaluateSetEnd).
+  const finish = useCallback(
+    (keepCount?: number) => {
+      if (phaseRef.current !== "recording") return;
+      const recorded = bufferRef.current;
+      const frames =
+        keepCount === undefined ? recorded : recorded.slice(0, keepCount);
+      bufferRef.current = [];
+      if (frames.length === 0) {
+        // The pose source delivered nothing; there is nothing to upload.
+        setStage("setup");
+        return;
+      }
+      payloadRef.current = buildPoseCapturePayload(frames, {
+        poseModelName: poseInfo?.poseModelName ?? "blazepose_full",
+        poseModelVersion: poseInfo?.poseModelVersion ?? "unknown",
+        aspectRatio: aspectRatioRef.current,
+        cameraView: FORM_CAPTURE_SETUP[exerciseCode].cameraView,
+        appVersion: Constants.expoConfig?.version,
+      });
+      void runUpload();
+    },
+    [exerciseCode, poseInfo, runUpload],
+  );
   const stop = useCallback(() => {
-    if (phaseRef.current !== "recording") return;
-    const frames = bufferRef.current;
-    bufferRef.current = [];
-    if (frames.length === 0) {
-      // The pose source delivered nothing; there is nothing to upload.
-      setStage("setup");
-      return;
-    }
-    payloadRef.current = buildPoseCapturePayload(frames, {
-      poseModelName: poseInfo?.poseModelName ?? "blazepose_full",
-      poseModelVersion: poseInfo?.poseModelVersion ?? "unknown",
-      aspectRatio: aspectRatioRef.current,
-      cameraView: FORM_CAPTURE_SETUP[exerciseCode].cameraView,
-      appVersion: Constants.expoConfig?.version,
-    });
-    void runUpload();
-  }, [exerciseCode, poseInfo, runUpload]);
+    finish();
+  }, [finish]);
 
-  const stopRef = useRef(stop);
-  stopRef.current = stop;
+  const finishRef = useRef(finish);
+  finishRef.current = finish;
   useEffect(() => {
     if (phase !== "recording") return;
     const timer = setInterval(() => {
@@ -382,10 +392,17 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         (Date.now() - recordingStartedAtRef.current) / SECOND_MS,
       );
       setElapsedSec(seconds);
-      if (seconds >= AUTO_STOP_SEC) stopRef.current();
+      // The user is away from the phone, so the set ends by itself when the
+      // body leaves the frame or stands still; the time limit is the backstop.
+      const verdict = evaluateSetEnd({
+        frames: bufferRef.current,
+        exerciseCode,
+      });
+      if (verdict.isOver) finishRef.current(verdict.keepCount);
+      else if (seconds >= AUTO_STOP_SEC) finishRef.current();
     }, SECOND_MS);
     return () => clearInterval(timer);
-  }, [phase]);
+  }, [phase, exerciseCode]);
 
   const retryUpload = useCallback(() => {
     void runUpload();
