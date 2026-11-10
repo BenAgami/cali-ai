@@ -18,6 +18,7 @@ import {
   type FormAnalysisExercise,
   type PoseCapturePayload,
   type SetupCheckResult,
+  type SetupIssue,
 } from "@repo/common";
 
 import { ApiError, sessionsApi } from "@src/api";
@@ -70,6 +71,20 @@ const HTTP_TOO_MANY_REQUESTS = 429;
 const DAILY_LIMIT_CODE = "DAILY_ANALYSIS_LIMIT_REACHED";
 const EXERCISE_LIMIT_CODE = "EXERCISE_ANALYSIS_LIMIT_REACHED";
 const KEEP_AWAKE_TAG = "recorded-set";
+
+/**
+ * Landmarks are unmirrored, but the front preview is mirrored, so a body cut
+ * off at the left of the landmark frame is cut off at the right of the screen.
+ */
+const toScreenIssue = (
+  issue: SetupIssue,
+  cameraPosition: "front" | "back",
+): SetupIssue => {
+  if (cameraPosition !== "front") return issue;
+  if (issue === "CLIPPED_LEFT") return "CLIPPED_RIGHT";
+  if (issue === "CLIPPED_RIGHT") return "CLIPPED_LEFT";
+  return issue;
+};
 
 const NOT_READY: SetupCheckResult = { isReady: false, issue: "NOT_DETECTED" };
 
@@ -397,7 +412,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       ? null
       : setupIssue === "WRONG_ANGLE" && exerciseCode === "pull_up"
         ? WRONG_ANGLE_PULL_UP_MESSAGE
-        : SETUP_ISSUE_MESSAGES[setupIssue];
+        : SETUP_ISSUE_MESSAGES[toScreenIssue(setupIssue, cameraPosition)];
 
   const isUploadRetryable = uploadErrorCode === "UPLOAD_FAILED";
 

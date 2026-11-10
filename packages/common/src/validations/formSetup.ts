@@ -101,6 +101,38 @@ const shoulderToTorsoRatio = (
   return torso < MIN_TORSO ? null : shoulderWidth / torso;
 };
 
+/**
+ * Which frame edge cuts the body off. A joint outside the frame is no longer
+ * confidently visible, so the visibility check fails first; but the pose model
+ * still places it beyond the edge and the adapter clamps it to the boundary.
+ * Counting hidden key joints at a boundary names the edge. Needs part of the
+ * body to be detected, so an empty frame (all zeros) is never read as clipped.
+ */
+const clippedEdgeOf = (
+  last: SetupFrame,
+  keyJoints: readonly number[],
+): SetupIssue | null => {
+  const points = keyJoints.map((joint) => last.keypoints[joint]);
+  const visibleCount = points.filter(
+    (point) => (point?.[2] ?? 0) >= VISIBLE_MIN,
+  ).length;
+  if (visibleCount === 0) return null;
+  const hidden = points.filter(
+    (point): point is [number, number, number] =>
+      point !== undefined && point[2] < VISIBLE_MIN,
+  );
+  const edges: [SetupIssue, number][] = [
+    ["CLIPPED_LEFT", hidden.filter(([x]) => x <= EDGE_MIN).length],
+    ["CLIPPED_RIGHT", hidden.filter(([x]) => x >= EDGE_MAX).length],
+    ["CLIPPED_TOP", hidden.filter(([, y]) => y <= EDGE_MIN).length],
+    ["CLIPPED_BOTTOM", hidden.filter(([, y]) => y >= EDGE_MAX).length],
+  ];
+  const [issue, count] = edges.reduce((best, edge) =>
+    edge[1] > best[1] ? edge : best,
+  );
+  return count > 0 ? issue : null;
+};
+
 /** Pure live check that gates the Start button (05-RUBRICS section 10). */
 export const evaluateSetup = (input: {
   frames: readonly SetupFrame[];
@@ -122,9 +154,8 @@ export const evaluateSetup = (input: {
     ),
   ).length;
   if (visibleFrames / window.length < VISIBLE_FRAME_SHARE_MIN) {
-    return notReady(
-      lumaMean !== null && lumaMean < DARK_LUMA ? "TOO_DARK" : "NOT_DETECTED",
-    );
+    if (lumaMean !== null && lumaMean < DARK_LUMA) return notReady("TOO_DARK");
+    return notReady(clippedEdgeOf(last, keyJoints) ?? "NOT_DETECTED");
   }
 
   const visible = last.keypoints.filter(([, , v]) => v >= VISIBLE_MIN);

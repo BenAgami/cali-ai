@@ -112,6 +112,58 @@ describe("evaluateSetup", () => {
     );
   });
 
+  describe("body partly out of frame", () => {
+    const run = (
+      update: (point: [number, number, number]) => [number, number, number],
+    ) => {
+      const { frames, aspectRatio } = makeFrames("push_up");
+      const hidden = [BLAZEPOSE.LEFT_WRIST, BLAZEPOSE.RIGHT_WRIST].reduce(
+        (current, joint) => mapJoint(current, joint, update),
+        frames,
+      );
+      return evaluateSetup({
+        frames: hidden,
+        exerciseCode: "push_up",
+        aspectRatio,
+        lumaMean: 0.5,
+      }).issue;
+    };
+
+    it.each([
+      ["CLIPPED_LEFT", ([, y]: [number, number, number]) => [0, y, 0.1]],
+      ["CLIPPED_RIGHT", ([, y]: [number, number, number]) => [1, y, 0.1]],
+      ["CLIPPED_TOP", ([x]: [number, number, number]) => [x, 0, 0.1]],
+      ["CLIPPED_BOTTOM", ([x]: [number, number, number]) => [x, 1, 0.1]],
+    ] as const)(
+      "names the edge when hidden joints sit at it: %s",
+      (issue, update) => {
+        expect(run(update as Parameters<typeof run>[0])).toBe(issue);
+      },
+    );
+
+    it("stays NOT_DETECTED when hidden joints are not at an edge", () => {
+      expect(run(([x, y]) => [x, y, 0.1])).toBe("NOT_DETECTED");
+    });
+
+    it("does not read an empty frame as clipped", () => {
+      const { frames, aspectRatio } = makeFrames("push_up");
+      const empty = frames.map((frame) => ({
+        ...frame,
+        keypoints: frame.keypoints.map((): [number, number, number] => [
+          0, 0, 0,
+        ]),
+      }));
+      expect(
+        evaluateSetup({
+          frames: empty,
+          exerciseCode: "push_up",
+          aspectRatio,
+          lumaMean: 0.5,
+        }).issue,
+      ).toBe("NOT_DETECTED");
+    });
+  });
+
   describe("clipping", () => {
     const run = (
       update: (point: [number, number, number]) => [number, number, number],
