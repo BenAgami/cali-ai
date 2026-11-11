@@ -5,7 +5,6 @@ import {
   SPEECH_LANGUAGE,
   SPOKEN_RECORDING_STARTED,
   SPOKEN_RECORDING_STOPPED,
-  spokenStopWarning,
 } from "@src/constants/recordingMessages";
 import type { RecordedSetPhase } from "@src/hooks/useRecordedSet";
 
@@ -56,7 +55,7 @@ export const useSpokenCues = (input: {
   useEffect(() => {
     if (stopsInSecs !== null) {
       wasWarningRef.current = true;
-      say(spokenStopWarning(stopsInSecs));
+      say(String(stopsInSecs));
     } else if (wasWarningRef.current) {
       wasWarningRef.current = false;
       // The user came back: drop a warning that is still being read out.
