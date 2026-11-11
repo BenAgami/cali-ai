@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [x] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output (completed 2026-11-04)
-- [ ] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback
+- [x] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback (completed 2026-11-12)
 - [ ] **Phase 5.1: Training Data & Labeling** (INSERTED) - Consent, retention, form labels, spot-check tool; foundation for training an own model
 - [ ] **Phase 6: Real-Time Form Cues** (DEFERRED — future milestone, not in v1) - Live audio/visual coaching cues from on-device pose estimation
 - [ ] **Phase 7: Progress Tracking** - Session history, per-exercise form score trends, overall form arc over time
@@ -125,7 +125,28 @@ Plans:
 4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
 5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
 6. When the body cannot be tracked reliably, the user sees camera advice instead of feedback
-   **Plans**: TBD
+   **Plans:** 18/18 plans executed
+
+Plans:
+
+- [x] 05-01-PLAN.md — Wave 0 gate: on-device BlazePose spike (MediaPipe PoseLandmarker plugin, Android), PoseFrame contract, runtime decision
+- [x] 05-02-PLAN.md — Rubric v0 document (tags, thresholds, ramps, bands, trackability, daily cap 15, per-exercise-per-workout cap 2) and user approval (D-13)
+- [x] 05-03-PLAN.md — Prisma migration: WorkoutSession workoutId/setNumber, AnalysisOutcome, nullable formScore, untrackableReasons, finding repNumbers
+- [x] 05-04-PLAN.md — @repo/common contracts: supported exercises, bands, dimensions, untrackable advice, result/recorded-set shapes, aspectRatio + quantizeCapture, consent version bump
+- [x] 05-05-PLAN.md — Skeleton fixtures from the 16 Phase 1 clips (dump script, manifest, loader)
+- [x] 05-06-PLAN.md — Metrics foundation: types, geometry, preprocessing, rep segmentation, trackability preflight, synthetic skeletons
+- [x] 05-07-PLAN.md — Session creation as recorded-set entry (supported exercises, workout link, consent gate), processingStatus filter, no formScore in lists
+- [x] 05-08-PLAN.md — Native endpoints/query hooks, global AnalysisTrackerContext with SSE watchers and completion banner
+- [x] 05-09-PLAN.md — Per-exercise rubric modules (push-up, dip, squat, pull-up)
+- [x] 05-10-PLAN.md — LLM form feedback: provider method, versioned prompt, validator + repair, typed timeout codes
+- [x] 05-11-PLAN.md — Capture consent gate + daily cap (15) and per-exercise-per-workout cap (2); GET /sessions/:id/analysis and /workouts/:id/recorded-sets
+- [x] 05-12-PLAN.md — Result UI: band badge, dimension rows, feedback blocks, camera advice, analysis-result screen, Recorded sets section
+- [x] 05-13-PLAN.md — Recording engine: pure setup check + payload builder, pose source, useRecordedSet state machine
+- [x] 05-14-PLAN.md — Scoring, finding selection, computeFormMetrics with golden fixture tests
+- [x] 05-15-PLAN.md — Record offer in workout run, record-set screen with framing guide, shared AI prerequisite steps
+- [x] 05-16-PLAN.md — Worker pipeline: metrics -> LLM (AbortSignal) -> guarded idempotent persist; end-to-end integration tests
+- [x] 05-17-PLAN.md — Rubric calibration on the 16 clips with the user, rubric-v1
+- [x] 05-18-PLAN.md — CI gates, docs, STATE updates, Android device UAT
 
 ### Phase 5.1: Training Data & Labeling (INSERTED)
 
@@ -181,7 +202,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
-| 5. Post-Set AI Form Analysis | 0/TBD          | Not started | -          |
+| 5. Post-Set AI Form Analysis | 18/18          | Complete    | 2026-11-12 |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
@@ -201,6 +222,16 @@ Plans:
 ### Phase 999.1: Rerun the Haiku workout-generation eval (BACKLOG)
 
 **Goal:** Rerun `yarn workspace api eval:workouts` to separate provider flakiness from plan quality (5 of 12 Haiku calls timed out or were unavailable in the 2026-11-04 run). Revisit making Haiku the primary model (about 19x cheaper, roughly $0.005 saved per generation) only if real traffic makes generation cost meaningful. See `.planning/phases/04-ai-workout-generation/04-EVAL-RESULTS.md`.
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (promote with /gsd:review-backlog when ready)
+
+### Phase 999.2: Auto-detect end of motion for recorded sets (DELIVERED in Phase 5)
+
+**Goal:** Stop a recorded set automatically when no movement is detected for a few seconds, instead of requiring a manual Stop tap. Built during Phase 5 device UAT (D-23): stops after 5 s out of frame or 6 s of stillness after the set started, trims the idle tail, and keeps Stop and the 175 s cap as fallbacks.
 **Requirements:** TBD
 **Plans:** 0 plans
 

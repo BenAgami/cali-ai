@@ -7,6 +7,7 @@ import type {
   WorkoutWithExercises,
   WorkoutListResponse,
   WorkoutLogResponse,
+  RecordedSet,
 } from "@repo/common";
 
 import { apiClient } from "../client";
@@ -51,4 +52,7 @@ export const workoutApi = {
 
   startLog: (id: number, data: WorkoutLogValues): Promise<WorkoutLogResponse> =>
     apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), data),
+
+  recordedSets: (workoutId: number): Promise<RecordedSet[]> =>
+    apiClient.get<RecordedSet[]>(WORKOUT_ROUTES.recordedSets(workoutId)),
 };

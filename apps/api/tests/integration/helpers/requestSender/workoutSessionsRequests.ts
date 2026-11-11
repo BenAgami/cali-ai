@@ -1,12 +1,10 @@
 import type { Application } from "express";
 import supertest from "supertest";
 
-import type { CreateWorkoutSessionValues } from "@repo/common";
-
 export const createWorkoutSession = async (
   app: Application,
   token: string | undefined,
-  data: Partial<CreateWorkoutSessionValues>,
+  data: object,
 ) => {
   const request = supertest
     .agent(app)

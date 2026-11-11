@@ -41,14 +41,15 @@ flowchart TD
 ## 2.1 Mobile Application
 
 - Camera capture with `react-native-vision-camera`
-- A frame processor runs the pose model on each frame via
-  `react-native-fast-tflite` (BlazePose Full, 33 keypoints; see
-  `.planning/phases/01-infrastructure/01-POSE-MODEL-DECISION.md`)
+- A frame processor runs MediaPipe PoseLandmarker (33 keypoints, GPU delegate,
+  about 30 fps) through `react-native-mediapipe-posedetection`; see
+  `.planning/phases/05-ai-form-analysis-camera-post-set/05-POSE-RUNTIME-DECISION.md`
 - Keypoints are buffered with timestamps; no video file is recorded
-- A quality gate checks framing and keypoint confidence before the set starts
+- A setup check (framing guide, trackability, light) gates the Start button
 - Sends the keypoints to the API when the set ends, then listens for progress
-  and results over SSE
-- Asks for, and records, consent to use data for model training
+  and results over SSE; an in-app banner announces the result
+- Asks for, and records, consent to send profile data and pose measurements
+  to the LLM provider
 
 Requires a custom Expo dev build (`expo-dev-client`); it does not run in Expo Go.
 
@@ -65,17 +66,26 @@ Three tiers: route → controller → service → Prisma.
 
 A BullMQ worker. For each job it:
 
-1. Loads the stored keypoints
-2. Smooths them, drops low-confidence frames, and splits them into reps
-3. Computes per-rep metrics (angles, range, symmetry, tempo, body line) with
-   pure TypeScript shared via `@repo/common`
-4. Sends metrics, the exercise rubric and user context to the LLM
-5. Validates the structured result (at most 2 corrections, positive first)
-6. Stores the result and a label, deletes the keypoints if the user has not
-   consented to training use, and emits the completion event
+1. Decodes the stored keypoints (gzip-json-v1)
+2. Runs `computeFormMetrics` (pure TypeScript in `apps/api/src/metrics/`):
+   preprocess, trackability, rep segmentation, rubric evaluation, scoring and
+   finding selection
+3. If the set is `UNTRACKABLE`, short-circuits: no LLM call, the result holds
+   camera advice
+4. Otherwise asks the LLM to phrase the server-selected findings, with an
+   `AbortSignal` deadline so a timed-out call is cancelled
+5. Persists the result with a guarded, idempotent write (a late or duplicate
+   run cannot overwrite a finished one)
+6. Completes the run and emits the completion event
 
-If keypoint confidence is too low, it returns camera advice instead of
-calling the LLM.
+**Score and band are deterministic; the LLM never scores.** The rubric decides
+the dimension results, the 0-100 score and the band, and chooses which
+findings are reported. The LLM only writes the wording of those findings. The
+raw score is stored for trends and is never returned by the API.
+
+Versions stored with every result: `metrics-v1` (metrics pipeline),
+`rubric-v1` (calibrated thresholds, see `05-RUBRICS.md` and
+`05-CALIBRATION.md`) and `form-feedback-v1` (prompt), plus the LLM model.
 
 ## 2.4 Database (Postgres)
 
@@ -110,10 +120,10 @@ automatically.
 
 # 4. Feedback Quality
 
-- The LLM never receives raw coordinates, only per-rep metrics, target ranges,
-  the exercise rubric and a summary of the user's recent sessions.
-- Output is structured and validated: score, up to 2 corrections, at least one
-  positive observation where deserved.
+- The LLM never receives raw coordinates, only the server-selected findings
+  with their measured values, the exercise and the user's height and weight as
+  context. It does not score.
+- Output is structured and validated: up to 2 corrections, positives first.
 - Every result records the LLM model, prompt version, rubric version and
   metrics version so results can be compared and recomputed.
 - Per-exercise definitions (keypoints used, metrics, target ranges, error tags,
@@ -124,15 +134,15 @@ automatically.
 
 # 5. Training Data and Own Model
 
-The LLM is the scorer at launch. Meanwhile:
+The rubric (deterministic metrics) is the scorer at launch; the LLM only writes the coaching text. Meanwhile:
 
 - Consented sets keep their raw keypoints. Non-consented sets keep only the
   result.
-- Each result also creates a `FormLabel` (source `LLM`, score bucket, error
+- Planned (not built in Phase 5): each result also creates a `FormLabel` (source `RUBRIC`/`LLM`, score bucket, error
   tags, versions). Other label sources (`SELF_REVIEW`, `USER_RATING`,
   `OWN_MODEL`) can be added for the same capture.
 - The owner spot-checks a sample of sets by watching skeleton replays.
-- A model trained on these labels can only match the LLM, so the goal is to
+- A model trained on these labels can only match the rubric and LLM, so the goal is to
   cut cost, not to improve quality. The LLM keeps writing the coaching text.
 - Training splits by user. The new model first runs in shadow mode, unseen by
   users, before it replaces the LLM score.

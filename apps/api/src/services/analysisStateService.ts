@@ -1,6 +1,7 @@
 import { getPrismaClient, SessionStatus } from "@repo/db";
 import type {
   AnalysisFailureReason,
+  ExperienceLevel,
   AnalysisStage,
   AnalysisStatusEvent,
 } from "@repo/common";
@@ -302,6 +303,31 @@ export class AnalysisStateService {
       where: { id: captureId, sessionId },
       select: { id: true, keypoints: true, keypointsFormat: true },
     });
+  }
+
+  async getAnalysisJobContext(sessionId: number): Promise<{
+    userId: number;
+    exerciseCode: string;
+    exerciseDisplayName: string;
+    experienceLevel: ExperienceLevel | null;
+  } | null> {
+    const session = await this.prisma.workoutSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        userId: true,
+        exercise: { select: { code: true, displayName: true } },
+        user: { select: { experienceLevel: true } },
+      },
+    });
+
+    if (!session) return null;
+
+    return {
+      userId: session.userId,
+      exerciseCode: session.exercise.code,
+      exerciseDisplayName: session.exercise.displayName,
+      experienceLevel: session.user.experienceLevel,
+    };
   }
 
   async getStatusEvent(sessionId: number): Promise<AnalysisStatusEvent | null> {

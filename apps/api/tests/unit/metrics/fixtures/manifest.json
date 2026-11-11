@@ -1,0 +1,146 @@
+[
+  {
+    "file": "push_up__diag45_1.json.gz",
+    "exercise": "push_up",
+    "clip": "diag45_1",
+    "kind": "reps",
+    "view": "diag45",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "push_up__side_1.json.gz",
+    "exercise": "push_up",
+    "clip": "side_1",
+    "kind": "reps",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "push_up__side_2.json.gz",
+    "exercise": "push_up",
+    "clip": "side_2",
+    "kind": "reps",
+    "view": "side",
+    "light": "dim",
+    "expectedReps": 5
+  },
+  {
+    "file": "push_up__hold_side.json.gz",
+    "exercise": "push_up",
+    "clip": "hold_side",
+    "kind": "hold",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 0
+  },
+  {
+    "file": "pull_up__back_1.json.gz",
+    "exercise": "pull_up",
+    "clip": "back_1",
+    "kind": "reps",
+    "view": "back",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "pull_up__front_1.json.gz",
+    "exercise": "pull_up",
+    "clip": "front_1",
+    "kind": "reps",
+    "view": "front",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "pull_up__side_1.json.gz",
+    "exercise": "pull_up",
+    "clip": "side_1",
+    "kind": "reps",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "pull_up__hold_front.json.gz",
+    "exercise": "pull_up",
+    "clip": "hold_front",
+    "kind": "hold",
+    "view": "front",
+    "light": "normal",
+    "expectedReps": 0
+  },
+  {
+    "file": "dip__diag45_1.json.gz",
+    "exercise": "dip",
+    "clip": "diag45_1",
+    "kind": "reps",
+    "view": "diag45",
+    "light": "dim",
+    "expectedReps": 5
+  },
+  {
+    "file": "dip__side_1.json.gz",
+    "exercise": "dip",
+    "clip": "side_1",
+    "kind": "reps",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "dip__side_2.json.gz",
+    "exercise": "dip",
+    "clip": "side_2",
+    "kind": "reps",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "dip__hold_side.json.gz",
+    "exercise": "dip",
+    "clip": "hold_side",
+    "kind": "hold",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 0
+  },
+  {
+    "file": "squat__diag45_1.json.gz",
+    "exercise": "squat",
+    "clip": "diag45_1",
+    "kind": "reps",
+    "view": "diag45",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "squat__side_1.json.gz",
+    "exercise": "squat",
+    "clip": "side_1",
+    "kind": "reps",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 5
+  },
+  {
+    "file": "squat__side_2.json.gz",
+    "exercise": "squat",
+    "clip": "side_2",
+    "kind": "reps",
+    "view": "side",
+    "light": "dim",
+    "expectedReps": 5
+  },
+  {
+    "file": "squat__hold_side.json.gz",
+    "exercise": "squat",
+    "clip": "hold_side",
+    "kind": "hold",
+    "view": "side",
+    "light": "normal",
+    "expectedReps": 0
+  }
+]

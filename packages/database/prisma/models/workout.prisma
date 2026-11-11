@@ -1,45 +1,49 @@
 model Workout {
-  id     Int @id @default(autoincrement())
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId Int  @map("user_id")
-  name   String @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  exercises WorkoutExercise[]
-  logs      WorkoutLog[]
+  id           Int                @id @default(autoincrement())
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int                @map("user_id")
+  name         String             @db.VarChar(100)
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  exercises    WorkoutExercise[]
+  logs         WorkoutLog[]
+  sessions     WorkoutSession[]
   aiModel      String?            @map("ai_model") @db.VarChar(80)
   generation   WorkoutGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
   generationId Int?               @unique @map("generation_id")
+
   @@index([userId, updatedAt(sort: Desc)], map: "idx_workouts_user_updated_at")
   @@map("workouts")
 }
 
 model WorkoutExercise {
-  id           Int @id @default(autoincrement())
-  workout      Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  workoutId    Int @map("workout_id")
+  id           Int      @id @default(autoincrement())
+  workout      Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workoutId    Int      @map("workout_id")
   exercise     Exercise @relation(fields: [exerciseId], references: [id])
-  exerciseId   Int @map("exercise_id")
+  exerciseId   Int      @map("exercise_id")
   position     Int
-  sets         Int @default(3)
+  sets         Int      @default(3)
   reps         Int?
-  durationSecs Int? @map("duration_secs")
-  restSecs     Int @default(60) @map("rest_secs")
+  durationSecs Int?     @map("duration_secs")
+  restSecs     Int      @default(60) @map("rest_secs")
   createdAt    DateTime @default(now()) @map("created_at")
+
   @@unique([workoutId, position], map: "uniq_workout_exercises_workout_position")
   @@index([workoutId], map: "idx_workout_exercises_workout_id")
   @@map("workout_exercises")
 }
 
 model WorkoutLog {
-  id           Int @id @default(autoincrement())
-  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       Int @map("user_id")
-  workout      Workout @relation(fields: [workoutId], references: [id])
-  workoutId    Int @map("workout_id")
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int      @map("user_id")
+  workout      Workout  @relation(fields: [workoutId], references: [id])
+  workoutId    Int      @map("workout_id")
   completedAt  DateTime @default(now()) @map("completed_at")
-  durationSecs Int @map("duration_secs")
+  durationSecs Int      @map("duration_secs")
   createdAt    DateTime @default(now()) @map("created_at")
+
   @@index([userId, completedAt(sort: Desc)], map: "idx_workout_logs_user_completed")
   @@map("workout_logs")
 }

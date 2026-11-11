@@ -11,6 +11,7 @@ const DELEGATE_METHODS = [
   "create",
   "createMany",
   "update",
+  "upsert",
   "updateMany",
   "delete",
   "deleteMany",
@@ -29,6 +30,8 @@ const MODELS = [
   "poseCapture",
   "bodyMetric",
   "workoutGeneration",
+  "analysisResult",
+  "analysisFinding",
 ] as const;
 
 type MockDelegate = Record<(typeof DELEGATE_METHODS)[number], Mock>;

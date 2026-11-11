@@ -9,6 +9,13 @@ export const ANALYSIS_STAGES = [
 
 export type AnalysisStage = (typeof ANALYSIS_STAGES)[number];
 
+export const SESSION_STATUSES = [
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+] as const;
+
 const ANALYSIS_EVENT_STATUSES = [
   "QUEUED",
   "PROCESSING",

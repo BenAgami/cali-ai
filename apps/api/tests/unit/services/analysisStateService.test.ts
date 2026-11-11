@@ -402,6 +402,31 @@ describe("AnalysisStateService reads", () => {
     });
   });
 
+  it("getAnalysisJobContext flattens the job context, or null when missing", async () => {
+    prisma.workoutSession.findUnique.mockResolvedValueOnce({
+      userId: 3,
+      exercise: { code: "push_up", displayName: "Push-up" },
+      user: { experienceLevel: "BEGINNER" },
+    });
+    await expect(service.getAnalysisJobContext(5)).resolves.toEqual({
+      userId: 3,
+      exerciseCode: "push_up",
+      exerciseDisplayName: "Push-up",
+      experienceLevel: "BEGINNER",
+    });
+    expect(prisma.workoutSession.findUnique).toHaveBeenCalledWith({
+      where: { id: 5 },
+      select: {
+        userId: true,
+        exercise: { select: { code: true, displayName: true } },
+        user: { select: { experienceLevel: true } },
+      },
+    });
+
+    prisma.workoutSession.findUnique.mockResolvedValueOnce(null);
+    await expect(service.getAnalysisJobContext(5)).resolves.toBeNull();
+  });
+
   it("getStatusEvent derives the event, or null for a missing session", async () => {
     prisma.workoutSession.findUnique.mockResolvedValueOnce(
       snapshot({ analysisStage: "WRITING_FEEDBACK" }),

@@ -5,6 +5,7 @@ import { StatusCodes } from "http-status-codes";
 import { type getPrismaClient, SessionStatus } from "@repo/db";
 import { CAPTURE_LIMITS } from "@repo/common";
 
+import { env } from "../../../src/config/env";
 import { formAnalysisQueue } from "../../../src/lib/queue";
 import { decodeCapture } from "../../../src/utils/captureCodec";
 
@@ -19,7 +20,9 @@ import {
   submitCapture,
   submitRawCapture,
 } from "../helpers/requestSender/sessionsRequests";
+import { createWorkoutFixture } from "../helpers/db/workoutHelper";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
@@ -41,14 +44,20 @@ describe("POST /api/sessions/:id/capture", () => {
   };
 
   const registerToken = async (): Promise<string> => {
-    const res = await registerUser(app, new RegisterUserBuilder().build());
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
     return res.body.data.token as string;
   };
 
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
     token = await registerToken();
-    exerciseCode = (await createExercise(prisma)).code;
+    exerciseCode = (await createExercise(prisma, { code: "push_up" })).code;
   });
 
   beforeEach(async () => {
@@ -277,5 +286,128 @@ describe("POST /api/sessions/:id/capture", () => {
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
     expect(response.body.message).toContain("retry");
+  });
+
+  describe("consent and caps", () => {
+    const newGatedUser = async () => {
+      const dto = new RegisterUserBuilder().build();
+      const res = await registerUser(app, dto);
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { email: dto.email },
+        select: { id: true },
+      });
+      await grantAiPrerequisites(prisma, user.id);
+      return { userId: user.id, token: res.body.data.token as string };
+    };
+
+    const createSetSession = async (
+      userId: number,
+      exerciseId: number,
+      workoutId: number | null,
+    ): Promise<number> =>
+      (
+        await prisma.workoutSession.create({
+          data: { userId, exerciseId, workoutId, setNumber: 1 },
+          select: { id: true },
+        })
+      ).id;
+
+    it("returns 428 AI_CONSENT_REQUIRED for a stale consent version and stores nothing", async () => {
+      const user = await newGatedUser();
+      await prisma.user.update({
+        where: { id: user.userId },
+        data: { aiConsentVersion: "2026-11-04" },
+      });
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      const sessionId = await createSetSession(user.userId, exercise.id, null);
+
+      const response = await submitCapture(
+        app,
+        user.token,
+        sessionId,
+        new PoseCaptureBuilder().setFrames(30).build(),
+      );
+
+      expect(response.status).toBe(StatusCodes.PRECONDITION_REQUIRED);
+      expect(response.body.code).toBe("AI_CONSENT_REQUIRED");
+      expect(await prisma.poseCapture.count({ where: { sessionId } })).toBe(0);
+    });
+
+    it("returns 429 DAILY_ANALYSIS_LIMIT_REACHED once the daily cap of captures exists", async () => {
+      const user = await newGatedUser();
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      for (let i = 0; i < env.formAnalysis.dailyCap; i++) {
+        const id = await createSetSession(user.userId, exercise.id, null);
+        await prisma.poseCapture.create({
+          data: {
+            sessionId: id,
+            keypointsFormat: "gzip-json-v1",
+            poseModelName: "movenet-lightning",
+            poseModelVersion: "4",
+            fps: 15,
+            frameCount: 1,
+            durationSec: 1,
+          },
+        });
+      }
+      const sessionId = await createSetSession(user.userId, exercise.id, null);
+
+      const response = await submitCapture(
+        app,
+        user.token,
+        sessionId,
+        new PoseCaptureBuilder().setFrames(30).build(),
+      );
+
+      expect(response.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
+      expect(response.body.code).toBe("DAILY_ANALYSIS_LIMIT_REACHED");
+    });
+
+    it("returns 429 EXERCISE_ANALYSIS_LIMIT_REACHED on the third capture of an exercise in one workout, but accepts it in another workout", async () => {
+      const user = await newGatedUser();
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      const workoutA = await createWorkoutFixture(prisma, {
+        userId: user.userId,
+        exercises: [{ exerciseId: exercise.id, position: 1 }],
+      });
+      const workoutB = await createWorkoutFixture(prisma, {
+        userId: user.userId,
+        exercises: [{ exerciseId: exercise.id, position: 1 }],
+      });
+      const payload = new PoseCaptureBuilder().setFrames(30).build();
+
+      for (let i = 0; i < env.formAnalysis.exerciseWorkoutCap; i++) {
+        const id = await createSetSession(
+          user.userId,
+          exercise.id,
+          workoutA.id,
+        );
+        const ok = await submitCapture(app, user.token, id, payload);
+        expect(ok.status).toBe(StatusCodes.ACCEPTED);
+      }
+
+      const third = await createSetSession(
+        user.userId,
+        exercise.id,
+        workoutA.id,
+      );
+      const blocked = await submitCapture(app, user.token, third, payload);
+      expect(blocked.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
+      expect(blocked.body.code).toBe("EXERCISE_ANALYSIS_LIMIT_REACHED");
+
+      const other = await createSetSession(
+        user.userId,
+        exercise.id,
+        workoutB.id,
+      );
+      const accepted = await submitCapture(app, user.token, other, payload);
+      expect(accepted.status).toBe(StatusCodes.ACCEPTED);
+    });
   });
 });

@@ -1,7 +1,27 @@
-import { SessionStatus } from "@repo/db";
+import { getPrismaClient, SessionStatus } from "@repo/db";
 import type { PoseCapturePayload } from "@repo/common";
 
-import { ConflictError, ServiceUnavailableError } from "../../../src/errors";
+import {
+  ConflictError,
+  PreconditionRequiredError,
+  ServiceUnavailableError,
+  TooManyRequestsError,
+} from "../../../src/errors";
+
+import {
+  asPrismaClient,
+  createPrismaMock,
+  type PrismaMock,
+} from "../helpers/prismaMock";
+
+vi.mock("@repo/db", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@repo/db")>()),
+  getPrismaClient: vi.fn(),
+}));
+
+vi.mock("../../../src/services/aiPrerequisitesService", () => ({
+  default: { assertAiPrerequisites: vi.fn() },
+}));
 
 vi.mock("../../../src/services/analysisStateService", () => ({
   default: {
@@ -24,10 +44,15 @@ vi.mock("../../../src/lib/logger", () => ({
 const { CaptureService } = await import("../../../src/services/captureService");
 const { default: analysisStateService } =
   await import("../../../src/services/analysisStateService");
+const { default: aiPrerequisitesService } =
+  await import("../../../src/services/aiPrerequisitesService");
 const { formAnalysisQueue } = await import("../../../src/lib/queue");
 const { logger } = await import("../../../src/lib/logger");
 
 const USER = "user-uuid";
+const USER_ID = 3;
+const WORKOUT_ID = 9;
+const EXERCISE_ID = 4;
 const SESSION_ID = 7;
 const JOB_ID_PATTERN = /^analysis-[0-9a-f-]{36}$/;
 
@@ -78,9 +103,21 @@ const stubFailed = () => {
 
 describe("CaptureService", () => {
   let service: InstanceType<typeof CaptureService>;
+  let prisma: PrismaMock;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    prisma = createPrismaMock();
+    vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma));
+    prisma.user.findUnique.mockResolvedValue({ id: USER_ID });
+    prisma.poseCapture.count.mockResolvedValue(0);
+    prisma.workoutSession.findUnique.mockResolvedValue({
+      workoutId: WORKOUT_ID,
+      exerciseId: EXERCISE_ID,
+    });
+    vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockResolvedValue(
+      {} as never,
+    );
     service = new CaptureService();
     vi.mocked(analysisStateService.failRun).mockResolvedValue(true);
   });
@@ -152,7 +189,132 @@ describe("CaptureService", () => {
     });
   });
 
+  describe("submitCapture gating", () => {
+    it("rejects with 428 and stores nothing when prerequisites are missing", async () => {
+      stubPending();
+      vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockRejectedValue(
+        new PreconditionRequiredError("consent", "AI_CONSENT_REQUIRED"),
+      );
+
+      await expect(
+        service.submitCapture(USER, SESSION_ID, payload),
+      ).rejects.toBeInstanceOf(PreconditionRequiredError);
+      expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
+        USER_ID,
+      );
+      expect(prisma.poseCapture.count).not.toHaveBeenCalled();
+      expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
+      expect(formAnalysisQueue.add).not.toHaveBeenCalled();
+    });
+
+    it("rejects with 429 DAILY_ANALYSIS_LIMIT_REACHED at the daily cap", async () => {
+      vi.useFakeTimers({ now: new Date("2026-11-09T12:00:00Z") });
+      try {
+        stubPending();
+        prisma.poseCapture.count.mockResolvedValue(15);
+
+        const error: unknown = await service
+          .submitCapture(USER, SESSION_ID, payload)
+          .catch((e: unknown) => e);
+
+        expect(error).toBeInstanceOf(TooManyRequestsError);
+        expect((error as TooManyRequestsError).code).toBe(
+          "DAILY_ANALYSIS_LIMIT_REACHED",
+        );
+        expect(prisma.poseCapture.count).toHaveBeenCalledTimes(1);
+        expect(prisma.poseCapture.count).toHaveBeenCalledWith({
+          where: {
+            session: { userId: USER_ID },
+            createdAt: { gte: new Date("2026-11-08T12:00:00Z") },
+          },
+        });
+        expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
+        expect(formAnalysisQueue.add).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("rejects with 429 EXERCISE_ANALYSIS_LIMIT_REACHED at the per-exercise cap", async () => {
+      stubPending();
+      prisma.poseCapture.count
+        .mockResolvedValueOnce(1)
+        .mockResolvedValueOnce(2);
+
+      const error: unknown = await service
+        .submitCapture(USER, SESSION_ID, payload)
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(TooManyRequestsError);
+      expect((error as TooManyRequestsError).code).toBe(
+        "EXERCISE_ANALYSIS_LIMIT_REACHED",
+      );
+      expect(prisma.poseCapture.count).toHaveBeenLastCalledWith({
+        where: {
+          session: {
+            userId: USER_ID,
+            workoutId: WORKOUT_ID,
+            exerciseId: EXERCISE_ID,
+          },
+        },
+      });
+      expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
+    });
+
+    it("checks the daily cap before the per-exercise cap", async () => {
+      stubPending();
+      prisma.poseCapture.count.mockResolvedValue(99);
+
+      const error: unknown = await service
+        .submitCapture(USER, SESSION_ID, payload)
+        .catch((e: unknown) => e);
+
+      expect((error as TooManyRequestsError).code).toBe(
+        "DAILY_ANALYSIS_LIMIT_REACHED",
+      );
+    });
+
+    it("skips the per-exercise cap for a session outside a workout", async () => {
+      stubPending();
+      vi.mocked(formAnalysisQueue.add).mockResolvedValue({} as never);
+      prisma.workoutSession.findUnique.mockResolvedValue({
+        workoutId: null,
+        exerciseId: EXERCISE_ID,
+      });
+
+      await service.submitCapture(USER, SESSION_ID, payload);
+
+      expect(prisma.poseCapture.count).toHaveBeenCalledTimes(1);
+      expect(formAnalysisQueue.add).toHaveBeenCalled();
+    });
+  });
+
   describe("retryAnalysis", () => {
+    it("requires AI prerequisites but ignores both caps", async () => {
+      stubFailed();
+      vi.mocked(formAnalysisQueue.add).mockResolvedValue({} as never);
+      prisma.poseCapture.count.mockResolvedValue(999);
+
+      await service.retryAnalysis(USER, SESSION_ID);
+
+      expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
+        USER_ID,
+      );
+      expect(prisma.poseCapture.count).not.toHaveBeenCalled();
+    });
+
+    it("rejects a retry with 428 when prerequisites are missing", async () => {
+      stubFailed();
+      vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockRejectedValue(
+        new PreconditionRequiredError("consent", "AI_CONSENT_REQUIRED"),
+      );
+
+      await expect(
+        service.retryAnalysis(USER, SESSION_ID),
+      ).rejects.toBeInstanceOf(PreconditionRequiredError);
+      expect(analysisStateService.restartRun).not.toHaveBeenCalled();
+    });
+
     it("restarts a FAILED run from the stored capture", async () => {
       vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
         snapshot(SessionStatus.FAILED),

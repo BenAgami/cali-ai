@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 04-11-PLAN.md
-last_updated: "2026-11-04T16:57:51.852Z"
+stopped_at: Completed Phase 05 (05-18 device UAT 23/23, verification passed)
+last_updated: "2026-11-10T09:09:00.351Z"
 progress:
-  total_phases: 9
-  completed_phases: 3
-  total_plans: 21
-  completed_plans: 20
+  total_phases: 11
+  completed_phases: 5
+  total_plans: 39
+  completed_plans: 39
 ---
 
 # Project State
@@ -19,12 +19,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-21)
 
 **Core value:** Users can record themselves doing calisthenics exercises and get actionable AI feedback on their form — what they did well and what to fix.
-**Current focus:** Phase 05 — ai-form-analysis (Phase 04 complete)
+**Current focus:** Phase 05 — ai-form-analysis-camera-post-set
 
 ## Current Position
 
-Phase: 08
-Plan: Not started
+Phase: 05 (ai-form-analysis-camera-post-set) — COMPLETE
+Plan: 18 of 18 (next: Phase 5.1, Training Data & Labeling)
 
 ## Performance Metrics
 
@@ -66,6 +66,21 @@ _Updated after each plan completion_
 | Phase 04 P10 | 10min | 2 tasks | 6 files |
 | Phase 04 P06 | 20min | 3 tasks | 9 files |
 | Phase 04 P11 | n/a | 2 tasks | 4 files |
+| Phase 05 P03 | 15min | 2 tasks | 7 files |
+| Phase 05 P04 | 25min | 2 tasks | 10 files |
+| Phase 05 P01 | multi-session | 3 tasks | 8 files |
+| Phase 05 P02 | 15min | 3 tasks | 5 files |
+| Phase 05 P08 | resumed | 2 tasks | 11 files |
+| Phase 05 P05 | interrupted | 2 tasks | 20 files |
+| Phase 5 P06 | 25min | 3 tasks | 10 files |
+| Phase 05 P12 | 25min | 3 tasks | 13 files |
+| Phase 05 P13 | 40min | 2 tasks | 8 files |
+| Phase 5 P11 | 60min | 3 tasks | 21 files |
+| Phase 05 P09 | 40min | 2 tasks | 13 files |
+| Phase 05 P15 | ~35min | 3 tasks | 10 files |
+| Phase 05 P14 | 25min | 2 tasks | 8 files |
+| Phase 05 P16 | n/a | 3 tasks | 12 files |
+| Phase 05 P17 | n/a | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -101,6 +116,11 @@ Recent decisions affecting current work:
 - [Phase 04]: Edited AI plans stay flagged: builder sends generationId on create only; disclaimer shows on Start when aiModel is non-null
 - [Phase 04]: Generation save: foreign/failed generationId is 404, double save 409 GENERATION_ALREADY_SAVED; edits never clear aiModel
 - [Phase 04]: Sonnet (claude-sonnet-5-5, effort medium) is primary per D-22 eval; fallback rung is Sonnet at high effort. Haiku missed thresholds (58% catalogValid, 33% levelDiffers) with timeouts/UNAVAILABLE.
+- [Phase 05]: Pose runtime is MediaPipe PoseLandmarker via react-native-mediapipe-posedetection 0.4.0 (GPU, about 30 fps with targetFps 60); Android returns raw landscape landmarks so the adapter rotates per camera in portrait; C4 squat 88% marginal, pull-up/dim-light unverified
+- [Phase 05]: Form analysis caps: 15 accepted captures/day and 2 per exercise per workout; retries count toward neither
+- [Phase 05]: 05-14: band cutoffs already match approved rubric; no segmentation params changed
+- [Phase 05]: 05-17: fixed fixture dump rotation (180 deg tag), squat ROM ramp tightened, rubric-v1
+- [Phase 05]: 05-18: device UAT 23/23 on a Galaxy S25+; hands-free start (D-22), auto-stop with spoken 3-2-1 (D-23) and spoken cues (expo-speech) added during UAT
 
 ### Roadmap Evolution
 
@@ -113,15 +133,16 @@ None yet.
 ### Blockers/Concerns
 
 - INFRA-05 (gate passed 2026-10-22, plan 01-03): the Android dev build runs the MoveNet pose pass in a vision-camera frame processor (user-verified; device, keypoint count and mean score not reported), and the EAS iOS `development-simulator` build compiles. iOS runtime verification remains an accepted, deferred risk (no Mac or Apple developer account).
-- Open decisions: pricing model and per-analysis cost cap; keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises (error tags, thresholds, detectability) need a multi-source research task before Phase 5 planning. Advanced skills are post-MVP (EXCOV-01).
+- Open decisions: pricing model and per-analysis cost cap; keypoint payload format; retention period and sampling; consent wording, minimum age and legal review; rubrics for the four core exercises: RESOLVED (`05-RUBRICS.md`, calibrated against user clips as `rubric-v1`, see `05-CALIBRATION.md`). Advanced skills are post-MVP (EXCOV-01).
 - RESOLVED (plan 01-04, roadmap criterion 6, 2026-11-08): pose model is BlazePose Full (33 points), passing 4/4 exercises vs 1/4 for MoveNet Lightning and Thunder; see `phases/01-infrastructure/01-POSE-MODEL-DECISION.md`. Phase 5 must integrate BlazePose on device (no official fast-tflite recipe) and recheck low light (pull-up has no dim take).
-- CONCERN (Phase 5, not started): `withTimeout` in `apps/api/src/utils/withTimeout.ts` only stops waiting; it cannot cancel the inner work, so a timed-out LLM call keeps running and is paid for, and only the guarded writes make its late result harmless. When the real LLM call replaces the `feedbackService` stub, change `withTimeout` to take `(signal) => Promise<T>` and pass an `AbortSignal` to the SDK request; keep the guarded writes either way. Also type `TimeoutError.code` as a union of the known codes (`ENQUEUE_TIMEOUT`, `LLM_TIMEOUT`) so a typo cannot silently never match.
+- RESOLVED (plan 05-10/05-16, 2026-11-10): the `withTimeout` cancellation concern. The form-analysis worker and workout generation bound LLM calls with an `AbortController` deadline that cancels the SDK request; `withTimeout` is kept only for the enqueue timeout and `TimeoutCode` is narrowed to `ENQUEUE_TIMEOUT`. Guarded idempotent writes remain.
+- Pose runtime (decided plan 05-01, 2026-11-09): MediaPipe PoseLandmarker via `react-native-mediapipe-posedetection` 0.4.0 (GPU, about 30 fps on a Galaxy S25+), not custom fast-tflite BlazePose; see `phases/05-ai-form-analysis-camera-post-set/05-POSE-RUNTIME-DECISION.md`. Squat near-side chain 88% (marginal) and pull-up facing camera / dim light are unverified until device UAT. iOS runtime remains an accepted, deferred risk (no Mac or Apple developer account).
 - Production deploys must run `yarn workspace @repo/db db:seed` after `db:migrate:deploy` so the `dip` exercise (Phase 4, D-14) exists; the seed is an idempotent upsert.
 - Redis instance: BullMQ requires Redis. Local and CI use Redis 7; production hosting (Upstash or managed Redis) is still unconfirmed.
 - `expo-doctor` passes 16/18. The two remaining failures are accepted for now: the Metro config's manual monorepo overrides (`watchFolders`, `disableHierarchicalLookup`) may be redundant under SDK 54 but need testing before removal, and `react-native-fast-tflite` is flagged untested on the New Architecture — the dev-build gate is what verifies it.
 
 ## Session Continuity
 
-Last session: 2026-11-04T16:55:57.827Z
-Stopped at: Completed 04-11-PLAN.md
+Last session: 2026-11-10T09:09:00.344Z
+Stopped at: Completed Phase 05 (05-18 device UAT 23/23, verification passed)
 Resume file: None

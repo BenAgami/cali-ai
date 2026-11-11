@@ -81,3 +81,13 @@ export const startWorkout = async (
       .set("Content-Type", "application/json"),
     token,
   ).send(data);
+
+export const getRecordedSets = async (
+  app: Application,
+  token: string | undefined,
+  id: number | string,
+) =>
+  withAuth(
+    supertest.agent(app).get(`/api/workouts/${id}/recorded-sets`),
+    token,
+  );

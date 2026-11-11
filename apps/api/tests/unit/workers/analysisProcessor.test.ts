@@ -1,20 +1,29 @@
 import { UnrecoverableError } from "bullmq";
 import type { PoseCapturePayload } from "@repo/common";
 
+import { LlmError } from "../../../src/lib/llm/types";
+import { UnsupportedCaptureError } from "../../../src/metrics/preprocess";
 import {
   encodeCapture,
   KEYPOINTS_FORMAT,
 } from "../../../src/utils/captureCodec";
-import { TimeoutError } from "../../../src/utils/withTimeout";
 import { createFakeJob } from "../helpers/bullmqJob";
+import { makeScoredMetrics } from "../helpers/scoredMetrics";
 
 const mockState = vi.hoisted(() => ({
   getCaptureForJob: vi.fn(),
+  getAnalysisJobContext: vi.fn(),
   advanceStage: vi.fn(),
   completeRun: vi.fn(),
   failRun: vi.fn(),
 }));
-const mockFeedback = vi.hoisted(() => ({ generateFeedback: vi.fn() }));
+const mockFeedback = vi.hoisted(() => ({ generateFormFeedback: vi.fn() }));
+const mockResults = vi.hoisted(() => ({
+  saveScored: vi.fn(),
+  saveUntrackable: vi.fn(),
+}));
+const mockBodyMetric = vi.hoisted(() => ({ getLatest: vi.fn() }));
+const mockCompute = vi.hoisted(() => ({ computeFormMetrics: vi.fn() }));
 const mockChild = vi.hoisted(() => ({
   info: vi.fn(),
   warn: vi.fn(),
@@ -28,6 +37,13 @@ vi.mock("../../../src/services/analysisStateService", () => ({
 vi.mock("../../../src/services/feedbackService", () => ({
   default: mockFeedback,
 }));
+vi.mock("../../../src/services/formAnalysisResultService", () => ({
+  default: mockResults,
+}));
+vi.mock("../../../src/services/bodyMetricService", () => ({
+  default: mockBodyMetric,
+}));
+vi.mock("../../../src/metrics/computeFormMetrics", () => mockCompute);
 vi.mock("../../../src/lib/logger", () => ({ logger: mockLogger }));
 
 import {
@@ -37,21 +53,39 @@ import {
 
 type JobData = { sessionId: number; captureId: number };
 
+const LLM_TIMEOUT_MS = 40_000;
+
 const payload = (): PoseCapturePayload => ({
   version: 1,
-  poseModelName: "movenet-lightning",
-  poseModelVersion: "4",
+  poseModelName: "blazepose-lite",
+  poseModelVersion: "1",
   fps: 15,
   frameCount: 2,
   durationSec: 1,
   frames: [0, 0.1].map((timestampSec) => ({
     timestampSec,
     keypoints: Array.from(
-      { length: 17 },
+      { length: 33 },
       () => [0.5, 0.5, 0.8] as [number, number, number],
     ),
   })),
 });
+
+const outcome = {
+  feedback: { summary: "ok", positives: [], corrections: [] },
+  model: "claude-sonnet-5-5",
+  promptVersion: "form-feedback-v1",
+  usage: { inputTokens: 1, outputTokens: 1 },
+  attempts: 1,
+};
+
+const untrackable = {
+  outcome: "UNTRACKABLE" as const,
+  exerciseCode: "push_up" as const,
+  reasons: ["NO_REPS_DETECTED" as const],
+  metricsVersion: "metrics-v1",
+  rubricVersion: "rubric-v0",
+};
 
 const makeJob = (extra: { attemptsMade?: number; attempts?: number } = {}) =>
   createFakeJob<JobData>({
@@ -66,7 +100,21 @@ beforeEach(() => {
   mockState.advanceStage.mockResolvedValue(true);
   mockState.completeRun.mockResolvedValue(true);
   mockState.failRun.mockResolvedValue(true);
-  mockFeedback.generateFeedback.mockResolvedValue({ summary: "ok" });
+  mockState.getAnalysisJobContext.mockResolvedValue({
+    userId: 3,
+    exerciseCode: "push_up",
+    exerciseDisplayName: "Push-up",
+    experienceLevel: "BEGINNER",
+  });
+  mockBodyMetric.getLatest.mockResolvedValue({
+    heightCm: 180,
+    weightKg: 75,
+    createdAt: new Date(),
+  });
+  mockCompute.computeFormMetrics.mockReturnValue(makeScoredMetrics());
+  mockFeedback.generateFormFeedback.mockResolvedValue(outcome);
+  mockResults.saveScored.mockResolvedValue(true);
+  mockResults.saveUntrackable.mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -81,8 +129,11 @@ describe("processAnalysisJob", () => {
       keypointsFormat: KEYPOINTS_FORMAT,
     });
 
-  it("advances stages, generates feedback and completes the run", async () => {
+  it("scores the set: stages, LLM call with signal and context, save, complete", async () => {
     await withCapture();
+    vi.useFakeTimers();
+    const metrics = makeScoredMetrics();
+    mockCompute.computeFormMetrics.mockReturnValue(metrics);
 
     await processAnalysisJob(makeJob());
 
@@ -92,17 +143,96 @@ describe("processAnalysisJob", () => {
       sessionId: 7,
     });
     expect(mockState.getCaptureForJob).toHaveBeenCalledWith(7, 9);
+    expect(mockCompute.computeFormMetrics).toHaveBeenCalledWith(
+      expect.objectContaining({ frameCount: 2 }),
+      "push_up",
+    );
     expect(mockState.advanceStage.mock.calls).toEqual([
       [7, "job-1", "ANALYZING_REPS", 0, mockChild],
       [7, "job-1", "ANALYZING_REPS", 1, mockChild],
       [7, "job-1", "WRITING_FEEDBACK", 0, mockChild],
     ]);
-    expect(mockFeedback.generateFeedback).toHaveBeenCalledWith({
-      frameCount: 2,
-      keypointsPerFrame: 17,
-      meanConfidence: expect.closeTo(0.8, 5) as number,
+    expect(mockBodyMetric.getLatest).toHaveBeenCalledWith(3);
+    expect(mockFeedback.generateFormFeedback).toHaveBeenCalledWith({
+      metrics,
+      context: {
+        exerciseDisplayName: "Push-up",
+        experienceLevel: "BEGINNER",
+        heightCm: 180,
+        weightKg: 75,
+      },
+      signal: expect.any(AbortSignal) as AbortSignal,
+      timeoutMs: LLM_TIMEOUT_MS,
+      log: mockChild,
     });
+    expect(mockResults.saveScored).toHaveBeenCalledWith(
+      7,
+      "job-1",
+      metrics,
+      outcome,
+    );
     expect(mockState.completeRun).toHaveBeenCalledWith(7, "job-1", mockChild);
+    expect(mockChild.info).toHaveBeenCalledWith(
+      { outcome: "SCORED", repCount: 5, band: "FAIR" },
+      "Form metrics computed",
+    );
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("completes an untrackable set without calling the LLM", async () => {
+    await withCapture();
+    mockCompute.computeFormMetrics.mockReturnValue(untrackable);
+
+    await processAnalysisJob(makeJob());
+
+    expect(mockState.advanceStage.mock.calls.map((call) => call[2])).toEqual([
+      "ANALYZING_REPS",
+      "ANALYZING_REPS",
+    ]);
+    expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
+    expect(mockBodyMetric.getLatest).not.toHaveBeenCalled();
+    expect(mockResults.saveUntrackable).toHaveBeenCalledWith(
+      7,
+      "job-1",
+      untrackable,
+    );
+    expect(mockState.completeRun).toHaveBeenCalledWith(7, "job-1", mockChild);
+  });
+
+  it("does not complete and warns when the scored write was discarded", async () => {
+    await withCapture();
+    mockResults.saveScored.mockResolvedValue(false);
+
+    await processAnalysisJob(makeJob());
+
+    expect(mockState.completeRun).not.toHaveBeenCalled();
+    expect(mockChild.warn).toHaveBeenCalledWith(
+      expect.stringContaining("discarded"),
+    );
+  });
+
+  it("does not complete and warns when the untrackable write was discarded", async () => {
+    await withCapture();
+    mockCompute.computeFormMetrics.mockReturnValue(untrackable);
+    mockResults.saveUntrackable.mockResolvedValue(false);
+
+    await processAnalysisJob(makeJob());
+
+    expect(mockState.completeRun).not.toHaveBeenCalled();
+    expect(mockChild.warn).toHaveBeenCalledWith(
+      expect.stringContaining("discarded"),
+    );
+  });
+
+  it("warns when completion itself was discarded", async () => {
+    await withCapture();
+    mockState.completeRun.mockResolvedValue(false);
+
+    await processAnalysisJob(makeJob());
+
+    expect(mockChild.warn).toHaveBeenCalledWith(
+      expect.stringContaining("discarded"),
+    );
   });
 
   it("fails unrecoverably with CAPTURE_MISSING when no capture exists", async () => {
@@ -141,36 +271,132 @@ describe("processAnalysisJob", () => {
     await expect(result).rejects.toThrow("CAPTURE_INVALID");
   });
 
-  it("rejects with a retryable LLM_TIMEOUT when feedback never settles", async () => {
+  it("maps UnsupportedCaptureError to CAPTURE_INVALID", async () => {
     await withCapture();
-    mockFeedback.generateFeedback.mockReturnValue(new Promise(() => {}));
+    mockCompute.computeFormMetrics.mockImplementation(() => {
+      throw new UnsupportedCaptureError("not blazepose");
+    });
+
+    const result = processAnalysisJob(makeJob());
+
+    await expect(result).rejects.toBeInstanceOf(UnrecoverableError);
+    await expect(result).rejects.toThrow("CAPTURE_INVALID");
+  });
+
+  it("rethrows unexpected metrics errors so BullMQ retries", async () => {
+    await withCapture();
+    const boom = new Error("boom");
+    mockCompute.computeFormMetrics.mockImplementation(() => {
+      throw boom;
+    });
+
+    await expect(processAnalysisJob(makeJob())).rejects.toBe(boom);
+  });
+
+  it("fails with ANALYSIS_ERROR when the job context is missing", async () => {
+    await withCapture();
+    mockState.getAnalysisJobContext.mockResolvedValue(null);
+
+    const result = processAnalysisJob(makeJob());
+
+    await expect(result).rejects.toBeInstanceOf(UnrecoverableError);
+    await expect(result).rejects.toThrow("ANALYSIS_ERROR");
+  });
+
+  it("fails with ANALYSIS_ERROR for an exercise without form analysis", async () => {
+    await withCapture();
+    mockState.getAnalysisJobContext.mockResolvedValue({
+      userId: 3,
+      exerciseCode: "plank",
+      exerciseDisplayName: "Plank",
+      experienceLevel: "BEGINNER",
+    });
+
+    await expect(processAnalysisJob(makeJob())).rejects.toThrow(
+      "ANALYSIS_ERROR",
+    );
+    expect(mockCompute.computeFormMetrics).not.toHaveBeenCalled();
+  });
+
+  it("fails with ANALYSIS_ERROR when the user has no body metric", async () => {
+    await withCapture();
+    mockBodyMetric.getLatest.mockResolvedValue(null);
+
+    const result = processAnalysisJob(makeJob());
+
+    await expect(result).rejects.toBeInstanceOf(UnrecoverableError);
+    await expect(result).rejects.toThrow("ANALYSIS_ERROR");
+    expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
+  });
+
+  it("fails with ANALYSIS_ERROR when the user has no experience level", async () => {
+    await withCapture();
+    mockState.getAnalysisJobContext.mockResolvedValue({
+      userId: 3,
+      exerciseCode: "push_up",
+      exerciseDisplayName: "Push-up",
+      experienceLevel: null,
+    });
+
+    await expect(processAnalysisJob(makeJob())).rejects.toThrow(
+      "ANALYSIS_ERROR",
+    );
+    expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
+  });
+
+  it.each(["INVALID_OUTPUT", "REFUSAL"] as const)(
+    "turns an LLM %s into an unrecoverable ANALYSIS_ERROR",
+    async (code) => {
+      await withCapture();
+      mockFeedback.generateFormFeedback.mockRejectedValue(new LlmError(code));
+
+      const result = processAnalysisJob(makeJob());
+
+      await expect(result).rejects.toBeInstanceOf(UnrecoverableError);
+      await expect(result).rejects.toThrow("ANALYSIS_ERROR");
+      expect(mockResults.saveScored).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(["TIMEOUT", "RATE_LIMITED", "UNAVAILABLE"] as const)(
+    "rethrows an LLM %s unchanged so BullMQ retries",
+    async (code) => {
+      await withCapture();
+      const error = new LlmError(code);
+      mockFeedback.generateFormFeedback.mockRejectedValue(error);
+
+      await expect(processAnalysisJob(makeJob())).rejects.toBe(error);
+      expect(mockState.completeRun).not.toHaveBeenCalled();
+    },
+  );
+
+  it("aborts the LLM signal at the deadline and clears the timer on settle", async () => {
+    await withCapture();
+    let signal: AbortSignal | undefined;
+    mockFeedback.generateFormFeedback.mockImplementation(
+      (input: { signal: AbortSignal }) => {
+        signal = input.signal;
+        return new Promise((_resolve, reject) => {
+          input.signal.addEventListener("abort", () => {
+            reject(new LlmError("TIMEOUT"));
+          });
+        });
+      },
+    );
     vi.useFakeTimers();
 
     const result = processAnalysisJob(makeJob());
-    const assertion = expect(result).rejects.toSatisfy(
-      (error: unknown) =>
-        error instanceof TimeoutError &&
-        error.code === "LLM_TIMEOUT" &&
-        !(error instanceof UnrecoverableError),
-    );
-    await vi.waitFor(() =>
-      expect(mockFeedback.generateFeedback).toHaveBeenCalled(),
-    );
-    await vi.advanceTimersByTimeAsync(40_000);
+    const assertion = expect(result).rejects.toMatchObject({
+      code: "TIMEOUT",
+    });
+    await vi.waitFor(() => expect(signal).toBeDefined());
+
+    expect(signal?.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(LLM_TIMEOUT_MS);
 
     await assertion;
-    expect(mockState.completeRun).not.toHaveBeenCalled();
-  });
-
-  it("logs a warning when the completion write was discarded", async () => {
-    await withCapture();
-    mockState.completeRun.mockResolvedValue(false);
-
-    await processAnalysisJob(makeJob());
-
-    expect(mockChild.warn).toHaveBeenCalledWith(
-      expect.stringContaining("discarded"),
-    );
+    expect(signal?.aborted).toBe(true);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
 
@@ -217,7 +443,7 @@ describe("onAnalysisJobFailed", () => {
   it("maps an exhausted LLM timeout to LLM_TIMEOUT", async () => {
     await onAnalysisJobFailed(
       makeJob({ attemptsMade: 3 }),
-      new TimeoutError("LLM_TIMEOUT", 40_000),
+      new LlmError("TIMEOUT"),
     );
 
     expect(mockState.failRun).toHaveBeenCalledWith(

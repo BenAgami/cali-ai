@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
+import type { SessionStatus } from "@repo/db";
 import type { CreateWorkoutSessionValues } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
@@ -10,6 +11,7 @@ type ListWorkoutSessionsQuery = {
   limit?: number;
   offset?: number;
   exerciseCode?: string;
+  processingStatus?: SessionStatus;
 };
 
 /**
@@ -43,13 +45,14 @@ export const listWorkoutSessions = async (
 
   const limit = req.query.limit ?? 20;
   const offset = req.query.offset ?? 0;
-  const exerciseCode = req.query.exerciseCode;
+  const { exerciseCode, processingStatus } = req.query;
 
   const result = await workoutSessionService.listSessions({
     userUuid,
     limit,
     offset,
     exerciseCode,
+    processingStatus,
   });
 
   res.status(StatusCodes.OK).json({

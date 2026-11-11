@@ -21,6 +21,7 @@ import {
   submitCapture,
 } from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
@@ -36,7 +37,13 @@ describe("GET /api/sessions/:id/status", () => {
   const connections: SseConnection[] = [];
 
   const registerToken = async (): Promise<string> => {
-    const res = await registerUser(app, new RegisterUserBuilder().build());
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
     return res.body.data.token as string;
   };
 
@@ -80,7 +87,7 @@ describe("GET /api/sessions/:id/status", () => {
     await new Promise((resolve) => server.once("listening", resolve));
     baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
     token = await registerToken();
-    exerciseCode = (await createExercise(prisma)).code;
+    exerciseCode = (await createExercise(prisma, { code: "push_up" })).code;
   });
 
   beforeEach(async () => {

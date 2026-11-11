@@ -10,10 +10,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import AiConsentNotice from "@src/components/AiConsentNotice";
 import AiDisclaimer from "@src/components/AiDisclaimer";
-import AiProfilePrerequisite from "@src/components/AiProfilePrerequisite";
-import BodyMetricsForm from "@src/components/BodyMetricsForm";
+import AiPrerequisiteSteps from "@src/components/AiPrerequisiteSteps";
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutGenerate } from "@src/hooks/useWorkoutGenerate";
 import {
@@ -54,48 +52,8 @@ const WorkoutGenerateScreen: React.FC = () => {
       );
     }
 
-    if (workoutGenerate.step === "PROFILE_INCOMPLETE") {
-      return (
-        <AiProfilePrerequisite
-          experienceLevel={workoutGenerate.experienceLevel}
-          goalTitle={workoutGenerate.goalTitle}
-          goalType={workoutGenerate.goalType}
-          onChangeLevel={workoutGenerate.setExperienceLevel}
-          onChangeGoalTitle={workoutGenerate.setGoalTitle}
-          onChangeGoalType={workoutGenerate.setGoalType}
-          onSave={workoutGenerate.saveProfilePrerequisite}
-          isSaving={workoutGenerate.isSavingProfile}
-          error={workoutGenerate.profileError}
-        />
-      );
-    }
-
-    if (workoutGenerate.step === "BODY_METRICS_REQUIRED") {
-      return (
-        <View>
-          <Text style={[styles.heading, { color: colors.text }]}>
-            Add your height and weight
-          </Text>
-          <BodyMetricsForm form={workoutGenerate.bodyMetricsForm} />
-          {workoutGenerate.bodyMetricsError && (
-            <Text style={styles.error}>{workoutGenerate.bodyMetricsError}</Text>
-          )}
-          {primaryButton(
-            "Save",
-            workoutGenerate.saveBodyMetrics,
-            workoutGenerate.isSavingBodyMetrics,
-          )}
-        </View>
-      );
-    }
-
-    if (workoutGenerate.step === "AI_CONSENT_REQUIRED") {
-      return (
-        <AiConsentNotice
-          onAccept={workoutGenerate.acceptConsent}
-          isAccepting={workoutGenerate.isAcceptingConsent}
-        />
-      );
+    if (workoutGenerate.step !== "READY") {
+      return <AiPrerequisiteSteps prerequisites={workoutGenerate} />;
     }
 
     if (workoutGenerate.preview) {

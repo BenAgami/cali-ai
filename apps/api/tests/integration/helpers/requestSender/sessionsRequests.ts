@@ -68,3 +68,19 @@ export const getAnalysisStatus = async (
 
   return request;
 };
+
+export const getSessionAnalysis = async (
+  app: Application,
+  token: string | undefined,
+  sessionId: number | string,
+) => {
+  const request = supertest
+    .agent(app)
+    .get(`/api/sessions/${sessionId}/analysis`);
+
+  if (token) {
+    request.set("Authorization", `Bearer ${token}`);
+  }
+
+  return request;
+};

@@ -1,7 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { ExerciseType, type getPrismaClient, SessionStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -10,6 +10,8 @@ import {
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createWorkoutSession } from "../helpers/requestSender/workoutSessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
+import { createWorkoutFixture } from "../helpers/db/workoutHelper";
 
 import {
   WorkoutSessionBuilder,
@@ -21,8 +23,42 @@ describe("POST /api/workout-sessions", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
+  const registerReadyUser = async () => {
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
+    return { token: res.body.data.token as string, userId: user.id };
+  };
+
+  const registerPlainUser = async () => {
+    const res = await registerUser(app, new RegisterUserBuilder().build());
+    return res.body.data.token as string;
+  };
+
+  let pushUp: Awaited<ReturnType<typeof createExercise>>;
+  let squat: Awaited<ReturnType<typeof createExercise>>;
+
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
+    pushUp = await createExercise(prisma, {
+      code: "push_up",
+      displayName: "Push Up",
+      exerciseType: ExerciseType.DYNAMIC,
+    });
+    squat = await createExercise(prisma, {
+      code: "squat",
+      displayName: "Squat",
+      exerciseType: ExerciseType.DYNAMIC,
+    });
+    await createExercise(prisma, {
+      code: "plank",
+      displayName: "Plank",
+      exerciseType: ExerciseType.STATIC_HOLD,
+    });
   });
 
   afterAll(async () => {
@@ -30,11 +66,9 @@ describe("POST /api/workout-sessions", () => {
   });
 
   it("should create a workout session successfully", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+    const { token } = await registerReadyUser();
 
-    const exercise = await createExercise(prisma);
+    const exercise = pushUp;
     const sessionDto: WorkoutSessionDto = new WorkoutSessionBuilder()
       .setExerciseCode(exercise.code)
       .build();
@@ -71,9 +105,7 @@ describe("POST /api/workout-sessions", () => {
   });
 
   it("should return 400 for missing exerciseCode", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+    const { token } = await registerReadyUser();
 
     const response = await createWorkoutSession(app, token, {});
 
@@ -81,27 +113,106 @@ describe("POST /api/workout-sessions", () => {
     expect(response.body.details[0].message).toContain("body.exerciseCode");
   });
 
-  it("should return 404 for unknown exercise code", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+  it("should return 400 for an exercise outside the supported four", async () => {
+    const { token } = await registerReadyUser();
 
-    const sessionDto: WorkoutSessionDto = new WorkoutSessionBuilder()
-      .setExerciseCode("non_existing_exercise")
-      .build();
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "plank",
+    });
 
-    const response = await createWorkoutSession(app, token, sessionDto);
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+    expect(response.body.details[0].message).toContain("body.exerciseCode");
+  });
+
+  it("should return 404 when a supported exercise is not in the catalog", async () => {
+    const { token } = await registerReadyUser();
+
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "dip",
+    });
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
     expect(response.body.message).toBe("Exercise not found");
   });
 
-  it("should return 400 for invalid performedAt", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+  it("should return 428 when AI prerequisites are missing", async () => {
+    const token = await registerPlainUser();
 
-    const exercise = await createExercise(prisma);
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "push_up",
+    });
+
+    expect(response.status).toBe(StatusCodes.PRECONDITION_REQUIRED);
+    expect(response.body.code).toBe("PROFILE_INCOMPLETE");
+  });
+
+  it("should link the session to an owned workout and set number", async () => {
+    const { token, userId } = await registerReadyUser();
+    const workout = await createWorkoutFixture(prisma, {
+      userId,
+      exercises: [{ exerciseId: pushUp.id, position: 1 }],
+    });
+
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "push_up",
+      workoutId: workout.id,
+      setNumber: 2,
+    });
+
+    expect(response.status).toBe(StatusCodes.CREATED);
+    expect(response.body.data.workoutId).toBe(workout.id);
+    expect(response.body.data.setNumber).toBe(2);
+    expect(JSON.stringify(response.body)).not.toContain("formScore");
+  });
+
+  it("should return 404 for another user's workout", async () => {
+    const owner = await registerReadyUser();
+    const { token } = await registerReadyUser();
+    const workout = await createWorkoutFixture(prisma, {
+      userId: owner.userId,
+      exercises: [{ exerciseId: pushUp.id, position: 1 }],
+    });
+
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "push_up",
+      workoutId: workout.id,
+    });
+
+    expect(response.status).toBe(StatusCodes.NOT_FOUND);
+    expect(response.body.message).toBe("Workout not found");
+  });
+
+  it("should return 400 when the exercise is not part of the workout", async () => {
+    const { token, userId } = await registerReadyUser();
+    const workout = await createWorkoutFixture(prisma, {
+      userId,
+      exercises: [{ exerciseId: squat.id, position: 1 }],
+    });
+
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "push_up",
+      workoutId: workout.id,
+    });
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+    expect(response.body.message).toBe("Exercise is not part of this workout");
+  });
+
+  it("should return 400 for setNumber without workoutId", async () => {
+    const { token } = await registerReadyUser();
+
+    const response = await createWorkoutSession(app, token, {
+      exerciseCode: "push_up",
+      setNumber: 1,
+    });
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+  });
+
+  it("should return 400 for invalid performedAt", async () => {
+    const { token } = await registerReadyUser();
+
+    const exercise = pushUp;
     const sessionDto: WorkoutSessionDto = new WorkoutSessionBuilder()
       .setExerciseCode(exercise.code)
       .setPerformedAt("not-a-date")

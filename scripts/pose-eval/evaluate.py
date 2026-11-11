@@ -196,6 +196,9 @@ def sample_frames(path: Path, fps: float) -> Iterator[tuple[int, np.ndarray]]:
     try:
         if not cap.isOpened():
             raise RuntimeError(f"cannot open video: {path}")
+        # Phone clips carry a rotation tag (e.g. 180 deg for landscape-left);
+        # without this OpenCV hands back un-rotated, upside-down frames.
+        cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)
         src_fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         step = max(1, round(src_fps / fps))
         i = 0

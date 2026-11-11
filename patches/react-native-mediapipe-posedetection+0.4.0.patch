@@ -1,0 +1,36 @@
+diff --git a/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js b/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js
+index c7cad7e..d0f86a1 100644
+--- a/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js
++++ b/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js
+@@ -75,7 +75,6 @@ const setupEventListeners = () => {
+   if (_NativeMediapipePosedetection.default?.onResults) {
+     // @ts-ignore
+     onResultsSubscription = _NativeMediapipePosedetection.default.onResults(args => {
+-      console.log('onResults event received:', args.handle);
+       const typedArgs = args;
+       const callbacks = detectorMap.get(typedArgs.handle);
+       if (callbacks) {
+diff --git a/node_modules/react-native-mediapipe-posedetection/lib/module/index.js b/node_modules/react-native-mediapipe-posedetection/lib/module/index.js
+index 37db904..eefe916 100644
+--- a/node_modules/react-native-mediapipe-posedetection/lib/module/index.js
++++ b/node_modules/react-native-mediapipe-posedetection/lib/module/index.js
+@@ -45,7 +45,6 @@ const setupEventListeners = () => {
+   if (MediapipePosedetection?.onResults) {
+     // @ts-ignore
+     onResultsSubscription = MediapipePosedetection.onResults(args => {
+-      console.log('onResults event received:', args.handle);
+       const typedArgs = args;
+       const callbacks = detectorMap.get(typedArgs.handle);
+       if (callbacks) {
+diff --git a/node_modules/react-native-mediapipe-posedetection/src/index.tsx b/node_modules/react-native-mediapipe-posedetection/src/index.tsx
+index cc4cc79..982694d 100644
+--- a/node_modules/react-native-mediapipe-posedetection/src/index.tsx
++++ b/node_modules/react-native-mediapipe-posedetection/src/index.tsx
+@@ -132,7 +132,6 @@ const setupEventListeners = () => {
+   if (MediapipePosedetection?.onResults) {
+     // @ts-ignore
+     onResultsSubscription = MediapipePosedetection.onResults((args: any) => {
+-      console.log('onResults event received:', args.handle);
+       const typedArgs = args as { handle: number } & PoseDetectionResultBundle;
+       const callbacks = detectorMap.get(typedArgs.handle);
+       if (callbacks) {

@@ -64,3 +64,15 @@ likewise accept `.mov`.
 Use one take in normal indoor light and one in dim light, except pull_up: its
 reshot clips are all in normal light, so pull-up low-light performance is
 untested (a Phase 5 risk to recheck on the device camera).
+
+## Dump fixtures
+
+Exports each clip as a `PoseCapturePayload` fixture (33 BlazePose landmarks,
+15 fps, quantized, gzip) plus `manifest.json` for the API unit tests:
+
+```
+scripts/pose-eval/.venv/Scripts/python scripts/pose-eval/dump_keypoints.py
+```
+
+Output goes to `apps/api/tests/unit/metrics/fixtures/`. The fixtures hold
+skeleton coordinates only, no imagery, so they are safe to commit.
