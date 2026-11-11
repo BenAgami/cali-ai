@@ -78,7 +78,7 @@ export const pushUpRubric: ExerciseRubric = {
       tag: "PU_SHALLOW_DEPTH",
       dimension: "ROM",
       label: "Shallow depth",
-      cue: "Lower until your chest is a fist's height from the floor.",
+      cue: "Lower until your chest is a fist away from the floor.",
       evaluate: (f) => severityAbove(f.minElbowDeg, 100, 120),
     },
     {

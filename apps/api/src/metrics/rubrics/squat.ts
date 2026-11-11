@@ -124,7 +124,7 @@ export const squatRubric: ExerciseRubric = {
       tag: "SQ_SHALLOW_DEPTH",
       dimension: "ROM",
       label: "Shallow depth",
-      cue: "Sit down until your hips reach knee height.",
+      cue: "Sit down until your hips are level with your knees.",
       evaluate: (f) =>
         maxSeverity(
           severityBelow(f.hipBelowKnee, -0.05, -0.2),

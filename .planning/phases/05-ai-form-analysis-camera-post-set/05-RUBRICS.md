@@ -49,7 +49,7 @@ Columns: tag | dimension | per-rep feature | MEDIUM when | HIGH when | label | c
 
 | Tag | Dim | Feature | MEDIUM | HIGH | Label | Cue |
 | --- | --- | ------- | ------ | ---- | ----- | --- |
-| PU_SHALLOW_DEPTH | ROM | minElbowDeg | > 100 | > 120 | Shallow depth | Lower until your chest is a fist's height from the floor. |
+| PU_SHALLOW_DEPTH | ROM | minElbowDeg | > 100 | > 120 | Shallow depth | Lower until your chest is a fist away from the floor. |
 | PU_INCOMPLETE_LOCKOUT | ROM | maxElbowDeg | < 155 | never | Arms not fully straight at the top | Press all the way up until your arms are straight. |
 | PU_HIP_SAG | CORE | meanHipOffset (L units, + = below line) | > 0.06 | > 0.12 | Hips sagging | Squeeze your glutes and brace your abs to keep one straight line from head to heels. |
 | PU_HIP_PIKE | CORE | -meanHipOffset | > 0.08 | never | Hips piking up | Lower your hips so your body forms one straight line. |
@@ -78,7 +78,7 @@ Columns: tag | dimension | per-rep feature | MEDIUM when | HIGH when | label | c
 
 | Tag | Dim | Feature | MEDIUM | HIGH | Label | Cue |
 | --- | --- | ------- | ------ | ---- | ----- | --- |
-| SQ_SHALLOW_DEPTH | ROM | hipBelowKnee (thigh units, + = hip below knee) or minKneeDeg | < -0.05 or > 110 | < -0.20 | Shallow depth | Sit down until your hips reach knee height. |
+| SQ_SHALLOW_DEPTH | ROM | hipBelowKnee (thigh units, + = hip below knee) or minKneeDeg | < -0.05 or > 110 | < -0.20 | Shallow depth | Sit down until your hips are level with your knees. |
 | SQ_EXCESSIVE_TRUNK_LEAN | CORE | trunkLeanDeg - shinLeanDeg, trunkLeanDeg | > 25 or trunk > 60 | never | Leaning forward a lot | Keep your chest up and sit your hips straight down. |
 | SQ_HEEL_RISE | CORE | heelRiseDeg vs first-1-s baseline | > 10 | never | Heels lifting | Keep your whole foot on the floor and push through your heels. |
 | SQ_INCOMPLETE_STAND | ROM | maxKneeDeg | LOW when < 160 | never | Not standing all the way up | Stand tall at the top of every rep. |
