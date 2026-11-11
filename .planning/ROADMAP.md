@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: User Profile** - Display name, avatar, fitness level, goal, and workout reminder notifications (completed 2026-04-03)
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [x] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output (completed 2026-11-04)
-- [ ] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback
+- [x] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback (completed 2026-11-12)
 - [ ] **Phase 5.1: Training Data & Labeling** (INSERTED) - Consent, retention, form labels, spot-check tool; foundation for training an own model
 - [ ] **Phase 6: Real-Time Form Cues** (DEFERRED — future milestone, not in v1) - Live audio/visual coaching cues from on-device pose estimation
 - [ ] **Phase 7: Progress Tracking** - Session history, per-exercise form score trends, overall form arc over time
@@ -125,7 +125,7 @@ Plans:
 4. User receives an in-app notification and the feedback screen updates automatically when analysis is complete — no manual refresh required
 5. A failed analysis (worker error, network loss) presents a retry option rather than a silent dead end
 6. When the body cannot be tracked reliably, the user sees camera advice instead of feedback
-   **Plans:** 12/18 plans executed
+   **Plans:** 18/18 plans executed
 
 Plans:
 
@@ -146,7 +146,7 @@ Plans:
 - [x] 05-15-PLAN.md — Record offer in workout run, record-set screen with framing guide, shared AI prerequisite steps
 - [x] 05-16-PLAN.md — Worker pipeline: metrics -> LLM (AbortSignal) -> guarded idempotent persist; end-to-end integration tests
 - [x] 05-17-PLAN.md — Rubric calibration on the 16 clips with the user, rubric-v1
-- [ ] 05-18-PLAN.md — CI gates, docs, STATE updates, Android device UAT
+- [x] 05-18-PLAN.md — CI gates, docs, STATE updates, Android device UAT
 
 ### Phase 5.1: Training Data & Labeling (INSERTED)
 
@@ -202,7 +202,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 2. User Profile              | 3/3            | Complete    | 2026-04-03 |
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
-| 5. Post-Set AI Form Analysis | 12/18 | In Progress|  |
+| 5. Post-Set AI Form Analysis | 18/18          | Complete    | 2026-11-12 |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |

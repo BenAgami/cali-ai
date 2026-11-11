@@ -28,7 +28,7 @@ const ANALYSIS_FAILURE_MESSAGES: Record<AnalysisFailureReason, string> = {
   ANALYSIS_ERROR: FAILURE_FALLBACK_MESSAGE,
 };
 
-// CAPTURE_* failures offer "Record again" instead of a retry.
+// CAPTURE_* failures are not retryable (the stored recording is unusable), so the row shows only the message.
 export const RETRYABLE_FAILURES: ReadonlySet<string> = new Set<string>([
   "TIMEOUT",
   "LLM_TIMEOUT",
