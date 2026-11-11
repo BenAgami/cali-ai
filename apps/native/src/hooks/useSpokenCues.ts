@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import * as Speech from "expo-speech";
 
 import {
   SPEECH_LANGUAGE,
   SPOKEN_RECORDING_STARTED,
   SPOKEN_RECORDING_STOPPED,
+  spokenStopWarning,
 } from "@src/constants/recordingMessages";
 import type { RecordedSetPhase } from "@src/hooks/useRecordedSet";
 
@@ -19,14 +20,16 @@ const say = (text: string) => {
 
 /**
  * Speaks the recorder's guidance so it works with the screen facing away
- * (back camera): placement advice, the countdown, and start/stop of the set.
+ * (back camera): placement advice, the countdown, a warning before the set
+ * ends by itself, and start/stop of the set.
  */
 export const useSpokenCues = (input: {
   phase: RecordedSetPhase;
   guidance: string | null;
   countdownSecondsLeft: number;
+  stopsInSecs: number | null;
 }) => {
-  const { phase, guidance, countdownSecondsLeft } = input;
+  const { phase, guidance, countdownSecondsLeft, stopsInSecs } = input;
 
   useEffect(() => {
     if (phase !== "setup" || guidance === null) return;
@@ -47,6 +50,19 @@ export const useSpokenCues = (input: {
       say(String(countdownSecondsLeft));
     }
   }, [phase, countdownSecondsLeft]);
+
+  // Declared before the start/stop effect so "Recording stopped" is not cut.
+  const wasWarningRef = useRef(false);
+  useEffect(() => {
+    if (stopsInSecs !== null) {
+      wasWarningRef.current = true;
+      say(spokenStopWarning(stopsInSecs));
+    } else if (wasWarningRef.current) {
+      wasWarningRef.current = false;
+      // The user came back: drop a warning that is still being read out.
+      if (phase === "recording") void Speech.stop();
+    }
+  }, [phase, stopsInSecs]);
 
   useEffect(() => {
     if (phase === "recording") say(SPOKEN_RECORDING_STARTED);

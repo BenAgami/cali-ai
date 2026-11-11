@@ -14,17 +14,31 @@ const STILL_RANGE = 0.04;
 /** Joint travel in a 2 s window that proves a set has started. */
 const ACTIVE_RANGE = 0.08;
 const ACTIVE_WINDOW_SECS = 2;
+/** The warning starts this many seconds before the set is ended. */
+const WARNING_SECS = 3;
 const MOVING_JOINTS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
 export type SetEndVerdict =
-  | { isOver: false }
+  | {
+      isOver: false;
+      /** Whole seconds until the set ends, inside the warning window only. */
+      stopsInSecs: number | null;
+    }
   | {
       isOver: true;
       /** Frames to keep: everything up to the end of the set, idle tail dropped. */
       keepCount: number;
     };
 
-const NOT_OVER: SetEndVerdict = { isOver: false };
+const NOT_OVER: SetEndVerdict = { isOver: false, stopsInSecs: null };
+
+const endsIn = (remainingSecs: number): SetEndVerdict => ({
+  isOver: false,
+  stopsInSecs:
+    remainingSecs > 0 && remainingSecs <= WARNING_SECS
+      ? Math.ceil(remainingSecs)
+      : null,
+});
 
 const isSeen = (frame: SetupFrame, joint: number): boolean =>
   (frame.keypoints[joint]?.[2] ?? 0) >= VISIBLE_MIN;
@@ -82,6 +96,28 @@ const hadMotion = (frames: readonly SetupFrame[]): boolean => {
 };
 
 /**
+ * Index where a fully tracked, motionless tail of `secs` seconds begins, or
+ * null. There must be frames before it, so a set that never moved cannot match.
+ */
+const tailStillIndex = (
+  frames: readonly SetupFrame[],
+  exerciseCode: FormAnalysisExercise,
+  secs: number,
+): number | null => {
+  const last = frames[frames.length - 1];
+  if (!last) return null;
+  const start = last.timestampSec - secs;
+  let index = 0;
+  while (index < frames.length && (frames[index]?.timestampSec ?? 0) < start) {
+    index += 1;
+  }
+  const tail = frames.slice(index);
+  const isWindowFull =
+    index > 0 && tail.every((frame) => isTracked(frame, exerciseCode));
+  return isWindowFull && motionRange(tail) <= STILL_RANGE ? index : null;
+};
+
+/**
  * Decides, from the frames recorded so far, whether the set is over, so the
  * recording can stop without a tap (the user is away from the phone). Two
  * ends: the body left the frame, or it stood still after the set had started.
@@ -115,29 +151,24 @@ export const evaluateSetEnd = (input: {
   if (trackedSecs < MIN_SET_SECS) return NOT_OVER;
 
   const nowSec = Math.max(input.nowSec ?? last.timestampSec, last.timestampSec);
-  if (nowSec - lastTracked.timestampSec >= LOST_SECS) {
+  const lostSecs = nowSec - lastTracked.timestampSec;
+  if (lostSecs >= LOST_SECS) {
     return { isOver: true, keepCount: lastTrackedIndex + 1 };
   }
+  if (lostSecs > 0) return endsIn(LOST_SECS - lostSecs);
 
-  const stillStart = last.timestampSec - STILL_SECS;
+  // Windows are nested, so the longest still tail is found by growing it.
+  let stillSecs = 0;
   let stillIndex = 0;
-  while (
-    stillIndex < frames.length &&
-    (frames[stillIndex]?.timestampSec ?? 0) < stillStart
-  ) {
-    stillIndex += 1;
+  for (let secs = 1; secs <= STILL_SECS; secs += 1) {
+    const index = tailStillIndex(frames, exerciseCode, secs);
+    if (index === null) break;
+    stillSecs = secs;
+    stillIndex = index;
   }
-
-  const stillFrames = frames.slice(stillIndex);
-  const isWindowFull =
-    stillIndex > 0 &&
-    stillFrames.every((frame) => isTracked(frame, exerciseCode));
-  if (
-    isWindowFull &&
-    motionRange(stillFrames) <= STILL_RANGE &&
-    hadMotion(frames.slice(0, stillIndex))
-  ) {
-    return { isOver: true, keepCount: stillIndex };
+  if (stillSecs === 0 || !hadMotion(frames.slice(0, stillIndex))) {
+    return NOT_OVER;
   }
-  return NOT_OVER;
+  if (stillSecs >= STILL_SECS) return { isOver: true, keepCount: stillIndex };
+  return endsIn(STILL_SECS - stillSecs);
 };

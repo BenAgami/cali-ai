@@ -42,6 +42,7 @@ describe("evaluateSetEnd", () => {
   it("is not over with no frames", () => {
     expect(evaluateSetEnd({ frames: [], exerciseCode: "push_up" })).toEqual({
       isOver: false,
+      stopsInSecs: null,
     });
   });
 
@@ -137,5 +138,41 @@ describe("evaluateSetEnd", () => {
         nowSec: last.timestampSec + 3,
       }).isOver,
     ).toBe(false);
+  });
+
+  it("warns in the last seconds before the body-left end, and only then", () => {
+    const frames = setFrames();
+    const last = frames[frames.length - 1];
+    if (!last) throw new Error("no frames");
+    const stopsIn = (afterSecs: number) => {
+      const verdict = evaluateSetEnd({
+        frames,
+        exerciseCode: "push_up",
+        nowSec: last.timestampSec + afterSecs,
+      });
+      return verdict.isOver ? "over" : verdict.stopsInSecs;
+    };
+    expect(stopsIn(1)).toBeNull();
+    expect(stopsIn(2)).toBe(3);
+    expect(stopsIn(3.5)).toBe(2);
+    expect(stopsIn(4.5)).toBe(1);
+    expect(stopsIn(5)).toBe("over");
+  });
+
+  it("counts down to the stand-still end instead of stopping silently", () => {
+    const frames = setFrames();
+    const states = Array.from({ length: 9 }, (_, secs) => {
+      const verdict = evaluateSetEnd({
+        frames: withTail(frames, secs),
+        exerciseCode: "push_up",
+      });
+      return verdict.isOver ? 0 : verdict.stopsInSecs;
+    });
+    const warnings = states.filter((state): state is number => state !== null);
+    expect(states[0]).toBeNull();
+    expect(warnings.length).toBeGreaterThan(1);
+    expect(warnings[warnings.length - 1]).toBe(0);
+    expect(warnings).toEqual([...warnings].sort((x, y) => y - x));
+    expect(Math.max(...warnings)).toBeLessThanOrEqual(3);
   });
 });

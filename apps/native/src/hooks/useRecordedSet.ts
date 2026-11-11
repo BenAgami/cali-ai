@@ -396,6 +396,8 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     finish();
   }, [finish]);
 
+  // Seconds until the set ends by itself, once that is about to happen.
+  const [stopsInSecs, setStopsInSecs] = useState<number | null>(null);
   const finishRef = useRef(finish);
   finishRef.current = finish;
   useEffect(() => {
@@ -417,10 +419,14 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
             (Date.now() - lastFrameAtRef.current) / SECOND_MS
           : undefined,
       });
+      setStopsInSecs(verdict.isOver ? null : verdict.stopsInSecs);
       if (verdict.isOver) finishRef.current(verdict.keepCount);
       else if (seconds >= AUTO_STOP_SEC) finishRef.current();
     }, SECOND_MS);
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      setStopsInSecs(null);
+    };
   }, [phase, exerciseCode]);
 
   const retryUpload = useCallback(() => {
@@ -456,7 +462,12 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       : setupIssue === "WRONG_ANGLE" && exerciseCode === "pull_up"
         ? WRONG_ANGLE_PULL_UP_MESSAGE
         : SPOKEN_ISSUE_MESSAGES[toScreenIssue(setupIssue, cameraPosition)];
-  useSpokenCues({ phase, guidance: spokenGuidance, countdownSecondsLeft });
+  useSpokenCues({
+    phase,
+    guidance: spokenGuidance,
+    countdownSecondsLeft,
+    stopsInSecs,
+  });
 
   const isUploadRetryable = uploadErrorCode === "UPLOAD_FAILED";
 

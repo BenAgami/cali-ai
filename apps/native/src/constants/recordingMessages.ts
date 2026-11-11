@@ -48,3 +48,5 @@ export const SPOKEN_ISSUE_MESSAGES: Record<SetupIssue, string> = {
 export const SPEECH_LANGUAGE = "en-US";
 export const SPOKEN_RECORDING_STARTED = "Go";
 export const SPOKEN_RECORDING_STOPPED = "Recording stopped";
+export const spokenStopWarning = (secondsLeft: number): string =>
+  `Stopping in ${secondsLeft}`;

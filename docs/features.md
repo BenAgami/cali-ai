@@ -39,7 +39,9 @@ The primary feature of CaliAI.
 - The set ends by itself, because the user is away from the phone: when the
   body has been out of frame for 5 s, or has stood still for 6 s after moving,
   recording stops and the idle tail is cut off. The Stop button remains as a
-  fallback and recording always stops at 175 s. The keypoints are submitted
+  fallback and recording always stops at 175 s. The last 3 s before an
+  automatic stop are spoken ("Stopping in 3, 2, 1"); moving or stepping back
+  into frame cancels it. The keypoints are submitted
   automatically. If the upload fails, "Retry upload" resends without
   re-recording.
 
