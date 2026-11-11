@@ -133,6 +133,31 @@ const clippedEdgeOf = (
   return count > 0 ? issue : null;
 };
 
+/** Nearest edge, as a fraction of the frame, that counts as where a body left. */
+const EXIT_EDGE_MAX_DISTANCE = 0.3;
+
+/**
+ * The pose model emits no frame once too little of the body is in view, so the
+ * check has no clipped joints to read. The body left through the edge its last
+ * detected position was closest to; null when that was mid-frame.
+ */
+export const exitEdgeOf = (last: SetupFrame): SetupIssue | null => {
+  const visible = last.keypoints.filter(([, , v]) => v >= VISIBLE_MIN);
+  if (visible.length === 0) return null;
+  const xs = visible.map(([x]) => x);
+  const ys = visible.map(([, y]) => y);
+  const edges: [SetupIssue, number][] = [
+    ["CLIPPED_LEFT", Math.min(...xs)],
+    ["CLIPPED_RIGHT", 1 - Math.max(...xs)],
+    ["CLIPPED_TOP", Math.min(...ys)],
+    ["CLIPPED_BOTTOM", 1 - Math.max(...ys)],
+  ];
+  const [issue, distance] = edges.reduce((best, edge) =>
+    edge[1] < best[1] ? edge : best,
+  );
+  return distance <= EXIT_EDGE_MAX_DISTANCE ? issue : null;
+};
+
 /** Pure live check that gates the Start button (05-RUBRICS section 10). */
 export const evaluateSetup = (input: {
   frames: readonly SetupFrame[];

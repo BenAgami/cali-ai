@@ -3,6 +3,7 @@ import {
   CAPTURE_LIMITS,
   buildPoseCapturePayload,
   evaluateSetup,
+  exitEdgeOf,
   poseCapturePayloadSchema,
   SETUP_WINDOW_FRAMES,
   type FormAnalysisExercise,
@@ -318,5 +319,39 @@ describe("buildPoseCapturePayload", () => {
     expect(() => buildPoseCapturePayload([], meta)).toThrow(
       "No pose frames captured",
     );
+  });
+});
+
+describe("exitEdgeOf", () => {
+  const frameAt = (x: number, y: number): SetupFrame => ({
+    timestampSec: 0,
+    keypoints: Array.from({ length: 33 }, (): [number, number, number] => [
+      x,
+      y,
+      0.9,
+    ]),
+  });
+
+  it.each([
+    ["CLIPPED_LEFT", 0.1, 0.5],
+    ["CLIPPED_RIGHT", 0.9, 0.5],
+    ["CLIPPED_TOP", 0.5, 0.1],
+    ["CLIPPED_BOTTOM", 0.5, 0.9],
+  ] as const)("names %s when the body was last seen near it", (issue, x, y) => {
+    expect(exitEdgeOf(frameAt(x, y))).toBe(issue);
+  });
+
+  it("names nothing when the body was last seen mid-frame", () => {
+    expect(exitEdgeOf(frameAt(0.5, 0.5))).toBeNull();
+  });
+
+  it("names nothing when no joint was detected", () => {
+    const empty = frameAt(0.1, 0.5);
+    expect(
+      exitEdgeOf({
+        ...empty,
+        keypoints: empty.keypoints.map(([x, y]) => [x, y, 0]),
+      }),
+    ).toBeNull();
   });
 });

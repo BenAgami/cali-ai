@@ -12,6 +12,7 @@ import {
   CAPTURE_LIMITS,
   evaluateSetEnd,
   evaluateSetup,
+  exitEdgeOf,
   FORM_CAPTURE_SETUP,
   getMissingAiPrerequisites,
   SETUP_WINDOW_FRAMES,
@@ -62,6 +63,8 @@ const RECORDING_TARGET_FPS = 15;
 const POSE_SOURCE_TARGET_FPS = 60;
 const SETUP_EVAL_INTERVAL_MS = 250;
 const FRAME_STALE_MS = 1000;
+/** How long after the body vanishes the edge it left through is still named. */
+const EXIT_MEMORY_MS = 5000;
 const WINDOW_FRAMES = SETUP_WINDOW_FRAMES * 2;
 const SECOND_MS = 1000;
 /** Keep 90% of the capture interval so ~33 ms frames thin cleanly to 15 fps. */
@@ -257,8 +260,16 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     const timer = setInterval(() => {
       const now = Date.now();
       const isStale = now - lastFrameAtRef.current > FRAME_STALE_MS;
+      const lastFrame = windowRef.current[windowRef.current.length - 1];
       const result = isStale
-        ? NOT_READY
+        ? {
+            isReady: false,
+            issue:
+              (lastFrame &&
+                now - lastFrameAtRef.current < EXIT_MEMORY_MS &&
+                exitEdgeOf(lastFrame)) ||
+              "NOT_DETECTED",
+          }
         : evaluateSetup({
             frames: windowRef.current,
             exerciseCode,
@@ -394,9 +405,15 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       setElapsedSec(seconds);
       // The user is away from the phone, so the set ends by itself when the
       // body leaves the frame or stands still; the time limit is the backstop.
+      const lastFrame = latestFrameRef.current;
       const verdict = evaluateSetEnd({
         frames: bufferRef.current,
         exerciseCode,
+        // Frames stop while nobody is detected, so measure from the clock.
+        nowSec: lastFrame
+          ? lastFrame.timestampSec +
+            (Date.now() - lastFrameAtRef.current) / SECOND_MS
+          : undefined,
       });
       if (verdict.isOver) finishRef.current(verdict.keepCount);
       else if (seconds >= AUTO_STOP_SEC) finishRef.current();

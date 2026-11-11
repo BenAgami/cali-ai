@@ -86,10 +86,15 @@ const hadMotion = (frames: readonly SetupFrame[]): boolean => {
  * recording can stop without a tap (the user is away from the phone). Two
  * ends: the body left the frame, or it stood still after the set had started.
  * The idle tail is not part of the set, so `keepCount` cuts it off.
+ *
+ * The pose model emits no frame while it detects no body, so a frame's own
+ * timestamp cannot show how long the body has been gone. `nowSec` is the
+ * current time on the frames' clock; without it the newest frame stands in.
  */
 export const evaluateSetEnd = (input: {
   frames: readonly SetupFrame[];
   exerciseCode: FormAnalysisExercise;
+  nowSec?: number;
 }): SetEndVerdict => {
   const { frames, exerciseCode } = input;
   const last = frames[frames.length - 1];
@@ -109,7 +114,8 @@ export const evaluateSetEnd = (input: {
   const trackedSecs = lastTracked.timestampSec - firstTracked.timestampSec;
   if (trackedSecs < MIN_SET_SECS) return NOT_OVER;
 
-  if (last.timestampSec - lastTracked.timestampSec >= LOST_SECS) {
+  const nowSec = Math.max(input.nowSec ?? last.timestampSec, last.timestampSec);
+  if (nowSec - lastTracked.timestampSec >= LOST_SECS) {
     return { isOver: true, keepCount: lastTrackedIndex + 1 };
   }
 

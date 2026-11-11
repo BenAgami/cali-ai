@@ -119,4 +119,23 @@ describe("evaluateSetEnd", () => {
       }).isOver,
     ).toBe(false);
   });
+
+  it("ends from the clock when the pose model stops emitting frames", () => {
+    const frames = setFrames();
+    const last = frames[frames.length - 1];
+    if (!last) throw new Error("no frames");
+    const verdict = evaluateSetEnd({
+      frames,
+      exerciseCode: "push_up",
+      nowSec: last.timestampSec + 5,
+    });
+    expect(verdict).toEqual({ isOver: true, keepCount: frames.length });
+    expect(
+      evaluateSetEnd({
+        frames,
+        exerciseCode: "push_up",
+        nowSec: last.timestampSec + 3,
+      }).isOver,
+    ).toBe(false);
+  });
 });
