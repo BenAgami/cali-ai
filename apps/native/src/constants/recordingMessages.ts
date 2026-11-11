@@ -28,3 +28,23 @@ export type UploadErrorCode = keyof typeof UPLOAD_ERROR_MESSAGES;
 export const RETRY_UPLOAD = "Retry upload";
 export const STOP = "Stop";
 export const COUNTDOWN_HINT = "Hold this position";
+
+/**
+ * Short spoken versions of the placement advice, for when the screen faces
+ * away (back camera). Keyed like the on-screen messages, in landmark-frame terms
+ * before the front-camera left/right swap.
+ */
+export const SPOKEN_ISSUE_MESSAGES: Record<SetupIssue, string> = {
+  NOT_DETECTED: "Step back so your whole body is in frame",
+  TOO_DARK: "Too dark, add light",
+  CLIPPED_LEFT: "Move right",
+  CLIPPED_RIGHT: "Move left",
+  CLIPPED_TOP: "Step back, your head or hands are cut off",
+  CLIPPED_BOTTOM: "Step back, your feet are cut off",
+  TOO_FAR: "Move closer to the camera",
+  WRONG_ANGLE: "Turn so the camera sees your side",
+};
+
+export const SPEECH_LANGUAGE = "en-US";
+export const SPOKEN_RECORDING_STARTED = "Go";
+export const SPOKEN_RECORDING_STOPPED = "Recording stopped";

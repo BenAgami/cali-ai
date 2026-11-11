@@ -26,12 +26,14 @@ import {
 import { ApiError, sessionsApi } from "@src/api";
 import {
   SETUP_ISSUE_MESSAGES,
+  SPOKEN_ISSUE_MESSAGES,
   UPLOAD_ERROR_MESSAGES,
   WRONG_ANGLE_PULL_UP_MESSAGE,
   type UploadErrorCode,
 } from "@src/constants/recordingMessages";
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
 import { useProfile } from "@src/hooks/queries/useProfile";
+import { useSpokenCues } from "@src/hooks/useSpokenCues";
 import type { PoseFrame } from "@src/pose/types";
 import { usePoseSource } from "@src/pose/usePoseSource";
 import { markRecordedSetDone } from "@src/state/recordedSetStore";
@@ -447,6 +449,14 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       : setupIssue === "WRONG_ANGLE" && exerciseCode === "pull_up"
         ? WRONG_ANGLE_PULL_UP_MESSAGE
         : SETUP_ISSUE_MESSAGES[toScreenIssue(setupIssue, cameraPosition)];
+
+  const spokenGuidance =
+    setupIssue === null
+      ? null
+      : setupIssue === "WRONG_ANGLE" && exerciseCode === "pull_up"
+        ? WRONG_ANGLE_PULL_UP_MESSAGE
+        : SPOKEN_ISSUE_MESSAGES[toScreenIssue(setupIssue, cameraPosition)];
+  useSpokenCues({ phase, guidance: spokenGuidance, countdownSecondsLeft });
 
   const isUploadRetryable = uploadErrorCode === "UPLOAD_FAILED";
 

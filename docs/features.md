@@ -33,6 +33,9 @@ The primary feature of CaliAI.
   button: when placement is good, a large 5 second countdown appears in the
   middle of the screen and recording starts by itself. If the user leaves the
   frame the countdown cancels and starts again once placement is good.
+  The guidance is also spoken (placement advice, the countdown, "Go" and
+  "Recording stopped"), so it works with the back camera, where the screen
+  faces away from the user.
 - The set ends by itself, because the user is away from the phone: when the
   body has been out of frame for 5 s, or has stood still for 6 s after moving,
   recording stops and the idle tail is cut off. The Stop button remains as a
