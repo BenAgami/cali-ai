@@ -59,6 +59,9 @@ const SNAPSHOT_SELECT = {
   bullmqJobId: true,
 } as const;
 
+export const ONLY_FAILED_RETRYABLE_MESSAGE =
+  "Only failed analyses can be retried";
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const dayAgo = (): Date => new Date(Date.now() - DAY_MS);
@@ -175,6 +178,7 @@ export class AnalysisStateService {
   async restartRun(
     sessionId: number,
     jobId: string,
+    userId: number,
   ): Promise<{ captureId: number }> {
     const stored = await this.prisma.poseCapture.findFirst({
       where: { sessionId, keypoints: { not: null } },
@@ -185,14 +189,30 @@ export class AnalysisStateService {
       throw new ConflictError("No stored capture to retry for this session");
     }
 
-    const { count } = await this.prisma.workoutSession.updateMany({
-      where: { id: sessionId, processingStatus: SessionStatus.FAILED },
-      data: this.runResetData(jobId),
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockUserQuota(tx, userId);
 
-    if (count === 0) {
-      throw new ConflictError("Only failed analyses can be retried");
-    }
+      const acceptedRetryCount = await tx.analysisRetry.count({
+        where: { session: { userId }, createdAt: { gte: dayAgo() } },
+      });
+      if (acceptedRetryCount >= env.formAnalysis.dailyRetryCap) {
+        throw new TooManyRequestsError(
+          ANALYSIS_LIMIT_MESSAGES.dailyRetry,
+          API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED,
+        );
+      }
+
+      const { count } = await tx.workoutSession.updateMany({
+        where: { id: sessionId, processingStatus: SessionStatus.FAILED },
+        data: this.runResetData(jobId),
+      });
+      if (count === 0) {
+        throw new ConflictError(ONLY_FAILED_RETRYABLE_MESSAGE);
+      }
+
+      // Last, so a refused retry rolls back without being recorded.
+      await tx.analysisRetry.create({ data: { sessionId } });
+    });
 
     await this.publishSnapshot(sessionId, logger);
 

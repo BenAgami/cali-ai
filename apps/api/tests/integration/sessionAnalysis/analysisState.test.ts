@@ -265,7 +265,7 @@ describe("session processing status transitions", () => {
     );
     await service.failRun(session.id, "job-a", "ANALYSIS_ERROR");
 
-    const { captureId } = await service.restartRun(session.id, "job-b");
+    const { captureId } = await service.restartRun(session.id, "job-b", userId);
 
     const row = await reload(session.id);
     expect(captureId).toBeGreaterThan(0);
@@ -275,7 +275,7 @@ describe("session processing status transitions", () => {
     expect(row.bullmqJobId).toBe("job-b");
 
     await expect(
-      service.restartRun(session.id, "job-c"),
+      service.restartRun(session.id, "job-c", userId),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
@@ -294,7 +294,7 @@ describe("session processing status transitions", () => {
     });
 
     await expect(
-      service.restartRun(session.id, "job-b"),
+      service.restartRun(session.id, "job-b", userId),
     ).rejects.toBeInstanceOf(ConflictError);
     expect((await reload(session.id)).processingStatus).toBe(
       SessionStatus.FAILED,

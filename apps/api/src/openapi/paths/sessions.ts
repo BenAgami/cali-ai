@@ -64,6 +64,8 @@ registry.registerPath({
   path: "/sessions/{id}/analysis/retry",
   tags: ["Session Analysis"],
   summary: "Retry a failed analysis from its stored capture",
+  description:
+    "Retries are capped per user over a rolling 24 h (FORM_ANALYSIS_DAILY_RETRY_CAP); only accepted retries count, and they do not count toward the daily capture cap.",
   security: [bearerAuth],
   request: { params: sessionIdParams },
   responses: {
@@ -72,6 +74,9 @@ registry.registerPath({
     404: errorResponse("Session not found"),
     409: errorResponse("Session is not FAILED or has no stored capture"),
     428: errorResponse("AI prerequisites missing"),
+    429: errorResponse(
+      "Daily analysis retry limit reached (DAILY_RETRY_LIMIT_REACHED)",
+    ),
     503: errorResponse("Queue unavailable"),
     500: errorResponse("Internal server error"),
   },

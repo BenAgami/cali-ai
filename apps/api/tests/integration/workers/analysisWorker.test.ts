@@ -247,6 +247,7 @@ describe("analysis worker (real Redis + Postgres)", () => {
     const { captureId } = await analysisStateService.restartRun(
       session.id,
       retryJobId,
+      userId,
     );
     await formAnalysisQueue.add(
       ANALYSIS_JOB_NAME,

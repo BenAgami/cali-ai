@@ -19,6 +19,7 @@ import { withTimeout } from "../utils/withTimeout";
 import aiPrerequisitesService from "./aiPrerequisitesService";
 import analysisStateService, {
   ANALYSIS_ALREADY_STARTED_MESSAGE,
+  ONLY_FAILED_RETRYABLE_MESSAGE,
   type SessionSnapshot,
 } from "./analysisStateService";
 
@@ -92,7 +93,7 @@ export class CaptureService {
       sessionId,
     );
     if (session.processingStatus !== SessionStatus.FAILED) {
-      throw new ConflictError("Only failed analyses can be retried");
+      throw new ConflictError(ONLY_FAILED_RETRYABLE_MESSAGE);
     }
 
     await aiPrerequisitesService.assertAiPrerequisites(session.userId);
@@ -101,6 +102,7 @@ export class CaptureService {
     const { captureId } = await analysisStateService.restartRun(
       sessionId,
       jobId,
+      session.userId,
     );
 
     await this.enqueue(sessionId, captureId, jobId);

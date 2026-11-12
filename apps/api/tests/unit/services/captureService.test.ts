@@ -240,7 +240,7 @@ describe("CaptureService", () => {
   });
 
   describe("retryAnalysis", () => {
-    it("requires AI prerequisites but ignores both caps", async () => {
+    it("requires AI prerequisites and does not count toward the daily capture cap", async () => {
       stubFailed();
       vi.mocked(formAnalysisQueue.add).mockResolvedValue({} as never);
       prisma.poseCapture.count.mockResolvedValue(999);
@@ -276,7 +276,9 @@ describe("CaptureService", () => {
 
       const result = await service.retryAnalysis(USER, SESSION_ID);
 
-      const jobId = vi.mocked(analysisStateService.restartRun).mock.calls[0][1];
+      const [, jobId, userId] = vi.mocked(analysisStateService.restartRun).mock
+        .calls[0];
+      expect(userId).toBe(USER_ID);
       expect(jobId).toMatch(JOB_ID_PATTERN);
       expect(result).toEqual({
         sessionId: SESSION_ID,

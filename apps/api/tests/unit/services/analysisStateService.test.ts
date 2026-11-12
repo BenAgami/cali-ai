@@ -214,10 +214,15 @@ describe("AnalysisStateService.startRunWithCapture", () => {
 });
 
 describe("AnalysisStateService.restartRun", () => {
+  beforeEach(() => {
+    prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
+    prisma.analysisRetry.count.mockResolvedValue(0);
+  });
+
   it("requires a stored capture", async () => {
     prisma.poseCapture.findFirst.mockResolvedValue(null);
 
-    await expect(service.restartRun(5, JOB)).rejects.toThrow(
+    await expect(service.restartRun(5, JOB, USER_ID)).rejects.toThrow(
       new ConflictError("No stored capture to retry for this session"),
     );
     expect(prisma.poseCapture.findFirst).toHaveBeenCalledWith({
@@ -227,25 +232,67 @@ describe("AnalysisStateService.restartRun", () => {
     expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
   });
 
-  it("rejects when the session is not FAILED", async () => {
-    prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
-
-    await expect(service.restartRun(5, JOB)).rejects.toThrow(
-      new ConflictError("Only failed analyses can be retried"),
-    );
-  });
-
-  it("resets the run from FAILED and publishes", async () => {
-    prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
+  it("locks the user before counting the last 24 hours of retries", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
 
-    await expect(service.restartRun(5, JOB)).resolves.toEqual({ captureId: 9 });
+    await service.restartRun(5, JOB, USER_ID);
+
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.analysisRetry.count.mock.invocationCallOrder[0],
+    );
+    expect(prisma.analysisRetry.count).toHaveBeenCalledWith({
+      where: {
+        session: { userId: USER_ID },
+        createdAt: { gte: new Date("2026-10-21T12:00:00Z") },
+      },
+    });
+  });
+
+  it("rejects at the retry cap and writes and publishes nothing", async () => {
+    prisma.analysisRetry.count.mockResolvedValue(
+      env.formAnalysis.dailyRetryCap,
+    );
+
+    const error: unknown = await service
+      .restartRun(5, JOB, USER_ID)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(TooManyRequestsError);
+    expect((error as TooManyRequestsError).code).toBe(
+      API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED,
+    );
+    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.analysisRetry.create).not.toHaveBeenCalled();
+    expect(publishAnalysisEvent).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the session is not FAILED and records no retry", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.restartRun(5, JOB, USER_ID)).rejects.toThrow(
+      new ConflictError("Only failed analyses can be retried"),
+    );
+    expect(prisma.analysisRetry.create).not.toHaveBeenCalled();
+  });
+
+  it("resets the run from FAILED, records the retry and publishes", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+
+    await expect(service.restartRun(5, JOB, USER_ID)).resolves.toEqual({
+      captureId: 9,
+    });
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: { id: 5, processingStatus: SessionStatus.FAILED },
       data: RUN_RESET,
     });
+    expect(prisma.analysisRetry.create).toHaveBeenCalledWith({
+      data: { sessionId: 5 },
+    });
+    expect(
+      prisma.workoutSession.updateMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.analysisRetry.create.mock.invocationCallOrder[0]);
     expect(publishAnalysisEvent).toHaveBeenCalledTimes(1);
   });
 });
