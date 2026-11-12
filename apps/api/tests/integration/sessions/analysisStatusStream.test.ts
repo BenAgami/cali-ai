@@ -135,7 +135,11 @@ describe("GET /api/sessions/:id/status", () => {
       0,
     );
     await connection.waitForEvents(3);
-    await analysisStateService.completeRun(sessionId, jobId);
+    await analysisStateService.completeRunWithResult(
+      sessionId,
+      jobId,
+      async () => {},
+    );
     await connection.waitForEvents(4);
     await connection.ended;
 
@@ -179,7 +183,11 @@ describe("GET /api/sessions/:id/status", () => {
 
   it("sends one COMPLETED event and ends for a completed session", async () => {
     const { sessionId, jobId } = await queuedSession();
-    await analysisStateService.completeRun(sessionId, jobId);
+    await analysisStateService.completeRunWithResult(
+      sessionId,
+      jobId,
+      async () => {},
+    );
 
     const connection = await connect(sessionId);
     await connection.ended;

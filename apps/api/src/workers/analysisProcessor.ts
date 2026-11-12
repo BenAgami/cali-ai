@@ -113,14 +113,12 @@ export const processAnalysisJob = async (
       "Form metrics computed",
     );
 
-    const isSaved = await formAnalysisResultService.saveUntrackable(
+    const isCompleted = await analysisStateService.completeRunWithResult(
       sessionId,
       jobId,
-      metrics,
+      (tx) => formAnalysisResultService.saveUntrackable(tx, sessionId, metrics),
+      log,
     );
-    const isCompleted =
-      isSaved &&
-      (await analysisStateService.completeRun(sessionId, jobId, log));
     if (!isCompleted) {
       log.warn("Run state changed during processing; result discarded");
     }
@@ -184,14 +182,13 @@ export const processAnalysisJob = async (
     throw toProcessingError(error);
   }
 
-  const isSaved = await formAnalysisResultService.saveScored(
+  const isCompleted = await analysisStateService.completeRunWithResult(
     sessionId,
     jobId,
-    metrics,
-    outcome,
+    (tx) =>
+      formAnalysisResultService.saveScored(tx, sessionId, metrics, outcome),
+    log,
   );
-  const isCompleted =
-    isSaved && (await analysisStateService.completeRun(sessionId, jobId, log));
   if (!isCompleted) {
     log.warn("Run state changed during processing; result discarded");
   }

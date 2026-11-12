@@ -180,7 +180,9 @@ describe("session processing status transitions", () => {
       userId,
     );
 
-    await expect(service.completeRun(session.id, "job-a")).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(session.id, "job-a", async () => {}),
+    ).resolves.toBe(true);
     const completed = await reload(session.id);
     expect(completed.processingStatus).toBe(SessionStatus.COMPLETED);
     expect(completed.processingFinishedAt).not.toBeNull();
@@ -191,6 +193,49 @@ describe("session processing status transitions", () => {
     expect((await reload(session.id)).processingStatus).toBe(
       SessionStatus.COMPLETED,
     );
+  });
+
+  it("rolls back the result and the COMPLETED flip when the result write fails", async () => {
+    const session = await createSession();
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
+
+    // Before completeRunWithResult the result was saved in its own transaction
+    // and COMPLETED flipped afterwards, so a crash in between left a stored
+    // result on a PROCESSING session. Both now commit or neither does.
+    await expect(
+      service.completeRunWithResult(session.id, "job-a", async (tx) => {
+        await tx.analysisResult.create({ data: { sessionId: session.id } });
+        throw new Error("write failed");
+      }),
+    ).rejects.toThrow("write failed");
+
+    expect((await reload(session.id)).processingStatus).toBe(
+      SessionStatus.PROCESSING,
+    );
+    await expect(
+      prisma.analysisResult.count({ where: { sessionId: session.id } }),
+    ).resolves.toBe(0);
+  });
+
+  it("writes nothing when the job no longer owns the run", async () => {
+    const session = await createSession();
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
+    const write = vi.fn();
+
+    await expect(
+      service.completeRunWithResult(session.id, "job-stale", write),
+    ).resolves.toBe(false);
+    expect(write).not.toHaveBeenCalled();
   });
 
   it("keeps the last reached stage when a run fails", async () => {

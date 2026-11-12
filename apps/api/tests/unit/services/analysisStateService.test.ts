@@ -369,14 +369,18 @@ describe("AnalysisStateService.advanceStage", () => {
   });
 });
 
-describe("AnalysisStateService.completeRun", () => {
-  it("completes under the job guard", async () => {
+describe("AnalysisStateService.completeRunWithResult", () => {
+  it("completes under the job guard, writes after the guard, then publishes", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.workoutSession.findUnique.mockResolvedValue(
       snapshot({ processingStatus: SessionStatus.COMPLETED }),
     );
+    const write = vi.fn().mockResolvedValue(undefined);
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(service.completeRunWithResult(5, JOB, write)).resolves.toBe(
+      true,
+    );
+
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: {
         id: 5,
@@ -391,15 +395,33 @@ describe("AnalysisStateService.completeRun", () => {
         failureReason: null,
       },
     });
+    expect(write).toHaveBeenCalledWith(prisma);
+    expect(
+      prisma.workoutSession.updateMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(write.mock.invocationCallOrder[0]);
     expect(publishAnalysisEvent).toHaveBeenCalledWith(
       expect.objectContaining({ status: "COMPLETED", progress_percent: 100 }),
     );
   });
 
-  it("discards a late write", async () => {
+  it("discards a late write without writing or publishing", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+    const write = vi.fn();
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(false);
+    await expect(service.completeRunWithResult(5, JOB, write)).resolves.toBe(
+      false,
+    );
+    expect(write).not.toHaveBeenCalled();
+    expect(publishAnalysisEvent).not.toHaveBeenCalled();
+  });
+
+  it("rethrows a failing write and does not publish", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    const boom = new Error("write failed");
+
+    await expect(
+      service.completeRunWithResult(5, JOB, () => Promise.reject(boom)),
+    ).rejects.toBe(boom);
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });
 });
@@ -543,7 +565,9 @@ describe("AnalysisStateService publishing", () => {
     );
     vi.mocked(publishAnalysisEvent).mockRejectedValue(new Error("redis down"));
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(5, JOB, async () => {}),
+    ).resolves.toBe(true);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(logger.warn).toHaveBeenCalledWith(
@@ -559,14 +583,18 @@ describe("AnalysisStateService publishing", () => {
     );
     vi.mocked(publishAnalysisEvent).mockReturnValue(new Promise(() => {}));
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(5, JOB, async () => {}),
+    ).resolves.toBe(true);
   });
 
   it("logs a failing snapshot read and still succeeds", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.workoutSession.findUnique.mockRejectedValue(new Error("db"));
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(5, JOB, async () => {}),
+    ).resolves.toBe(true);
     expect(logger.warn).toHaveBeenCalled();
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });

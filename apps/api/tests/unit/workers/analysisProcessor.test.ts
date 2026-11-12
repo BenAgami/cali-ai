@@ -17,7 +17,7 @@ const mockState = vi.hoisted(() => ({
   getCaptureForJob: vi.fn(),
   getAnalysisJobContext: vi.fn(),
   advanceStage: vi.fn(),
-  completeRun: vi.fn(),
+  completeRunWithResult: vi.fn(),
   failRun: vi.fn(),
 }));
 const mockFeedback = vi.hoisted(() => ({ generateFormFeedback: vi.fn() }));
@@ -55,6 +55,8 @@ import {
   onAnalysisJobFailed,
   processAnalysisJob,
 } from "../../../src/workers/analysisProcessor";
+
+const fakeTx = { marker: "tx" };
 
 type JobData = { sessionId: number; captureId: number };
 
@@ -101,7 +103,16 @@ beforeEach(() => {
   vi.resetAllMocks();
   mockLogger.child.mockReturnValue(mockChild);
   mockState.advanceStage.mockResolvedValue(true);
-  mockState.completeRun.mockResolvedValue(true);
+  mockState.completeRunWithResult.mockImplementation(
+    async (
+      _sessionId: number,
+      _jobId: string,
+      write: (tx: unknown) => Promise<void>,
+    ) => {
+      await write(fakeTx);
+      return true;
+    },
+  );
   mockState.failRun.mockResolvedValue(true);
   mockState.getAnalysisJobContext.mockResolvedValue({
     userId: 3,
@@ -162,13 +173,19 @@ describe("processAnalysisJob", () => {
       },
       log: mockChild,
     });
-    expect(mockResults.saveScored).toHaveBeenCalledWith(
+    expect(mockState.completeRunWithResult).toHaveBeenCalledTimes(1);
+    expect(mockState.completeRunWithResult).toHaveBeenCalledWith(
       7,
       "job-1",
+      expect.any(Function),
+      mockChild,
+    );
+    expect(mockResults.saveScored).toHaveBeenCalledWith(
+      fakeTx,
+      7,
       metrics,
       outcome,
     );
-    expect(mockState.completeRun).toHaveBeenCalledWith(7, "job-1", mockChild);
     expect(mockChild.info).toHaveBeenCalledWith(
       { outcome: "SCORED", repCount: 5, band: "FAIR" },
       "Form metrics computed",
@@ -187,12 +204,12 @@ describe("processAnalysisJob", () => {
     ]);
     expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
     expect(mockPrerequisites.assertAiPrerequisites).not.toHaveBeenCalled();
+    expect(mockState.completeRunWithResult).toHaveBeenCalledTimes(1);
     expect(mockResults.saveUntrackable).toHaveBeenCalledWith(
+      fakeTx,
       7,
-      "job-1",
       untrackable,
     );
-    expect(mockState.completeRun).toHaveBeenCalledWith(7, "job-1", mockChild);
   });
 
   it("skips the LLM call and save when a newer run replaced this job", async () => {
@@ -206,47 +223,28 @@ describe("processAnalysisJob", () => {
 
     expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
     expect(mockResults.saveScored).not.toHaveBeenCalled();
-    expect(mockState.completeRun).not.toHaveBeenCalled();
+    expect(mockState.completeRunWithResult).not.toHaveBeenCalled();
     expect(mockChild.warn).toHaveBeenCalledWith(
       expect.stringContaining("skipping"),
     );
   });
 
-  it("does not complete and warns when the scored write was discarded", async () => {
-    await withCapture();
-    mockResults.saveScored.mockResolvedValue(false);
+  it.each(["scored", "untrackable"] as const)(
+    "warns when the %s result was discarded because the run changed",
+    async (kind) => {
+      await withCapture();
+      if (kind === "untrackable") {
+        mockCompute.computeFormMetrics.mockReturnValue(untrackable);
+      }
+      mockState.completeRunWithResult.mockResolvedValue(false);
 
-    await processAnalysisJob(makeJob());
+      await processAnalysisJob(makeJob());
 
-    expect(mockState.completeRun).not.toHaveBeenCalled();
-    expect(mockChild.warn).toHaveBeenCalledWith(
-      expect.stringContaining("discarded"),
-    );
-  });
-
-  it("does not complete and warns when the untrackable write was discarded", async () => {
-    await withCapture();
-    mockCompute.computeFormMetrics.mockReturnValue(untrackable);
-    mockResults.saveUntrackable.mockResolvedValue(false);
-
-    await processAnalysisJob(makeJob());
-
-    expect(mockState.completeRun).not.toHaveBeenCalled();
-    expect(mockChild.warn).toHaveBeenCalledWith(
-      expect.stringContaining("discarded"),
-    );
-  });
-
-  it("warns when completion itself was discarded", async () => {
-    await withCapture();
-    mockState.completeRun.mockResolvedValue(false);
-
-    await processAnalysisJob(makeJob());
-
-    expect(mockChild.warn).toHaveBeenCalledWith(
-      expect.stringContaining("discarded"),
-    );
-  });
+      expect(mockChild.warn).toHaveBeenCalledWith(
+        expect.stringContaining("discarded"),
+      );
+    },
+  );
 
   it("fails unrecoverably with CAPTURE_MISSING when no capture exists", async () => {
     mockState.getCaptureForJob.mockResolvedValue(null);
@@ -374,7 +372,7 @@ describe("processAnalysisJob", () => {
       mockFeedback.generateFormFeedback.mockRejectedValue(error);
 
       await expect(processAnalysisJob(makeJob())).rejects.toBe(error);
-      expect(mockState.completeRun).not.toHaveBeenCalled();
+      expect(mockState.completeRunWithResult).not.toHaveBeenCalled();
     },
   );
 });

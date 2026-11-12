@@ -1,5 +1,3 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
-
 import type { FormFeedbackOutcome } from "../../../src/services/feedbackService";
 import {
   storedRawFeedbackSchema,
@@ -14,15 +12,8 @@ import { makeScoredMetrics } from "../helpers/scoredMetrics";
 import { METRICS_VERSION } from "../../../src/metrics/types";
 import { FORM_FEEDBACK_PROMPT_VERSION } from "../../../src/prompts/formFeedbackPrompt";
 
-vi.mock("@repo/db", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@repo/db")>()),
-  getPrismaClient: vi.fn(),
-}));
-
 const { FormAnalysisResultService } =
   await import("../../../src/services/formAnalysisResultService");
-
-const JOB = "job-1";
 
 const outcome: FormFeedbackOutcome = {
   feedback: {
@@ -58,45 +49,24 @@ const outcome: FormFeedbackOutcome = {
   attempts: 1,
 };
 
-let prisma: PrismaMock;
+let tx: PrismaMock;
 let service: InstanceType<typeof FormAnalysisResultService>;
 
 beforeEach(() => {
-  prisma = createPrismaMock();
-  vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma));
-  prisma.workoutSession.count.mockResolvedValue(1);
-  prisma.analysisResult.upsert.mockResolvedValue({ id: 11 });
-  prisma.analysisFinding.deleteMany.mockResolvedValue({ count: 0 });
-  prisma.analysisFinding.createMany.mockResolvedValue({ count: 0 });
+  tx = createPrismaMock();
+  tx.analysisResult.upsert.mockResolvedValue({ id: 11 });
+  tx.analysisFinding.deleteMany.mockResolvedValue({ count: 0 });
+  tx.analysisFinding.createMany.mockResolvedValue({ count: 0 });
   service = new FormAnalysisResultService();
 });
 
 describe("FormAnalysisResultService.saveScored", () => {
-  it("writes nothing and returns false when the run guard fails", async () => {
-    prisma.workoutSession.count.mockResolvedValue(0);
-
-    await expect(
-      service.saveScored(5, JOB, makeScoredMetrics(), outcome),
-    ).resolves.toBe(false);
-
-    expect(prisma.workoutSession.count).toHaveBeenCalledWith({
-      where: {
-        id: 5,
-        processingStatus: SessionStatus.PROCESSING,
-        bullmqJobId: JOB,
-      },
-    });
-    expect(prisma.analysisResult.upsert).not.toHaveBeenCalled();
-    expect(prisma.analysisFinding.deleteMany).not.toHaveBeenCalled();
-    expect(prisma.analysisFinding.createMany).not.toHaveBeenCalled();
-  });
-
   it("upserts a SCORED result with stored-schema JSON", async () => {
     await expect(
-      service.saveScored(5, JOB, makeScoredMetrics(), outcome),
-    ).resolves.toBe(true);
+      service.saveScored(asPrismaClient(tx), 5, makeScoredMetrics(), outcome),
+    ).resolves.toBeUndefined();
 
-    const args = prisma.analysisResult.upsert.mock.calls[0][0] as {
+    const args = tx.analysisResult.upsert.mock.calls[0][0] as {
       where: unknown;
       create: Record<string, unknown>;
       update: Record<string, unknown>;
@@ -132,12 +102,17 @@ describe("FormAnalysisResultService.saveScored", () => {
   });
 
   it("replaces findings: positives first, then corrections with rep timing", async () => {
-    await service.saveScored(5, JOB, makeScoredMetrics(), outcome);
+    await service.saveScored(
+      asPrismaClient(tx),
+      5,
+      makeScoredMetrics(),
+      outcome,
+    );
 
-    expect(prisma.analysisFinding.deleteMany).toHaveBeenCalledWith({
+    expect(tx.analysisFinding.deleteMany).toHaveBeenCalledWith({
       where: { analysisResultId: 11 },
     });
-    const { data } = prisma.analysisFinding.createMany.mock.calls[0][0] as {
+    const { data } = tx.analysisFinding.createMany.mock.calls[0][0] as {
       data: Record<string, unknown>[];
     };
     expect(data).toHaveLength(4);
@@ -172,12 +147,17 @@ describe("FormAnalysisResultService.saveScored", () => {
   });
 
   it("deletes findings before creating them so a retry cannot duplicate", async () => {
-    await service.saveScored(5, JOB, makeScoredMetrics(), outcome);
+    await service.saveScored(
+      asPrismaClient(tx),
+      5,
+      makeScoredMetrics(),
+      outcome,
+    );
 
     const deleteOrder =
-      prisma.analysisFinding.deleteMany.mock.invocationCallOrder[0];
+      tx.analysisFinding.deleteMany.mock.invocationCallOrder[0];
     const createOrder =
-      prisma.analysisFinding.createMany.mock.invocationCallOrder[0];
+      tx.analysisFinding.createMany.mock.invocationCallOrder[0];
     expect(deleteOrder).toBeLessThan(createOrder);
   });
 });
@@ -191,22 +171,12 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
     rubricVersion: "rubric-v0",
   };
 
-  it("writes nothing when the run guard fails", async () => {
-    prisma.workoutSession.count.mockResolvedValue(0);
-
-    await expect(service.saveUntrackable(5, JOB, untrackable)).resolves.toBe(
-      false,
-    );
-
-    expect(prisma.analysisResult.upsert).not.toHaveBeenCalled();
-  });
-
   it("stores an UNTRACKABLE result with reasons and clears findings", async () => {
-    await expect(service.saveUntrackable(5, JOB, untrackable)).resolves.toBe(
-      true,
-    );
+    await expect(
+      service.saveUntrackable(asPrismaClient(tx), 5, untrackable),
+    ).resolves.toBeUndefined();
 
-    const args = prisma.analysisResult.upsert.mock.calls[0][0] as {
+    const args = tx.analysisResult.upsert.mock.calls[0][0] as {
       create: Record<string, unknown>;
     };
     expect(args.create).toMatchObject({
@@ -226,9 +196,9 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
       reps: [],
       llmUsage: null,
     });
-    expect(prisma.analysisFinding.deleteMany).toHaveBeenCalledWith({
+    expect(tx.analysisFinding.deleteMany).toHaveBeenCalledWith({
       where: { analysisResultId: 11 },
     });
-    expect(prisma.analysisFinding.createMany).not.toHaveBeenCalled();
+    expect(tx.analysisFinding.createMany).not.toHaveBeenCalled();
   });
 });

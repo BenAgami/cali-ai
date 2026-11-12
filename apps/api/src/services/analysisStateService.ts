@@ -252,26 +252,36 @@ export class AnalysisStateService {
     return true;
   }
 
-  async completeRun(
+  /**
+   * Completes the run and writes its result atomically; false (and no write)
+   * when this job no longer owns a PROCESSING session. The guarded update runs
+   * first so its row lock also serializes with failRun and the reaper.
+   */
+  async completeRunWithResult(
     sessionId: number,
     jobId: string,
+    write: (tx: Prisma.TransactionClient) => Promise<void>,
     log: Logger = logger,
   ): Promise<boolean> {
-    const { count } = await this.prisma.workoutSession.updateMany({
-      where: this.runGuard(sessionId, jobId),
-      data: {
-        processingStatus: SessionStatus.COMPLETED,
-        analysisStage: "COMPLETED",
-        analysisStageProgress: null,
-        processingFinishedAt: new Date(),
-        failureReason: null,
-      },
+    const isCompleted = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.workoutSession.updateMany({
+        where: this.runGuard(sessionId, jobId),
+        data: {
+          processingStatus: SessionStatus.COMPLETED,
+          analysisStage: "COMPLETED",
+          analysisStageProgress: null,
+          processingFinishedAt: new Date(),
+          failureReason: null,
+        },
+      });
+      if (count === 0) return false;
+
+      await write(tx);
+      return true;
     });
 
-    if (count === 0) return false;
-
-    await this.publishSnapshot(sessionId, log);
-    return true;
+    if (isCompleted) await this.publishSnapshot(sessionId, log);
+    return isCompleted;
   }
 
   async failRun(

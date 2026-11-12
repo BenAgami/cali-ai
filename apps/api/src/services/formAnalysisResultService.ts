@@ -1,4 +1,4 @@
-import { getPrismaClient, SessionStatus, type Prisma } from "@repo/db";
+import type { Prisma } from "@repo/db";
 
 import type { FormFeedbackOutcome } from "./feedbackService";
 import type {
@@ -13,22 +13,19 @@ import {
 const POSITIVE_TITLE = "What went well";
 
 /**
- * Write side of form analysis. Every write runs in one transaction behind the
- * run guard (status PROCESSING and this job's id), so BullMQ retries and the
- * retry endpoint never duplicate findings and a superseded run writes nothing.
+ * Write side of form analysis. Writers run inside the caller's transaction
+ * (`analysisStateService.completeRunWithResult`), which holds the run guard and
+ * commits the result together with COMPLETED, so BullMQ retries and the retry
+ * endpoint never duplicate findings and a superseded run writes nothing.
  * The JSON columns are built with the stored schemas the read side parses.
  */
 export class FormAnalysisResultService {
-  private get prisma() {
-    return getPrismaClient();
-  }
-
   async saveScored(
+    tx: Prisma.TransactionClient,
     sessionId: number,
-    jobId: string,
     metrics: ScoredFormMetrics,
     outcome: FormFeedbackOutcome,
-  ): Promise<boolean> {
+  ): Promise<void> {
     const { feedback } = outcome;
 
     const scoreBreakdown = storedScoreBreakdownSchema.parse({
@@ -73,45 +70,39 @@ export class FormAnalysisResultService {
       };
     });
 
-    return this.prisma.$transaction(async (tx) => {
-      const isCurrentRun = await this.isCurrentRun(tx, sessionId, jobId);
-      if (!isCurrentRun) return false;
+    const data = {
+      outcome: "SCORED" as const,
+      formScore: metrics.overallScore,
+      scoreBreakdown,
+      summaryFeedback: feedback.summary,
+      rawFeedback: rawFeedback as Prisma.InputJsonObject,
+      aiModelName: outcome.model,
+      untrackableReasons: [],
+      analyzedAt: new Date(),
+    };
+    const result = await tx.analysisResult.upsert({
+      where: { sessionId },
+      create: { sessionId, ...data },
+      update: data,
+      select: { id: true },
+    });
 
-      const data = {
-        outcome: "SCORED" as const,
-        formScore: metrics.overallScore,
-        scoreBreakdown,
-        summaryFeedback: feedback.summary,
-        rawFeedback: rawFeedback as Prisma.InputJsonObject,
-        aiModelName: outcome.model,
-        untrackableReasons: [],
-        analyzedAt: new Date(),
-      };
-      const result = await tx.analysisResult.upsert({
-        where: { sessionId },
-        create: { sessionId, ...data },
-        update: data,
-        select: { id: true },
-      });
-
-      await tx.analysisFinding.deleteMany({
-        where: { analysisResultId: result.id },
-      });
-      await tx.analysisFinding.createMany({
-        data: [...positives, ...corrections].map((finding) => ({
-          analysisResultId: result.id,
-          ...finding,
-        })),
-      });
-      return true;
+    await tx.analysisFinding.deleteMany({
+      where: { analysisResultId: result.id },
+    });
+    await tx.analysisFinding.createMany({
+      data: [...positives, ...corrections].map((finding) => ({
+        analysisResultId: result.id,
+        ...finding,
+      })),
     });
   }
 
   async saveUntrackable(
+    tx: Prisma.TransactionClient,
     sessionId: number,
-    jobId: string,
     metrics: UntrackableFormMetrics,
-  ): Promise<boolean> {
+  ): Promise<void> {
     const rawFeedback = storedRawFeedbackSchema.parse({
       metricsVersion: metrics.metricsVersion,
       rubricVersion: metrics.rubricVersion,
@@ -122,47 +113,26 @@ export class FormAnalysisResultService {
       llmUsage: null,
     });
 
-    return this.prisma.$transaction(async (tx) => {
-      const isCurrentRun = await this.isCurrentRun(tx, sessionId, jobId);
-      if (!isCurrentRun) return false;
-
-      const data = {
-        outcome: "UNTRACKABLE" as const,
-        formScore: null,
-        scoreBreakdown: {},
-        summaryFeedback: null,
-        rawFeedback: rawFeedback as Prisma.InputJsonObject,
-        aiModelName: null,
-        untrackableReasons: metrics.reasons,
-        analyzedAt: new Date(),
-      };
-      const result = await tx.analysisResult.upsert({
-        where: { sessionId },
-        create: { sessionId, ...data },
-        update: data,
-        select: { id: true },
-      });
-
-      await tx.analysisFinding.deleteMany({
-        where: { analysisResultId: result.id },
-      });
-      return true;
+    const data = {
+      outcome: "UNTRACKABLE" as const,
+      formScore: null,
+      scoreBreakdown: {},
+      summaryFeedback: null,
+      rawFeedback: rawFeedback as Prisma.InputJsonObject,
+      aiModelName: null,
+      untrackableReasons: metrics.reasons,
+      analyzedAt: new Date(),
+    };
+    const result = await tx.analysisResult.upsert({
+      where: { sessionId },
+      create: { sessionId, ...data },
+      update: data,
+      select: { id: true },
     });
-  }
 
-  private async isCurrentRun(
-    tx: Prisma.TransactionClient,
-    sessionId: number,
-    jobId: string,
-  ): Promise<boolean> {
-    const count = await tx.workoutSession.count({
-      where: {
-        id: sessionId,
-        processingStatus: SessionStatus.PROCESSING,
-        bullmqJobId: jobId,
-      },
+    await tx.analysisFinding.deleteMany({
+      where: { analysisResultId: result.id },
     });
-    return count > 0;
   }
 }
 
