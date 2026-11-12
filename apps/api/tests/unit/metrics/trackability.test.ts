@@ -1,6 +1,6 @@
 import type { PoseCapturePayload } from "@repo/common";
 
-import { toPoseSeries } from "../../../src/metrics/preprocess";
+import { chooseNearSide, toPoseSeries } from "../../../src/metrics/preprocess";
 import {
   checkTrackability,
   MIN_REPS_FOR_BAND,
@@ -16,7 +16,8 @@ const run = (
 ) => {
   const built = buildSyntheticCapture(options);
   const payload = mutate ? mutate(built) : built;
-  return checkTrackability(payload, toPoseSeries(payload, options.exercise));
+  const series = toPoseSeries(payload, options.exercise);
+  return checkTrackability(payload, series, chooseNearSide(series));
 };
 
 const pushUp: SyntheticOptions = { exercise: "push_up", reps: 5 };
@@ -71,6 +72,19 @@ describe("checkTrackability", () => {
       frames: p.frames.map((frame) => ({
         ...frame,
         keypoints: frame.keypoints.map(([x, y, v]) => [x + 0.8, y, v]),
+      })),
+    }));
+    expect(reasonsOf(result)).toContain("OUT_OF_FRAME");
+  });
+
+  it("flags a body whose wrists and ankles are below the frame", () => {
+    const result = run(pushUp, (p) => ({
+      ...p,
+      frames: p.frames.map((frame) => ({
+        ...frame,
+        keypoints: frame.keypoints.map((point, index) =>
+          [15, 16, 27, 28].includes(index) ? [point[0], 1.05, 0.9] : point,
+        ),
       })),
     }));
     expect(reasonsOf(result)).toContain("OUT_OF_FRAME");

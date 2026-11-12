@@ -118,4 +118,9 @@ describe("chooseNearSide", () => {
       chooseNearSide(toPoseSeries(payloadOf([left, left]), "push_up")),
     ).toBe("left");
   });
+
+  it("returns null for pull_up, which faces the camera and uses both sides", () => {
+    const series = toPoseSeries(payloadOf([blankFrame(33)]), "pull_up");
+    expect(chooseNearSide(series)).toBeNull();
+  });
 });

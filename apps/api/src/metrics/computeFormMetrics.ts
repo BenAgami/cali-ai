@@ -42,12 +42,13 @@ export const computeFormMetrics = (
 ): FormMetrics => {
   const series = toPoseSeries(payload, exerciseCode);
 
-  const trackability = checkTrackability(payload, series);
+  const side = chooseNearSide(series);
+
+  const trackability = checkTrackability(payload, series, side);
   if (!trackability.isTrackable) {
     return untrackable(exerciseCode, trackability.reasons);
   }
 
-  const side = exerciseCode === "pull_up" ? null : chooseNearSide(series);
   const rubric = getRubric(exerciseCode);
   const context = rubric.buildSetContext(series, side);
   const { signal, params } = rubric.primarySignal(series, side, context);

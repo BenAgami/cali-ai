@@ -7,8 +7,7 @@ import {
 } from "@repo/common";
 
 import { distance, mean, median } from "./geometry";
-import { chooseNearSide } from "./preprocess";
-import type { PoseSeries, TrackabilityResult } from "./types";
+import type { PoseSeries, Side, TrackabilityResult } from "./types";
 
 /** Minimum reps for a band; fewer -> UNTRACKABLE NO_REPS_DETECTED (05-14). */
 export const MIN_REPS_FOR_BAND = 2;
@@ -27,29 +26,29 @@ const THRESHOLDS = {
 
 const { LEFT_SHOULDER, RIGHT_SHOULDER, LEFT_HIP, RIGHT_HIP } = BLAZEPOSE;
 
-/** Shoulder-hip chains to measure torso on: near side, or both for pull_up. */
-const torsoChains = (series: PoseSeries): Array<[number, number]> => {
-  if (series.exerciseCode === "pull_up") {
+/** Shoulder-hip chains to measure torso on: near side, or both when `side` is null. */
+const torsoChains = (side: Side | null): Array<[number, number]> => {
+  if (side === null) {
     return [
       [LEFT_SHOULDER, LEFT_HIP],
       [RIGHT_SHOULDER, RIGHT_HIP],
     ];
   }
-  return chooseNearSide(series) === "left"
+  return side === "left"
     ? [[LEFT_SHOULDER, LEFT_HIP]]
     : [[RIGHT_SHOULDER, RIGHT_HIP]];
 };
 
-const keyJointIndices = (series: PoseSeries): number[] => {
+const keyJointIndices = (series: PoseSeries, side: Side | null): number[] => {
   const joints = FORM_KEY_JOINTS[series.exerciseCode];
-  if (series.exerciseCode === "pull_up")
-    return [...joints.left, ...joints.right];
-  return [...(chooseNearSide(series) === "left" ? joints.left : joints.right)];
+  if (side === null) return [...joints.left, ...joints.right];
+  return [...(side === "left" ? joints.left : joints.right)];
 };
 
 export const checkTrackability = (
   payload: PoseCapturePayload,
   series: PoseSeries,
+  side: Side | null,
 ): TrackabilityResult => {
   const reasons = new Set<UntrackableReason>();
   const frameCount = series.timestampsSec.length;
@@ -64,7 +63,7 @@ export const checkTrackability = (
     reasons.add("TOO_FEW_FRAMES");
   }
 
-  const keys = keyJointIndices(series);
+  const keys = keyJointIndices(series, side);
 
   const meanVisibility = mean(
     series.visibility.flatMap((row) => keys.map((k) => row[k])),
@@ -102,7 +101,7 @@ export const checkTrackability = (
     reasons.add("OUT_OF_FRAME");
   }
 
-  const chains = torsoChains(series);
+  const chains = torsoChains(side);
   const torsoPerFrame = series.rawPoints.map((row) =>
     mean(chains.map(([s, h]) => distance(row[s], row[h]))),
   );

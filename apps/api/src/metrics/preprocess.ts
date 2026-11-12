@@ -131,7 +131,12 @@ export const toPoseSeries = (
   };
 };
 
-export const chooseNearSide = (series: PoseSeries): Side => {
+/**
+ * The side facing the camera (higher mean key-joint visibility). pull_up faces
+ * the camera and uses both sides, so it has none.
+ */
+export const chooseNearSide = (series: PoseSeries): Side | null => {
+  if (series.exerciseCode === "pull_up") return null;
   const joints = FORM_KEY_JOINTS[series.exerciseCode];
   const sideVisibility = (indices: readonly number[]): number =>
     mean(series.visibility.flatMap((row) => indices.map((i) => row[i])));

@@ -27,8 +27,7 @@ export const runRubric = (
   });
   mutate?.(payload);
   const series = toPoseSeries(payload, rubric.exerciseCode);
-  const side =
-    rubric.exerciseCode === "pull_up" ? null : chooseNearSide(series);
+  const side = chooseNearSide(series);
   const context = rubric.buildSetContext(series, side);
   const { signal, params } = rubric.primarySignal(series, side, context);
   const segmentation = segmentReps(signal, series.timestampsSec, params);
