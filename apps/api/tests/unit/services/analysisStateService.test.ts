@@ -85,9 +85,10 @@ describe("AnalysisStateService.findOwnedSession", () => {
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
     prisma.workoutSession.findFirst.mockResolvedValue(snapshot());
 
-    await expect(service.findOwnedSession("uuid-1", 5)).resolves.toEqual(
-      snapshot(),
-    );
+    await expect(service.findOwnedSession("uuid-1", 5)).resolves.toEqual({
+      ...snapshot(),
+      userId: 42,
+    });
     expect(prisma.workoutSession.findFirst).toHaveBeenCalledWith({
       where: { id: 5, userId: 42 },
       select: {

@@ -18,12 +18,15 @@ import {
 import { logger } from "../lib/logger";
 import { ANALYSIS_JOB_NAME, formAnalysisQueue } from "../lib/queue";
 import { encodeCapture, KEYPOINTS_FORMAT } from "../utils/captureCodec";
-import { getUserIdByUuid } from "../utils/getUserIdByUuid";
+import { toStatusEvent } from "../utils/analysisProgress";
 import { toError } from "../utils/toError";
 import { withTimeout } from "../utils/withTimeout";
 
 import aiPrerequisitesService from "./aiPrerequisitesService";
-import analysisStateService from "./analysisStateService";
+import analysisStateService, {
+  ANALYSIS_ALREADY_STARTED_MESSAGE,
+  type SessionSnapshot,
+} from "./analysisStateService";
 
 type CaptureAcceptedData = z.infer<typeof captureAcceptedResponseSchema>;
 
@@ -58,12 +61,11 @@ export class CaptureService {
       );
     }
     if (session.processingStatus !== SessionStatus.PENDING) {
-      return this.acceptedRun(sessionId, session.bullmqJobId);
+      return this.acceptedRun(session);
     }
 
-    const userId = await getUserIdByUuid(this.prisma, userUuid);
-    await aiPrerequisitesService.assertAiPrerequisites(userId);
-    await this.assertUnderDailyCap(userId);
+    await aiPrerequisitesService.assertAiPrerequisites(session.userId);
+    await this.assertUnderDailyCap(session.userId);
 
     const keypoints = await encodeCapture(payload);
     const jobId = newJobId();
@@ -100,8 +102,7 @@ export class CaptureService {
       throw new ConflictError("Only failed analyses can be retried");
     }
 
-    const userId = await getUserIdByUuid(this.prisma, userUuid);
-    await aiPrerequisitesService.assertAiPrerequisites(userId);
+    await aiPrerequisitesService.assertAiPrerequisites(session.userId);
 
     const jobId = newJobId();
     const { captureId } = await analysisStateService.restartRun(
@@ -119,17 +120,22 @@ export class CaptureService {
    * can follow that run. The resent body is not stored or counted again.
    */
   private async acceptedRun(
-    sessionId: number,
-    jobId: string | null,
+    session: SessionSnapshot,
   ): Promise<CaptureAcceptedData> {
-    const stored = await this.prisma.poseCapture.findFirst({
-      where: { sessionId },
+    const stored = await this.prisma.poseCapture.findUnique({
+      where: { sessionId: session.id },
       select: { id: true },
     });
-    if (!stored || jobId === null) {
-      throw new ConflictError("Analysis already started for this session");
+    const event = toStatusEvent(session);
+    if (!stored || session.bullmqJobId === null || event === null) {
+      throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
     }
-    return { sessionId, captureId: stored.id, jobId, status: "QUEUED" };
+    return {
+      sessionId: session.id,
+      captureId: stored.id,
+      jobId: session.bullmqJobId,
+      status: event.status,
+    };
   }
 
   private async assertUnderDailyCap(userId: number): Promise<void> {

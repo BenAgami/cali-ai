@@ -36,6 +36,9 @@ export type CaptureInsert = {
   appVersion: string | null;
 };
 
+export const ANALYSIS_ALREADY_STARTED_MESSAGE =
+  "Analysis already started for this session";
+
 export type SessionSnapshot = AnalysisSnapshot & {
   bullmqJobId: string | null;
 };
@@ -82,7 +85,7 @@ export class AnalysisStateService {
   async findOwnedSession(
     userUuid: string,
     sessionId: number,
-  ): Promise<SessionSnapshot> {
+  ): Promise<SessionSnapshot & { userId: number }> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
     const session = await this.prisma.workoutSession.findFirst({
@@ -94,7 +97,7 @@ export class AnalysisStateService {
       throw new NotFoundError("Workout session not found");
     }
 
-    return session;
+    return { ...session, userId };
   }
 
   async startRunWithCapture(
@@ -109,7 +112,7 @@ export class AnalysisStateService {
       });
 
       if (count === 0) {
-        throw new ConflictError("Analysis already started for this session");
+        throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
       }
 
       try {
@@ -127,7 +130,7 @@ export class AnalysisStateService {
           isPrismaKnownRequestError(error) &&
           error.code === PrismaErrorCode.UNIQUE_CONSTRAINT_VIOLATION
         ) {
-          throw new ConflictError("Analysis already started for this session");
+          throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
         }
         throw error;
       }

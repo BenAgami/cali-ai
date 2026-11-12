@@ -23,14 +23,24 @@ vi.mock("../../../src/services/aiPrerequisitesService", () => ({
   default: { assertAiPrerequisites: vi.fn() },
 }));
 
-vi.mock("../../../src/services/analysisStateService", () => ({
-  default: {
-    findOwnedSession: vi.fn(),
-    startRunWithCapture: vi.fn(),
-    restartRun: vi.fn(),
-    failRun: vi.fn(),
-  },
+vi.mock("../../../src/lib/progressBus", () => ({
+  publishAnalysisEvent: vi.fn(),
 }));
+
+vi.mock(
+  "../../../src/services/analysisStateService",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/services/analysisStateService")
+    >()),
+    default: {
+      findOwnedSession: vi.fn(),
+      startRunWithCapture: vi.fn(),
+      restartRun: vi.fn(),
+      failRun: vi.fn(),
+    },
+  }),
+);
 
 vi.mock("../../../src/lib/queue", () => ({
   formAnalysisQueue: { add: vi.fn() },
@@ -51,8 +61,6 @@ const { logger } = await import("../../../src/lib/logger");
 
 const USER = "user-uuid";
 const USER_ID = 3;
-const WORKOUT_ID = 9;
-const EXERCISE_ID = 4;
 const SESSION_ID = 7;
 const JOB_ID_PATTERN = /^analysis-[0-9a-f-]{36}$/;
 
@@ -81,6 +89,7 @@ const snapshot = (processingStatus: SessionStatus) => ({
   analysisStageProgress: null,
   failureReason: null,
   bullmqJobId: null,
+  userId: USER_ID,
 });
 
 const stubPending = () => {
@@ -109,12 +118,7 @@ describe("CaptureService", () => {
     vi.clearAllMocks();
     prisma = createPrismaMock();
     vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma));
-    prisma.user.findUnique.mockResolvedValue({ id: USER_ID });
     prisma.poseCapture.count.mockResolvedValue(0);
-    prisma.workoutSession.findUnique.mockResolvedValue({
-      workoutId: WORKOUT_ID,
-      exerciseId: EXERCISE_ID,
-    });
     vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockResolvedValue(
       {} as never,
     );
@@ -158,14 +162,17 @@ describe("CaptureService", () => {
       );
     });
 
-    it.each([SessionStatus.PROCESSING, SessionStatus.COMPLETED])(
-      "answers a resend to a %s session with its current run",
-      async (status) => {
+    it.each([
+      { status: SessionStatus.PROCESSING, expected: "QUEUED" },
+      { status: SessionStatus.COMPLETED, expected: "COMPLETED" },
+    ])(
+      "answers a resend to a $status session with status $expected",
+      async ({ status, expected }) => {
         vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue({
           ...snapshot(status),
           bullmqJobId: "analysis-existing",
         });
-        prisma.poseCapture.findFirst.mockResolvedValue({ id: 11 });
+        prisma.poseCapture.findUnique.mockResolvedValue({ id: 11 });
 
         const result = await service.submitCapture(USER, SESSION_ID, payload);
 
@@ -173,9 +180,9 @@ describe("CaptureService", () => {
           sessionId: SESSION_ID,
           captureId: 11,
           jobId: "analysis-existing",
-          status: "QUEUED",
+          status: expected,
         });
-        expect(prisma.poseCapture.findFirst).toHaveBeenCalledWith({
+        expect(prisma.poseCapture.findUnique).toHaveBeenCalledWith({
           where: { sessionId: SESSION_ID },
           select: { id: true },
         });
@@ -189,7 +196,7 @@ describe("CaptureService", () => {
         ...snapshot(SessionStatus.PROCESSING),
         bullmqJobId: "analysis-existing",
       });
-      prisma.poseCapture.findFirst.mockResolvedValue(null);
+      prisma.poseCapture.findUnique.mockResolvedValue(null);
 
       await expect(
         service.submitCapture(USER, SESSION_ID, payload),
@@ -257,33 +264,6 @@ describe("CaptureService", () => {
       } finally {
         vi.useRealTimers();
       }
-    });
-
-    it("checks the daily cap before the per-exercise cap", async () => {
-      stubPending();
-      prisma.poseCapture.count.mockResolvedValue(99);
-
-      const error: unknown = await service
-        .submitCapture(USER, SESSION_ID, payload)
-        .catch((e: unknown) => e);
-
-      expect((error as TooManyRequestsError).code).toBe(
-        "DAILY_ANALYSIS_LIMIT_REACHED",
-      );
-    });
-
-    it("skips the per-exercise cap for a session outside a workout", async () => {
-      stubPending();
-      vi.mocked(formAnalysisQueue.add).mockResolvedValue({} as never);
-      prisma.workoutSession.findUnique.mockResolvedValue({
-        workoutId: null,
-        exerciseId: EXERCISE_ID,
-      });
-
-      await service.submitCapture(USER, SESSION_ID, payload);
-
-      expect(prisma.poseCapture.count).toHaveBeenCalledTimes(1);
-      expect(formAnalysisQueue.add).toHaveBeenCalled();
     });
   });
 

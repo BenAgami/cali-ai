@@ -39,7 +39,7 @@ registry.registerPath({
   responses: {
     202: successResponse(
       CaptureAccepted,
-      "Capture accepted and queued. Resending to a session whose analysis already started returns that run; the resent body is not stored.",
+      "Capture accepted and queued (status QUEUED). Resending to a session whose analysis already started returns that run with its current status; the resent body is not stored.",
     ),
     400: errorResponse(
       "Validation error, or the body is not gzip (any other content type is rejected)",

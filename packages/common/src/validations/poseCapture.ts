@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { analysisStatusEventSchema } from "./analysis";
+
 export const CAPTURE_LIMITS = {
   maxCompressedBytes: 1_048_576,
   maxInflatedBytes: 10_485_760,
@@ -105,7 +107,7 @@ export const captureAcceptedResponseSchema = z.object({
   sessionId: z.number().int(),
   captureId: z.number().int(),
   jobId: z.string(),
-  status: z.literal("QUEUED"),
+  status: analysisStatusEventSchema.shape.status,
 });
 
 export type CaptureAccepted = z.infer<typeof captureAcceptedResponseSchema>;

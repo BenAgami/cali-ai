@@ -2,6 +2,7 @@ import { gzipSync } from "node:zlib";
 
 import {
   CAPTURE_LIMITS,
+  captureAcceptedResponseSchema,
   poseCapturePayloadSchema,
   quantizeCapture,
   type PoseCapturePayload,
@@ -80,5 +81,26 @@ describe("quantizeCapture", () => {
     ).length;
 
     expect(compressed).toBeLessThan(CAPTURE_LIMITS.maxCompressedBytes);
+  });
+});
+
+describe("captureAcceptedResponseSchema", () => {
+  const accepted = { sessionId: 1, captureId: 2, jobId: "analysis-x" };
+
+  it.each(["QUEUED", "PROCESSING", "COMPLETED"])(
+    "accepts status %s",
+    (status) => {
+      expect(
+        captureAcceptedResponseSchema.safeParse({ ...accepted, status })
+          .success,
+      ).toBe(true);
+    },
+  );
+
+  it("rejects an unknown status", () => {
+    expect(
+      captureAcceptedResponseSchema.safeParse({ ...accepted, status: "DONE" })
+        .success,
+    ).toBe(false);
   });
 });
