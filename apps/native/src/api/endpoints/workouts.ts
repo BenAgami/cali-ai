@@ -60,8 +60,10 @@ export const workoutApi = {
     workoutLogId?: number,
   ): Promise<RecordedSet[]> => {
     const url = WORKOUT_ROUTES.recordedSets(workoutId);
-    return apiClient.get<RecordedSet[]>(
-      workoutLogId === undefined ? url : `${url}?workoutLogId=${workoutLogId}`,
-    );
+    const query = new URLSearchParams();
+    if (workoutLogId !== undefined)
+      query.set("workoutLogId", String(workoutLogId));
+    const qs = query.toString();
+    return apiClient.get<RecordedSet[]>(qs ? `${url}?${qs}` : url);
   },
 };
