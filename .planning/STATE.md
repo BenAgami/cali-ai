@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05.2-12-PLAN.md
-last_updated: "2026-11-12T21:23:50.926Z"
+stopped_at: Completed 05.2-11-PLAN.md
+last_updated: "2026-11-12T21:26:19.675Z"
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 53
-  completed_plans: 50
+  completed_plans: 51
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05.2 (fix-pr-review-findings-for-phase-5) — EXECUTING
-Plan: 11 of 14
+Plan: 12 of 14
 
 ## Performance Metrics
 
@@ -91,6 +91,7 @@ _Updated after each plan completion_
 | Phase 05.2 P09 | 25min | 3 tasks | 5 files |
 | Phase 05.2 P07 | 35min | 2 tasks | 12 files |
 | Phase 05.2 P12 | 10min | 2 tasks | 7 files |
+| Phase 05.2 P11 | 30min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,7 @@ Recent decisions affecting current work:
 - [Phase 05.2]: 05.2-10: retry limit is per user, so one limit 429 shows the limit message on every FAILED row
 - [Phase 05.2]: 05.2-08: feedbackService owns the LLM deadline (AbortSignal.timeout); unusable attempts are logged and the last LlmError is rethrown
 - [Phase 05.2]: 05.2-07: daily cap checked inside the capture transaction behind SELECT ... FOR UPDATE on the user row (proven 5/5 runs)
+- [Phase 05.2]: Retry row inserted last in the restart transaction so refused retries are never counted
 
 ### Roadmap Evolution
 
@@ -159,6 +161,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-12T21:23:50.918Z
-Stopped at: Completed 05.2-12-PLAN.md
+Last session: 2026-11-12T21:26:19.668Z
+Stopped at: Completed 05.2-11-PLAN.md
 Resume file: None
