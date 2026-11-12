@@ -11,6 +11,7 @@ import {
   createFakeLlmProvider,
   type FormFakeStep,
 } from "../helpers/fakeLlmProvider";
+import { COMMON_FORBIDDEN_TOPICS } from "../../../src/metrics/rubrics/shared";
 import { makeScoredMetrics } from "../helpers/scoredMetrics";
 
 vi.mock("../../../src/lib/llm", async (importOriginal) => ({
@@ -176,6 +177,34 @@ describe("feedbackService.generateFormFeedback", () => {
     const validation = validateFormFeedback(draft, makeScoredMetrics());
 
     expect(validation.isValid).toBe(false);
+  });
+
+  describe("with the shared forbidden topics", () => {
+    const validateDetail = (detail: string) => {
+      const draft = goodDraft();
+      draft.corrections[0].detail = detail;
+      return validateFormFeedback(
+        draft,
+        makeScoredMetrics({ forbiddenTopics: COMMON_FORBIDDEN_TOPICS }),
+      );
+    };
+
+    it.for([
+      "Shift your weight back onto your heels.",
+      "Keep your hip height level.",
+      "Keep your body in one line, no weights needed.",
+    ])("accepts coaching wording: %s", (text) => {
+      expect(validateDetail(text).isValid).toBe(true);
+    });
+
+    it.for([
+      "This can feel painful.",
+      "Avoid pains in the knee.",
+      "Your body weight is a factor.",
+      "At your body height this is easier.",
+    ])("rejects body or pain wording: %s", (text) => {
+      expect(validateDetail(text).isValid).toBe(false);
+    });
   });
 
   it("rejects over-long summary and cue", () => {

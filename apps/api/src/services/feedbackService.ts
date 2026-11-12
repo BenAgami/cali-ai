@@ -64,7 +64,7 @@ export const validateFormFeedback = (
 ): FormFeedbackValidation => {
   const issues: string[] = [];
   const forbiddenPatterns = metrics.forbiddenTopics.map(
-    (topic) => new RegExp(`\\b${escapeRegExp(topic)}\\b`, "i"),
+    (topic) => new RegExp(`\\b${escapeRegExp(topic)}\\w*`, "i"),
   );
 
   const checkText = (label: string, text: string, maxLength?: number) => {

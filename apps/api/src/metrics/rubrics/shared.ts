@@ -20,8 +20,10 @@ export const COMMON_FORBIDDEN_TOPICS = [
   "injury",
   "pain",
   "medical terms",
-  "height",
-  "weight",
+  "body height",
+  "body weight",
+  "how tall",
+  "how heavy",
   "body composition",
 ];
 

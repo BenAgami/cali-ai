@@ -11,7 +11,7 @@ describe.each(FORM_ANALYSIS_EXERCISES)("%s rubric wording", (exerciseCode) => {
     const patterns = rubric.forbiddenTopics.map(
       (topic) =>
         new RegExp(
-          `\\b${topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`,
+          `\\b${topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\w*`,
           "i",
         ),
     );

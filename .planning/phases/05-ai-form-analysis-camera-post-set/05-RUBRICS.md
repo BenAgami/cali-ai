@@ -98,7 +98,7 @@ Columns: tag | dimension | per-rep feature | MEDIUM when | HIGH when | label | c
 - pull_up: kipping, body swing front-to-back, shoulder blades, grip width.
 - dip: shoulder shrug, shoulder blades, bar width, injury.
 - squat: knees caving in, lower-back rounding, foot angle, knees past toes.
-- All exercises: injury, pain, medical terms, height, weight, body composition.
+- All exercises: injury, pain, medical terms, body height, body weight, how tall, how heavy, body composition. Matching is by word start, so "painful" and "pains" are caught; bare "weight" and "height" are allowed because cues such as "shift your weight" and "hip height" are normal coaching.
 
 ## 6. Scoring ramps (per rep -> dimension)
 
@@ -184,3 +184,4 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - All other thresholds, ramps and band cutoffs unchanged by calibration; push-up, dip and pull-up values confirmed against the user's verdicts (calibration).
 - 2026-11-12 / 11: removed the per-exercise-per-workout cap (`FORM_ANALYSIS_EXERCISE_WORKOUT_CAP`, `EXERCISE_ANALYSIS_LIMIT_REACHED`). Workouts are plans and each start is now its own run (`WorkoutLog`), so a lifetime per-plan count was wrong. No scoring value changed, so `RUBRIC_VERSION` is unchanged.
 - 2026-11-12 / 8 (rubric-v1 -> rubric-v2): the "full lockout/stand" positive now requires the lockout feature (`maxElbowDeg`, squat `maxKneeDeg`) to be measured on every rep. Before, it was awarded whenever the incomplete-lockout tag had not fired, including when the joints were hidden and the tag could not be evaluated. The wording is now per exercise (`positives.fullRangeText`) and avoids "lock" and "full extension", so a squat is never praised for locking the knees. Scores, tags and thresholds are unchanged; only which positives appear, and their wording, change.
+- 2026-11-12 / 5 (rubric-v2): common forbidden topics `height`, `weight` -> `body height`, `body weight`, `how tall`, `how heavy`, and feedback validation matches a topic by word start (`pain` also catches "painful"). The bare words blocked normal coaching ("shift your weight") and made valid feedback fail validation.
