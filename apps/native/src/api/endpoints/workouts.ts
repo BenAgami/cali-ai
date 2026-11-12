@@ -6,7 +6,7 @@ import type {
   WorkoutWithExercises,
   WorkoutListResponse,
   WorkoutLogResponse,
-  RecordedSet,
+  RecordedSetPage,
 } from "@repo/common";
 
 import { apiClient } from "../client";
@@ -50,8 +50,12 @@ export const workoutApi = {
   recordedSets: (
     workoutId: number,
     workoutLogId?: number,
-  ): Promise<RecordedSet[]> =>
-    apiClient.get<RecordedSet[]>(
-      withQuery(WORKOUT_ROUTES.recordedSets(workoutId), { workoutLogId }),
+    offset?: number,
+  ): Promise<RecordedSetPage> =>
+    apiClient.get<RecordedSetPage>(
+      withQuery(WORKOUT_ROUTES.recordedSets(workoutId), {
+        workoutLogId,
+        offset,
+      }),
     ),
 };

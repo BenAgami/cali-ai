@@ -44,7 +44,19 @@ export const useWorkoutRecordedSets = (
   workoutId: number | undefined,
   runId?: number,
 ) => {
-  const { data, isLoading, error, refetch } = useRecordedSets(workoutId, runId);
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
+  } = useRecordedSets(workoutId, runId);
+  const recordedSets = useMemo(
+    () => data?.pages.flatMap((page) => page.items) ?? [],
+    [data],
+  );
   const { tracked, statusBySession, unseenSessionIds, track, retry } =
     useAnalysisTracker();
   const [retryingIds, setRetryingIds] = useState<ReadonlySet<number>>(
@@ -65,8 +77,7 @@ export const useWorkoutRecordedSets = (
   // Re-attach to in-flight jobs that the tracker does not know about yet
   // (e.g. opened after an app restart before re-hydration finished).
   useEffect(() => {
-    if (data === undefined) return;
-    for (const recorded of data) {
+    for (const recorded of recordedSets) {
       const isTracked = tracked.some(
         (entry) => entry.sessionId === recorded.sessionId,
       );
@@ -88,11 +99,11 @@ export const useWorkoutRecordedSets = (
         exerciseDisplayName: recorded.exerciseDisplayName,
       });
     }
-  }, [data, tracked, track]);
+  }, [recordedSets, tracked, track]);
 
   const items = useMemo<WorkoutRecordedSet[]>(
     () =>
-      (data ?? []).map((recorded) => {
+      recordedSets.map((recorded) => {
         const liveEvent = statusBySession[recorded.sessionId];
         const effectiveStatus = toEffectiveStatus(recorded, liveEvent);
         return {
@@ -108,7 +119,7 @@ export const useWorkoutRecordedSets = (
         };
       }),
     [
-      data,
+      recordedSets,
       statusBySession,
       unseenSessionIds,
       isRetryLimitReached,
@@ -149,5 +160,18 @@ export const useWorkoutRecordedSets = (
     [retry, refetch],
   );
 
-  return { items, isLoading, error, retryingIds, retrySet };
+  const loadMore = useCallback(() => {
+    void fetchNextPage();
+  }, [fetchNextPage]);
+
+  return {
+    items,
+    isLoading,
+    error,
+    retryingIds,
+    retrySet,
+    hasMore: hasNextPage,
+    isLoadingMore: isFetchingNextPage,
+    loadMore,
+  };
 };
