@@ -192,6 +192,8 @@ describe("feedbackService.generateFormFeedback", () => {
     it.for([
       "Shift your weight back onto your heels.",
       "Keep your hip height level.",
+      "Keep your weight over your hands.",
+      "Lower until your chest is at bar height.",
       "Keep your body in one line, no weights needed.",
     ])("accepts coaching wording: %s", (text) => {
       expect(validateDetail(text).isValid).toBe(true);
@@ -202,6 +204,12 @@ describe("feedbackService.generateFormFeedback", () => {
       "Avoid pains in the knee.",
       "Your body weight is a factor.",
       "At your body height this is easier.",
+      "Given your height, a wider stance helps.",
+      "At your weight, lower slowly.",
+      "You weigh enough that tempo matters.",
+      "Because you're tall, widen your grip.",
+      "Taller athletes need more depth.",
+      "Your 180 cm frame makes this harder.",
     ])("rejects body or pain wording: %s", (text) => {
       expect(validateDetail(text).isValid).toBe(false);
     });

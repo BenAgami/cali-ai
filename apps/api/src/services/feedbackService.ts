@@ -21,7 +21,8 @@ const LENGTH_CAPS = { summary: 200, positive: 200, cue: 120, detail: 280 };
 
 const BANNED_PATTERNS: RegExp[] = [
   /\d+\s*(°|deg\b|degrees?)/i,
-  /\b(valgus|varus|injur(?:y|ies|ed|e)|diagnos\w*|medical|physio\w*|rehab\w*|bmi|body fat|overweight|underweight|kg|kilograms?|lbs?|pounds|centimet(?:er|re)s?)\b/i,
+  /\b(valgus|varus|injur(?:y|ies|ed|e)|diagnos\w*|medical|physio\w*|rehab\w*|bmi|body fat|overweight|underweight|kg|kilograms?|lbs?|pounds|cm|centimet(?:er|re)s?)\b/i,
+  /\b(your (?:height|size|build|stature)|you weigh|you(?:'re| are) (?:tall|short|heavy|light|big|small)|(?:at|for|with|given) your (?:body ?)?weight|(?:taller|shorter|heavier|lighter) (?:athletes?|people|lifters?))\b/i,
 ];
 
 const escapeRegExp = (value: string): string =>
