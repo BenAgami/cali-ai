@@ -134,15 +134,16 @@ export const processAnalysisJob = async (
     "Form metrics computed",
   );
 
-  await analysisStateService.advanceStage(
+  // advanceStage is guarded on this job owning a PROCESSING session, so false
+  // means a newer run replaced it; skip the LLM call it would pay for.
+  const isRunActive = await analysisStateService.advanceStage(
     sessionId,
     jobId,
     "WRITING_FEEDBACK",
     0,
     log,
   );
-
-  if (!(await analysisStateService.isRunActive(sessionId, jobId))) {
+  if (!isRunActive) {
     log.warn("Run state changed before the LLM call; skipping it");
     return;
   }

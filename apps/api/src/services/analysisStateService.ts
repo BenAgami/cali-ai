@@ -199,14 +199,6 @@ export class AnalysisStateService {
     return true;
   }
 
-  async isRunActive(sessionId: number, jobId: string): Promise<boolean> {
-    const session = await this.prisma.workoutSession.findFirst({
-      where: this.runGuard(sessionId, jobId),
-      select: { id: true },
-    });
-    return session !== null;
-  }
-
   async completeRun(
     sessionId: number,
     jobId: string,
