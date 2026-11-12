@@ -142,6 +142,11 @@ export const processAnalysisJob = async (
     log,
   );
 
+  if (!(await analysisStateService.isRunActive(sessionId, jobId))) {
+    log.warn("Run state changed before the LLM call; skipping it");
+    return;
+  }
+
   const bodyMetric = await bodyMetricService.getLatest(jobContext.userId);
   if (!bodyMetric || !jobContext.experienceLevel) {
     throw new UnrecoverableError("ANALYSIS_ERROR");

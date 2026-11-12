@@ -14,6 +14,7 @@ const mockState = vi.hoisted(() => ({
   getCaptureForJob: vi.fn(),
   getAnalysisJobContext: vi.fn(),
   advanceStage: vi.fn(),
+  isRunActive: vi.fn(),
   completeRun: vi.fn(),
   failRun: vi.fn(),
 }));
@@ -98,6 +99,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   mockLogger.child.mockReturnValue(mockChild);
   mockState.advanceStage.mockResolvedValue(true);
+  mockState.isRunActive.mockResolvedValue(true);
   mockState.completeRun.mockResolvedValue(true);
   mockState.failRun.mockResolvedValue(true);
   mockState.getAnalysisJobContext.mockResolvedValue({
@@ -197,6 +199,21 @@ describe("processAnalysisJob", () => {
       untrackable,
     );
     expect(mockState.completeRun).toHaveBeenCalledWith(7, "job-1", mockChild);
+  });
+
+  it("skips the LLM call and save when a newer run replaced this job", async () => {
+    await withCapture();
+    mockState.isRunActive.mockResolvedValue(false);
+
+    await processAnalysisJob(makeJob());
+
+    expect(mockState.isRunActive).toHaveBeenCalledWith(7, "job-1");
+    expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
+    expect(mockResults.saveScored).not.toHaveBeenCalled();
+    expect(mockState.completeRun).not.toHaveBeenCalled();
+    expect(mockChild.warn).toHaveBeenCalledWith(
+      expect.stringContaining("skipping"),
+    );
   });
 
   it("does not complete and warns when the scored write was discarded", async () => {

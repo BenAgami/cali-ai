@@ -273,6 +273,24 @@ describe("AnalysisStateService.advanceStage", () => {
   });
 });
 
+describe("AnalysisStateService.isRunActive", () => {
+  it("is true only while the job still owns a PROCESSING session", async () => {
+    prisma.workoutSession.findFirst.mockResolvedValueOnce({ id: 5 });
+    await expect(service.isRunActive(5, JOB)).resolves.toBe(true);
+    expect(prisma.workoutSession.findFirst).toHaveBeenCalledWith({
+      where: {
+        id: 5,
+        processingStatus: SessionStatus.PROCESSING,
+        bullmqJobId: JOB,
+      },
+      select: { id: true },
+    });
+
+    prisma.workoutSession.findFirst.mockResolvedValueOnce(null);
+    await expect(service.isRunActive(5, "old")).resolves.toBe(false);
+  });
+});
+
 describe("AnalysisStateService.completeRun", () => {
   it("completes under the job guard", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
