@@ -78,6 +78,12 @@ describe("buildUntrackableAdvice", () => {
     ]);
   });
 
+  it("returns one generic line when there are no reasons", () => {
+    expect(buildUntrackableAdvice([], "push_up")).toEqual([
+      "We couldn't analyse this recording. Try again with your whole body in view.",
+    ]);
+  });
+
   it("dedupes repeated reasons", () => {
     expect(
       buildUntrackableAdvice(["LOW_CONFIDENCE", "LOW_CONFIDENCE"], "squat"),
@@ -94,6 +100,17 @@ describe("formAnalysisResponseSchema", () => {
         outcome: "UNTRACKABLE",
         reasons: ["TOO_FAR"],
         advice: ["Move closer"],
+      }).success,
+    ).toBe(true);
+  });
+
+  it("accepts an UNTRACKABLE result with no known reasons", () => {
+    expect(
+      formAnalysisResponseSchema.safeParse({
+        ...base,
+        outcome: "UNTRACKABLE",
+        reasons: [],
+        advice: ["Try again"],
       }).success,
     ).toBe(true);
   });

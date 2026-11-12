@@ -152,7 +152,14 @@ const VIEW_HINT_REASONS: readonly UntrackableReason[] = [
   "TOO_FAR",
 ];
 
-/** Advice strings in reason order, deduped; the view hint is appended once when WRONG_VIEW, OUT_OF_FRAME or TOO_FAR is present. */
+const UNTRACKABLE_FALLBACK_ADVICE =
+  "We couldn't analyse this recording. Try again with your whole body in view.";
+
+/**
+ * Advice strings in reason order, deduped; the view hint is appended once when
+ * WRONG_VIEW, OUT_OF_FRAME or TOO_FAR is present. With no reasons (for example
+ * stored reasons a later release renamed) it returns one generic line.
+ */
 export const buildUntrackableAdvice = (
   reasons: readonly UntrackableReason[],
   exerciseCode: FormAnalysisExercise,
@@ -160,6 +167,9 @@ export const buildUntrackableAdvice = (
   const unique = reasons.filter(
     (reason, index) => reasons.indexOf(reason) === index,
   );
+  if (unique.length === 0) {
+    return [UNTRACKABLE_FALLBACK_ADVICE];
+  }
   const advice = unique.map((reason) => UNTRACKABLE_ADVICE[reason]);
   if (unique.some((reason) => VIEW_HINT_REASONS.indexOf(reason) !== -1)) {
     advice.push(FORM_VIEW_HINTS[exerciseCode]);
@@ -213,7 +223,7 @@ export const formAnalysisResponseSchema = z.discriminatedUnion("outcome", [
   z.object({
     ...analysisBase,
     outcome: z.literal("UNTRACKABLE"),
-    reasons: z.array(z.enum(UNTRACKABLE_REASONS)).min(1),
+    reasons: z.array(z.enum(UNTRACKABLE_REASONS)),
     advice: z.array(z.string()).min(1),
   }),
 ]);
