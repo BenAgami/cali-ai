@@ -502,20 +502,17 @@ describe("AnalysisStateService reads", () => {
     prisma.workoutSession.findUnique.mockResolvedValueOnce({
       userId: 3,
       exercise: { code: "push_up", displayName: "Push-up" },
-      user: { experienceLevel: "BEGINNER" },
     });
     await expect(service.getAnalysisJobContext(5)).resolves.toEqual({
       userId: 3,
       exerciseCode: "push_up",
       exerciseDisplayName: "Push-up",
-      experienceLevel: "BEGINNER",
     });
     expect(prisma.workoutSession.findUnique).toHaveBeenCalledWith({
       where: { id: 5 },
       select: {
         userId: true,
         exercise: { select: { code: true, displayName: true } },
-        user: { select: { experienceLevel: true } },
       },
     });
 

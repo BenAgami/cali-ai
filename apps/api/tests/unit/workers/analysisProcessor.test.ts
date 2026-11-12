@@ -1,6 +1,7 @@
 import { UnrecoverableError } from "bullmq";
 import type { PoseCapturePayload } from "@repo/common";
 
+import { PreconditionRequiredError } from "../../../src/errors";
 import { LlmError } from "../../../src/lib/llm/types";
 import { UnsupportedCaptureError } from "../../../src/metrics/preprocess";
 import { METRICS_VERSION } from "../../../src/metrics/types";
@@ -24,7 +25,9 @@ const mockResults = vi.hoisted(() => ({
   saveScored: vi.fn(),
   saveUntrackable: vi.fn(),
 }));
-const mockBodyMetric = vi.hoisted(() => ({ getLatest: vi.fn() }));
+const mockPrerequisites = vi.hoisted(() => ({
+  assertAiPrerequisites: vi.fn(),
+}));
 const mockCompute = vi.hoisted(() => ({ computeFormMetrics: vi.fn() }));
 const mockChild = vi.hoisted(() => ({
   info: vi.fn(),
@@ -42,8 +45,8 @@ vi.mock("../../../src/services/feedbackService", () => ({
 vi.mock("../../../src/services/formAnalysisResultService", () => ({
   default: mockResults,
 }));
-vi.mock("../../../src/services/bodyMetricService", () => ({
-  default: mockBodyMetric,
+vi.mock("../../../src/services/aiPrerequisitesService", () => ({
+  default: mockPrerequisites,
 }));
 vi.mock("../../../src/metrics/computeFormMetrics", () => mockCompute);
 vi.mock("../../../src/lib/logger", () => ({ logger: mockLogger }));
@@ -104,12 +107,13 @@ beforeEach(() => {
     userId: 3,
     exerciseCode: "push_up",
     exerciseDisplayName: "Push-up",
-    experienceLevel: "BEGINNER",
   });
-  mockBodyMetric.getLatest.mockResolvedValue({
+  mockPrerequisites.assertAiPrerequisites.mockResolvedValue({
+    userId: 3,
+    experienceLevel: "BEGINNER",
+    goal: { goalType: "STRENGTH", title: "First pull-up" },
     heightCm: 180,
     weightKg: 75,
-    createdAt: new Date(),
   });
   mockCompute.computeFormMetrics.mockReturnValue(makeScoredMetrics());
   mockFeedback.generateFormFeedback.mockResolvedValue(outcome);
@@ -147,7 +151,7 @@ describe("processAnalysisJob", () => {
       [7, "job-1", "ANALYZING_REPS", 1, mockChild],
       [7, "job-1", "WRITING_FEEDBACK", 0, mockChild],
     ]);
-    expect(mockBodyMetric.getLatest).toHaveBeenCalledWith(3);
+    expect(mockPrerequisites.assertAiPrerequisites).toHaveBeenCalledWith(3);
     expect(mockFeedback.generateFormFeedback).toHaveBeenCalledWith({
       metrics,
       context: {
@@ -182,7 +186,7 @@ describe("processAnalysisJob", () => {
       "ANALYZING_REPS",
     ]);
     expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
-    expect(mockBodyMetric.getLatest).not.toHaveBeenCalled();
+    expect(mockPrerequisites.assertAiPrerequisites).not.toHaveBeenCalled();
     expect(mockResults.saveUntrackable).toHaveBeenCalledWith(
       7,
       "job-1",
@@ -318,7 +322,6 @@ describe("processAnalysisJob", () => {
       userId: 3,
       exerciseCode: "plank",
       exerciseDisplayName: "Plank",
-      experienceLevel: "BEGINNER",
     });
 
     await expect(processAnalysisJob(makeJob())).rejects.toThrow(
@@ -327,9 +330,11 @@ describe("processAnalysisJob", () => {
     expect(mockCompute.computeFormMetrics).not.toHaveBeenCalled();
   });
 
-  it("fails with ANALYSIS_ERROR when the user has no body metric", async () => {
+  it("abandons the job with ANALYSIS_ERROR and no LLM call when AI prerequisites lapsed", async () => {
     await withCapture();
-    mockBodyMetric.getLatest.mockResolvedValue(null);
+    mockPrerequisites.assertAiPrerequisites.mockRejectedValue(
+      new PreconditionRequiredError("Consent needed", "AI_CONSENT_REQUIRED"),
+    );
 
     const result = processAnalysisJob(makeJob());
 
@@ -338,18 +343,12 @@ describe("processAnalysisJob", () => {
     expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
   });
 
-  it("fails with ANALYSIS_ERROR when the user has no experience level", async () => {
+  it("rethrows an unexpected prerequisites error so BullMQ retries it", async () => {
     await withCapture();
-    mockState.getAnalysisJobContext.mockResolvedValue({
-      userId: 3,
-      exerciseCode: "push_up",
-      exerciseDisplayName: "Push-up",
-      experienceLevel: null,
-    });
+    const boom = new Error("db down");
+    mockPrerequisites.assertAiPrerequisites.mockRejectedValue(boom);
 
-    await expect(processAnalysisJob(makeJob())).rejects.toThrow(
-      "ANALYSIS_ERROR",
-    );
+    await expect(processAnalysisJob(makeJob())).rejects.toBe(boom);
     expect(mockFeedback.generateFormFeedback).not.toHaveBeenCalled();
   });
 

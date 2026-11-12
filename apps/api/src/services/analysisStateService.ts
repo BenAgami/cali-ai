@@ -3,7 +3,6 @@ import {
   ANALYSIS_LIMIT_MESSAGES,
   API_ERROR_CODES,
   type AnalysisFailureReason,
-  type ExperienceLevel,
   type AnalysisStage,
   type AnalysisStatusEvent,
 } from "@repo/common";
@@ -363,14 +362,12 @@ export class AnalysisStateService {
     userId: number;
     exerciseCode: string;
     exerciseDisplayName: string;
-    experienceLevel: ExperienceLevel | null;
   } | null> {
     const session = await this.prisma.workoutSession.findUnique({
       where: { id: sessionId },
       select: {
         userId: true,
         exercise: { select: { code: true, displayName: true } },
-        user: { select: { experienceLevel: true } },
       },
     });
 
@@ -380,7 +377,6 @@ export class AnalysisStateService {
       userId: session.userId,
       exerciseCode: session.exercise.code,
       exerciseDisplayName: session.exercise.displayName,
-      experienceLevel: session.user.experienceLevel,
     };
   }
 

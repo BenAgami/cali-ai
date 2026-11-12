@@ -6,13 +6,16 @@ import {
   type PoseCapturePayload,
 } from "@repo/common";
 
+import { PreconditionRequiredError } from "../errors";
 import { LlmError } from "../lib/llm";
 import { logger } from "../lib/logger";
 import type { AnalysisJobData } from "../lib/queue";
 import { computeFormMetrics } from "../metrics/computeFormMetrics";
 import { UnsupportedCaptureError } from "../metrics/preprocess";
 import analysisStateService from "../services/analysisStateService";
-import bodyMetricService from "../services/bodyMetricService";
+import aiPrerequisitesService, {
+  type AiUserContext,
+} from "../services/aiPrerequisitesService";
 import feedbackService, {
   type FormFeedbackOutcome,
 } from "../services/feedbackService";
@@ -147,9 +150,22 @@ export const processAnalysisJob = async (
     return;
   }
 
-  const bodyMetric = await bodyMetricService.getLatest(jobContext.userId);
-  if (!bodyMetric || !jobContext.experienceLevel) {
-    throw new UnrecoverableError("ANALYSIS_ERROR");
+  let aiContext: AiUserContext;
+  try {
+    aiContext = await aiPrerequisitesService.assertAiPrerequisites(
+      jobContext.userId,
+    );
+  } catch (error) {
+    // Prerequisites lapsed after capture (e.g. consent withdrawn): never send
+    // the data to the LLM, and don't let BullMQ retry an HTTP error.
+    if (error instanceof PreconditionRequiredError) {
+      log.warn(
+        { code: error.code },
+        "AI prerequisites no longer met; analysis abandoned",
+      );
+      throw new UnrecoverableError("ANALYSIS_ERROR");
+    }
+    throw error;
   }
 
   let outcome: FormFeedbackOutcome;
@@ -158,9 +174,9 @@ export const processAnalysisJob = async (
       metrics,
       context: {
         exerciseDisplayName: jobContext.exerciseDisplayName,
-        experienceLevel: jobContext.experienceLevel,
-        heightCm: bodyMetric.heightCm,
-        weightKg: bodyMetric.weightKg,
+        experienceLevel: aiContext.experienceLevel,
+        heightCm: aiContext.heightCm,
+        weightKg: aiContext.weightKg,
       },
       log,
     });
