@@ -52,8 +52,8 @@ export type FormFeedbackOutcome = {
 };
 
 export type FormFeedbackValidation =
-  | { ok: true; feedback: ValidatedFormFeedback }
-  | { ok: false; issues: string[] };
+  | { isValid: true; feedback: ValidatedFormFeedback }
+  | { isValid: false; issues: string[] };
 
 const uniqueSorted = (values: number[]): number[] =>
   [...new Set(values)].sort((a, b) => a - b);
@@ -130,7 +130,8 @@ export const validateFormFeedback = (
     }
   }
 
-  if (issues.length > 0) return { ok: false, issues: [...new Set(issues)] };
+  if (issues.length > 0)
+    return { isValid: false, issues: [...new Set(issues)] };
 
   const corrections: ValidatedCorrection[] = metrics.corrections.map(
     (finding) => {
@@ -153,7 +154,7 @@ export const validateFormFeedback = (
   );
 
   return {
-    ok: true,
+    isValid: true,
     feedback: {
       summary: draft.summary,
       positives: positives.map((p) => ({
@@ -217,7 +218,7 @@ class FeedbackService {
       }
 
       const validation = validateFormFeedback(result.feedback, metrics);
-      if (validation.ok) {
+      if (validation.isValid) {
         return {
           feedback: validation.feedback,
           model: result.model,

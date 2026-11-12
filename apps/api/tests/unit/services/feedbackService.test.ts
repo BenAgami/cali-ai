@@ -175,7 +175,7 @@ describe("feedbackService.generateFormFeedback", () => {
 
     const validation = validateFormFeedback(draft, makeScoredMetrics());
 
-    expect(validation.ok).toBe(false);
+    expect(validation.isValid).toBe(false);
   });
 
   it("rejects over-long summary and cue", () => {
@@ -185,7 +185,7 @@ describe("feedbackService.generateFormFeedback", () => {
     const validation = validateFormFeedback(draft, makeScoredMetrics());
 
     expect(validation).toMatchObject({
-      ok: false,
+      isValid: false,
       issues: [
         "The summary must be at most 200 characters",
         "The cue must be at most 120 characters",
