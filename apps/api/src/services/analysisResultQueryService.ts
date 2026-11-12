@@ -22,7 +22,7 @@ import {
 const RECORDED_SETS_LIMIT = 50;
 
 const isUntrackableReason = (value: string): value is UntrackableReason =>
-  (UNTRACKABLE_REASONS as readonly string[]).indexOf(value) !== -1;
+  (UNTRACKABLE_REASONS as readonly string[]).includes(value);
 
 /**
  * Read side of form analysis: maps stored rows to the shared response shapes.
