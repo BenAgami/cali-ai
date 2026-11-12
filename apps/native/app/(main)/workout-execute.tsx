@@ -17,6 +17,7 @@ import { useWorkoutExecution } from "@src/hooks/useWorkoutExecution";
 import { useCompleteWorkoutRun } from "@src/hooks/mutations/useCompleteWorkoutRun";
 import RestTimer from "@src/components/RestTimer";
 import RecordedSetCard from "@src/components/form/RecordedSetCard";
+import ShowEarlierSetsButton from "@src/components/form/ShowEarlierSetsButton";
 import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
 import { consumeRecordedSetDone } from "@src/state/recordedSetStore";
 import { isFormAnalysisExercise } from "@repo/common";
@@ -291,6 +292,12 @@ const WorkoutExecuteScreen: React.FC = () => {
               isRetrying={recorded.retryingIds.has(item.sessionId)}
             />
           ))}
+          {recorded.hasMore && (
+            <ShowEarlierSetsButton
+              isLoading={recorded.isLoadingMore}
+              onPress={recorded.loadMore}
+            />
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>

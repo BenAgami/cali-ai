@@ -13,6 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import AiDisclaimer from "@src/components/AiDisclaimer";
 import RecordedSetCard from "@src/components/form/RecordedSetCard";
+import ShowEarlierSetsButton from "@src/components/form/ShowEarlierSetsButton";
 import {
   EARLIER_SETS_TITLE,
   RECORDED_SETS_TITLE,
@@ -192,6 +193,12 @@ const WorkoutDetailScreen: React.FC = () => {
                     ))}
                   </View>
                 ))}
+                {recorded.hasMore && (
+                  <ShowEarlierSetsButton
+                    isLoading={recorded.isLoadingMore}
+                    onPress={recorded.loadMore}
+                  />
+                )}
               </View>
             )}
 

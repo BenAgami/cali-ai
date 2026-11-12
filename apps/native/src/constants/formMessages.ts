@@ -40,6 +40,8 @@ export const RETRYABLE_FAILURES: ReadonlySet<string> = new Set<string>([
   "ANALYSIS_ERROR",
 ]);
 
+export const SHOW_EARLIER_SETS = "Show earlier sets";
+
 export const RETRY_ISSUE_MESSAGES = {
   LIMIT: ANALYSIS_LIMIT_MESSAGES.dailyRetry,
   FAILED: "Couldn't retry. Check your connection and try again.",
