@@ -7,7 +7,9 @@ import {
   useCameraDevice,
   useCameraPermission,
 } from "react-native-vision-camera";
+import { StatusCodes } from "http-status-codes";
 import {
+  API_ERROR_CODES,
   buildPoseCapturePayload,
   CAPTURE_LIMITS,
   evaluateSetEnd,
@@ -15,6 +17,7 @@ import {
   exitEdgeOf,
   FORM_CAPTURE_SETUP,
   SETUP_WINDOW_FRAMES,
+  type CreateWorkoutSessionValues,
   type FormAnalysisExercise,
   type PoseCapturePayload,
   type SetupCheckResult,
@@ -71,11 +74,6 @@ const SECOND_MS = 1000;
 /** Keep 90% of the capture interval so ~33 ms frames thin cleanly to 15 fps. */
 const MIN_FRAME_GAP_SEC = (1 / RECORDING_TARGET_FPS) * 0.9;
 const DEFAULT_ASPECT_RATIO = 9 / 16;
-const HTTP_CONFLICT = 409;
-const HTTP_PRECONDITION_REQUIRED = 428;
-const HTTP_TOO_MANY_REQUESTS = 429;
-const DAILY_LIMIT_CODE = "DAILY_ANALYSIS_LIMIT_REACHED";
-const ANALYSIS_FAILED_CODE = "ANALYSIS_FAILED";
 const KEEP_AWAKE_TAG = "recorded-set";
 
 /**
@@ -94,15 +92,38 @@ const toScreenIssue = (
 
 const NOT_READY: SetupCheckResult = { isReady: false, issue: "NOT_DETECTED" };
 
+const LIMIT_UPLOAD_ERRORS: Partial<Record<string, UploadErrorCode>> = {
+  [API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED]: "DAILY_LIMIT",
+  [API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED]: "DAILY_RETRY_LIMIT",
+};
+
 const toUploadErrorCode = (error: unknown): UploadErrorCode => {
   if (
     error instanceof ApiError &&
-    error.status === HTTP_TOO_MANY_REQUESTS &&
-    error.code === DAILY_LIMIT_CODE
+    error.status === Number(StatusCodes.TOO_MANY_REQUESTS) &&
+    error.code !== undefined
   ) {
-    return "DAILY_LIMIT";
+    return LIMIT_UPLOAD_ERRORS[error.code] ?? "UPLOAD_FAILED";
   }
   return "UPLOAD_FAILED";
+};
+
+// A run completed elsewhere (e.g. Done on another screen) refuses new sets with
+// WORKOUT_LOG_COMPLETED; record the set outside the run instead of losing it.
+const createSessionForSet = async (input: CreateWorkoutSessionValues) => {
+  try {
+    return await sessionsApi.create(input);
+  } catch (error) {
+    if (
+      input.workoutLogId !== undefined &&
+      error instanceof ApiError &&
+      error.status === Number(StatusCodes.CONFLICT) &&
+      error.code === API_ERROR_CODES.WORKOUT_LOG_COMPLETED
+    ) {
+      return sessionsApi.create({ ...input, workoutLogId: undefined });
+    }
+    throw error;
+  }
 };
 
 // A failed queue add leaves the stored capture on a FAILED session, which the
@@ -117,8 +138,8 @@ const submitOrRestart = async (
   } catch (error) {
     if (
       error instanceof ApiError &&
-      error.status === HTTP_CONFLICT &&
-      error.code === ANALYSIS_FAILED_CODE
+      error.status === Number(StatusCodes.CONFLICT) &&
+      error.code === API_ERROR_CODES.ANALYSIS_FAILED
     ) {
       return sessionsApi.retryAnalysis(sessionId);
     }
@@ -357,7 +378,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     setStage("uploading");
     try {
       sessionIdRef.current ??= (
-        await sessionsApi.create({
+        await createSessionForSet({
           exerciseCode,
           workoutId: workoutId ?? undefined,
           workoutLogId: workoutLogId ?? undefined,
@@ -383,7 +404,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     } catch (error) {
       if (
         error instanceof ApiError &&
-        error.status === HTTP_PRECONDITION_REQUIRED
+        error.status === Number(StatusCodes.PRECONDITION_REQUIRED)
       ) {
         void refetchProfile();
         setStage("setup");

@@ -1,4 +1,8 @@
-import { FORM_VIEW_HINTS, type SetupIssue } from "@repo/common";
+import {
+  ANALYSIS_LIMIT_MESSAGES,
+  FORM_VIEW_HINTS,
+  type SetupIssue,
+} from "@repo/common";
 
 export const SETUP_ISSUE_MESSAGES: Record<SetupIssue, string> = {
   NOT_DETECTED:
@@ -17,8 +21,8 @@ export const WRONG_ANGLE_PULL_UP_MESSAGE = FORM_VIEW_HINTS.pull_up;
 
 export const UPLOAD_ERROR_MESSAGES = {
   UPLOAD_FAILED: "Upload failed. Check your connection and retry.",
-  DAILY_LIMIT:
-    "You've reached today's limit for form analysis. Try again tomorrow.",
+  DAILY_LIMIT: ANALYSIS_LIMIT_MESSAGES.dailyAnalysis,
+  DAILY_RETRY_LIMIT: ANALYSIS_LIMIT_MESSAGES.dailyRetry,
 } as const;
 
 export type UploadErrorCode = keyof typeof UPLOAD_ERROR_MESSAGES;
