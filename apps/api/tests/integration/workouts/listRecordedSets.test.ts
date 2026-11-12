@@ -77,15 +77,15 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     const response = await getRecordedSets(app, token, workout.id);
 
     expect(response.status).toBe(StatusCodes.OK);
-    expect(response.body.data).toHaveLength(2);
-    expect(response.body.data[0]).toMatchObject({
+    expect(response.body.data.items).toHaveLength(2);
+    expect(response.body.data.items[0]).toMatchObject({
       sessionId: newer.id,
       processingStatus: "PROCESSING",
       analysisStage: "ANALYZING_REPS",
       outcome: null,
       band: null,
     });
-    expect(response.body.data[1]).toMatchObject({
+    expect(response.body.data.items[1]).toMatchObject({
       sessionId: older.id,
       outcome: "SCORED",
       band: "EXCELLENT",
@@ -129,10 +129,10 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
       workoutLogId: runA.id,
     });
 
-    expect(all.body.data).toHaveLength(2);
+    expect(all.body.data.items).toHaveLength(2);
     expect(filtered.status).toBe(StatusCodes.OK);
-    expect(filtered.body.data).toHaveLength(1);
-    expect(filtered.body.data[0]).toMatchObject({
+    expect(filtered.body.data.items).toHaveLength(1);
+    expect(filtered.body.data.items[0]).toMatchObject({
       sessionId: inRunA.id,
       workoutLogId: runA.id,
     });
@@ -164,7 +164,9 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     const response = await getRecordedSets(app, token, workout.id);
 
     expect(
-      response.body.data.map((set: { sessionId: number }) => set.sessionId),
+      response.body.data.items.map(
+        (set: { sessionId: number }) => set.sessionId,
+      ),
     ).toEqual([processing.id]);
   });
 
@@ -175,7 +177,65 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     const response = await getRecordedSets(app, token, workout.id);
 
     expect(response.status).toBe(StatusCodes.OK);
-    expect(response.body.data).toEqual([]);
+    expect(response.body.data.items).toEqual([]);
+    expect(response.body.data.page.hasMore).toBe(false);
+  });
+
+  it("pages with limit and offset and reports hasMore and nextOffset", async () => {
+    const { userId, token } = await newUser();
+    const workout = await newWorkout(userId);
+    for (const setNumber of [1, 2, 3]) {
+      await prisma.workoutSession.create({
+        data: {
+          userId,
+          exerciseId,
+          workoutId: workout.id,
+          setNumber,
+          performedAt: new Date(`2026-11-09T10:0${setNumber}:00Z`),
+          processingStatus: SessionStatus.PROCESSING,
+        },
+      });
+    }
+
+    const first = await getRecordedSets(app, token, workout.id, { limit: 2 });
+    const second = await getRecordedSets(app, token, workout.id, {
+      limit: 2,
+      offset: 2,
+    });
+
+    expect(first.status).toBe(StatusCodes.OK);
+    expect(first.body.data.items).toHaveLength(2);
+    expect(first.body.data.page).toMatchObject({
+      hasMore: true,
+      nextOffset: 2,
+    });
+    expect(second.body.data.items).toHaveLength(1);
+    expect(second.body.data.page).toMatchObject({
+      hasMore: false,
+      nextOffset: null,
+    });
+  });
+
+  it("defaults the page size to 50", async () => {
+    const { userId, token } = await newUser();
+    const workout = await newWorkout(userId);
+
+    const response = await getRecordedSets(app, token, workout.id);
+
+    expect(response.body.data.page).toMatchObject({ limit: 50, offset: 0 });
+  });
+
+  it.each<Record<string, number>>([
+    { limit: 101 },
+    { limit: 0 },
+    { offset: -1 },
+  ])("returns 400 for invalid paging %j", async (query) => {
+    const { userId, token } = await newUser();
+    const workout = await newWorkout(userId);
+
+    const response = await getRecordedSets(app, token, workout.id, query);
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
   });
 
   it("returns 404 for another user's workout", async () => {

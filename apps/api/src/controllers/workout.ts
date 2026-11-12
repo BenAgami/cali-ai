@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import type {
   CreateWorkoutValues,
   GenerateWorkoutValues,
+  RecordedSetsQuery,
   UpdateWorkoutValues,
 } from "@repo/common";
 
@@ -15,10 +16,6 @@ import workoutGenerationService from "../services/workoutGenerationService";
 type ListWorkoutsQuery = {
   limit?: number;
   offset?: number;
-};
-
-type RecordedSetsQuery = {
-  workoutLogId?: number;
 };
 
 type WorkoutIdParam = {
@@ -82,16 +79,18 @@ export const getWorkoutById = async (
  * @route GET /api/workouts/:id/recorded-sets
  */
 export const listRecordedSets = async (
-  req: Request<WorkoutIdParam, unknown, unknown, RecordedSetsQuery>,
+  req: Request<WorkoutIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
+  // validateSchema replaced req.query with the parsed value, defaults included.
+  const query = req.query as unknown as RecordedSetsQuery;
   const data = await analysisResultQueryService.listRecordedSets(
     userUuid,
     Number(req.params.id),
-    req.query.workoutLogId,
+    query,
   );
 
   res.status(StatusCodes.OK).json({

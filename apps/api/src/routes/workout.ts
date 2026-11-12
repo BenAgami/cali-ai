@@ -4,7 +4,10 @@ import z from "zod";
 import {
   createWorkoutSchema,
   generateWorkoutSchema,
+  recordedSetsQuerySchema,
   updateWorkoutSchema,
+  workoutIdParamSchema,
+  workoutLogIdParamSchema,
 } from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
@@ -27,18 +30,6 @@ const router: Router = Router();
 const listWorkoutsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),
-});
-
-const recordedSetsQuerySchema = z.object({
-  workoutLogId: z.coerce.number().int().positive().optional(),
-});
-
-const workoutIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
-});
-
-const workoutLogIdParamSchema = workoutIdParamSchema.extend({
-  logId: z.coerce.number().int().positive(),
 });
 
 /**

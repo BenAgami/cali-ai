@@ -4,6 +4,7 @@ import {
   formAnalysisResponseSchema,
 } from "@repo/common";
 
+import { lookAheadTake } from "../../../src/utils/pagination";
 import {
   ConflictError,
   InternalError,
@@ -118,16 +119,18 @@ describe("AnalysisResultQueryService", () => {
       ...overrides,
     });
 
+    const query = { limit: 50, offset: 0 };
+
     it("throws NotFoundError when the workout is not owned", async () => {
       prisma.workout.findFirst.mockResolvedValue(null);
 
-      await expect(service.listRecordedSets(USER, 9)).rejects.toThrow(
+      await expect(service.listRecordedSets(USER, 9, query)).rejects.toThrow(
         new NotFoundError("Workout not found"),
       );
       expect(prisma.workoutSession.findMany).not.toHaveBeenCalled();
     });
 
-    it("queries newest first, capped at 50, and maps band from the score", async () => {
+    it("queries newest first with a look-ahead row and maps band from the score", async () => {
       prisma.workout.findFirst.mockResolvedValue({ id: 9 });
       prisma.workoutSession.findMany.mockResolvedValue([
         row(),
@@ -144,7 +147,7 @@ describe("AnalysisResultQueryService", () => {
         }),
       ]);
 
-      const result = await service.listRecordedSets(USER, 9);
+      const { items: result } = await service.listRecordedSets(USER, 9, query);
 
       expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -154,7 +157,8 @@ describe("AnalysisResultQueryService", () => {
             processingStatus: { not: SessionStatus.PENDING },
           },
           orderBy: [{ performedAt: "desc" }, { id: "desc" }],
-          take: 50,
+          skip: 0,
+          take: 51,
         }),
       );
       expect(
@@ -176,7 +180,10 @@ describe("AnalysisResultQueryService", () => {
       prisma.workout.findFirst.mockResolvedValue({ id: 9 });
       prisma.workoutSession.findMany.mockResolvedValue([row()]);
 
-      const result = await service.listRecordedSets(USER, 9, 4);
+      const { items: result } = await service.listRecordedSets(USER, 9, {
+        ...query,
+        workoutLogId: 4,
+      });
 
       expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -189,6 +196,29 @@ describe("AnalysisResultQueryService", () => {
         }),
       );
       expect(result[0]).toMatchObject({ workoutLogId: 4 });
+    });
+
+    it("pages with skip and a look-ahead take, trimming the extra row", async () => {
+      prisma.workout.findFirst.mockResolvedValue({ id: 9 });
+      prisma.workoutSession.findMany.mockResolvedValue(
+        [20, 19, 18, 17, 16, 15].map((id) => row({ id })),
+      );
+
+      const result = await service.listRecordedSets(USER, 9, {
+        limit: 5,
+        offset: 10,
+      });
+
+      expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 10, take: lookAheadTake(5) }),
+      );
+      expect(result.items).toHaveLength(5);
+      expect(result.page).toEqual({
+        limit: 5,
+        offset: 10,
+        hasMore: true,
+        nextOffset: 15,
+      });
     });
   });
 

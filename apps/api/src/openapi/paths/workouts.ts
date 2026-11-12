@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { recordedSetsQuerySchema, workoutLogIdParamSchema } from "@repo/common";
+
 import { registry } from "../registry";
 import {
   CreateWorkoutBody,
@@ -133,20 +135,20 @@ registry.registerPath({
   tags: ["Workouts"],
   summary: "List the recorded sets of a workout",
   description:
-    "Up to 50 sets, newest first, with processing status, stage, outcome and band. The raw score is never returned.",
+    "Newest first, paged by limit (default 50, max 100) and offset; page.hasMore and page.nextOffset say whether earlier sets exist. Includes processing status, stage, outcome and band. The raw score is never returned.",
   security: [bearerAuth],
   request: {
     params: workoutIdParam,
-    query: z.object({
-      workoutLogId: z.number().int().optional().openapi({
+    query: recordedSetsQuerySchema.extend({
+      workoutLogId: recordedSetsQuerySchema.shape.workoutLogId.openapi({
         description: "Only the sets recorded during this workout run",
         example: 1,
       }),
     }),
   },
   responses: {
-    200: successResponse(z.array(RecordedSet), "Recorded sets"),
-    400: errorResponse("Invalid workout ID"),
+    200: successResponse(paginatedData(RecordedSet), "Recorded sets"),
+    400: errorResponse("Invalid workout ID or paging parameters"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout not found"),
     500: errorResponse("Internal server error"),
@@ -218,9 +220,7 @@ registry.registerPath({
     "Stamps completedAt; durationSecs is computed from the run's startedAt. Any request body is ignored.",
   security: [bearerAuth],
   request: {
-    params: workoutIdParam.extend({
-      logId: z.number().int().openapi({ example: 1 }),
-    }),
+    params: workoutLogIdParamSchema,
   },
   responses: {
     200: successResponse(WorkoutLogResponse, "Workout run completed"),

@@ -2,24 +2,24 @@ import {
   bandFromScore,
   buildUntrackableAdvice,
   formAnalysisResponseSchema,
-  recordedSetListSchema,
+  recordedSetPageSchema,
   isFormAnalysisExercise,
   FORM_DIMENSIONS,
   UNTRACKABLE_REASONS,
   type FormAnalysisResponse,
-  type RecordedSet,
+  type RecordedSetPage,
+  type RecordedSetsQuery,
   type UntrackableReason,
 } from "@repo/common";
 import { getPrismaClient, SessionStatus } from "@repo/db";
 
 import { ConflictError, InternalError, NotFoundError } from "../errors";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
+import { lookAheadTake, paginate } from "../utils/pagination";
 import {
   storedRawFeedbackSchema,
   storedScoreBreakdownSchema,
 } from "../utils/storedAnalysis";
-
-const RECORDED_SETS_LIMIT = 50;
 
 const isUntrackableReason = (value: string): value is UntrackableReason =>
   (UNTRACKABLE_REASONS as readonly string[]).includes(value);
@@ -163,8 +163,8 @@ export class AnalysisResultQueryService {
   async listRecordedSets(
     userUuid: string,
     workoutId: number,
-    workoutLogId?: number,
-  ): Promise<RecordedSet[]> {
+    query: RecordedSetsQuery,
+  ): Promise<RecordedSetPage> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
     const workout = await this.prisma.workout.findFirst({
@@ -180,11 +180,12 @@ export class AnalysisResultQueryService {
       where: {
         workoutId,
         userId,
-        workoutLogId,
+        workoutLogId: query.workoutLogId,
         processingStatus: { not: SessionStatus.PENDING },
       },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
-      take: RECORDED_SETS_LIMIT,
+      skip: query.offset,
+      take: lookAheadTake(query.limit),
       select: {
         id: true,
         workoutId: true,
@@ -201,29 +202,31 @@ export class AnalysisResultQueryService {
       },
     });
 
-    const parsed = recordedSetListSchema.safeParse(
-      sessions.map((session) => {
-        const result = session.analysisResult;
-        return {
-          sessionId: session.id,
-          workoutId: session.workoutId,
-          workoutLogId: session.workoutLogId,
-          setNumber: session.setNumber,
-          exerciseCode: session.exercise.code,
-          exerciseDisplayName: session.exercise.displayName,
-          performedAt: session.performedAt.toISOString(),
-          processingStatus: session.processingStatus,
-          analysisStage: session.analysisStage,
-          analysisStageProgress: session.analysisStageProgress,
-          failureReason: session.failureReason,
-          bullmqJobId: session.bullmqJobId,
-          outcome: result?.outcome ?? null,
-          band:
-            result?.outcome === "SCORED" && result.formScore !== null
-              ? bandFromScore(result.formScore)
-              : null,
-        };
-      }),
+    const mapped = sessions.map((session) => {
+      const result = session.analysisResult;
+      return {
+        sessionId: session.id,
+        workoutId: session.workoutId,
+        workoutLogId: session.workoutLogId,
+        setNumber: session.setNumber,
+        exerciseCode: session.exercise.code,
+        exerciseDisplayName: session.exercise.displayName,
+        performedAt: session.performedAt.toISOString(),
+        processingStatus: session.processingStatus,
+        analysisStage: session.analysisStage,
+        analysisStageProgress: session.analysisStageProgress,
+        failureReason: session.failureReason,
+        bullmqJobId: session.bullmqJobId,
+        outcome: result?.outcome ?? null,
+        band:
+          result?.outcome === "SCORED" && result.formScore !== null
+            ? bandFromScore(result.formScore)
+            : null,
+      };
+    });
+
+    const parsed = recordedSetPageSchema.safeParse(
+      paginate(mapped, query.limit, query.offset),
     );
     if (!parsed.success) {
       throw new InternalError("Recorded sets are not readable");

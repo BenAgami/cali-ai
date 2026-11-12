@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { ANALYSIS_STAGES, SESSION_STATUSES } from "./analysis";
+import { paginatedSchema } from "./pagination";
 
 export const FORM_ANALYSIS_EXERCISES = [
   "push_up",
@@ -249,4 +250,6 @@ export const recordedSetSchema = z.object({
 
 export type RecordedSet = z.infer<typeof recordedSetSchema>;
 
-export const recordedSetListSchema = z.array(recordedSetSchema);
+export const recordedSetPageSchema = paginatedSchema(recordedSetSchema);
+
+export type RecordedSetPage = z.infer<typeof recordedSetPageSchema>;
