@@ -23,6 +23,13 @@ import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useDeleteWorkout } from "@src/hooks/mutations/useDeleteWorkout";
 import { useStartWorkoutRun } from "@src/hooks/mutations/useStartWorkoutRun";
+import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
+import {
+  START_LABEL,
+  START_RUN_FAILED_MESSAGE,
+  START_RUN_FAILED_TITLE,
+  STARTING_LABEL,
+} from "@src/constants/workoutMessages";
 import type { WorkoutExerciseHydrated } from "@repo/common";
 
 type DetailParams = { id?: string };
@@ -54,7 +61,7 @@ const formatExerciseRow = (ex: WorkoutExerciseHydrated): string => {
 const WorkoutDetailScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<DetailParams>();
-  const id = params.id ? Number(params.id) : undefined;
+  const id = parsePositiveIntParam(params.id) ?? undefined;
   const { data, isLoading, error } = useWorkoutDetail(id);
   const deleteMutation = useDeleteWorkout();
   const startRunMutation = useStartWorkoutRun();
@@ -76,7 +83,7 @@ const WorkoutDetailScreen: React.FC = () => {
           params: { id: String(id), runId: String(run.id) },
         }),
       onError: () =>
-        Alert.alert("Could not start", "Check your connection and try again."),
+        Alert.alert(START_RUN_FAILED_TITLE, START_RUN_FAILED_MESSAGE),
     });
   };
 
@@ -211,7 +218,7 @@ const WorkoutDetailScreen: React.FC = () => {
               }
             >
               <Text style={styles.primaryCtaText}>
-                {startRunMutation.isPending ? "Starting…" : "Start"}
+                {startRunMutation.isPending ? STARTING_LABEL : START_LABEL}
               </Text>
             </Pressable>
 

@@ -21,6 +21,11 @@ import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
 import { consumeRecordedSetDone } from "@src/state/recordedSetStore";
 import { isFormAnalysisExercise } from "@repo/common";
 import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
+import {
+  RUN_NOT_STARTED_MESSAGE,
+  SAVE_RUN_FAILED_MESSAGE,
+  SAVE_RUN_FAILED_TITLE,
+} from "@src/constants/workoutMessages";
 
 type ExecuteParams = { id?: string; runId?: string };
 
@@ -52,7 +57,7 @@ const formatRepsOrDuration = (
 const WorkoutExecuteScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<ExecuteParams>();
-  const id = params.id ? Number(params.id) : undefined;
+  const id = parsePositiveIntParam(params.id) ?? undefined;
   const { data: workout, isLoading, error } = useWorkoutDetail(id);
   const execution = useWorkoutExecution(workout);
   const runId = parsePositiveIntParam(params.runId);
@@ -81,16 +86,12 @@ const WorkoutExecuteScreen: React.FC = () => {
     if (!id || !workout) return;
     if (runId === null) {
       // Opened without a run (e.g. restored navigation): nothing to save.
-      Alert.alert(
-        "Could not save",
-        "This workout wasn't started from its plan, so it can't be saved.",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/(main)/(tabs)/workouts"),
-          },
-        ],
-      );
+      Alert.alert(SAVE_RUN_FAILED_TITLE, RUN_NOT_STARTED_MESSAGE, [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(main)/(tabs)/workouts"),
+        },
+      ]);
       return;
     }
     completeMutation.mutate(
@@ -101,16 +102,12 @@ const WorkoutExecuteScreen: React.FC = () => {
           router.replace("/(main)/(tabs)/workouts");
         },
         onError: () => {
-          Alert.alert(
-            "Could not save",
-            "We couldn't record this workout, but your time is shown above.",
-            [
-              {
-                text: "OK",
-                onPress: () => router.replace("/(main)/(tabs)/workouts"),
-              },
-            ],
-          );
+          Alert.alert(SAVE_RUN_FAILED_TITLE, SAVE_RUN_FAILED_MESSAGE, [
+            {
+              text: "OK",
+              onPress: () => router.replace("/(main)/(tabs)/workouts"),
+            },
+          ]);
         },
       },
     );
