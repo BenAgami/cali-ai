@@ -6,6 +6,7 @@ type PrismaClient = ReturnType<typeof getPrismaClient>;
 
 const DELEGATE_METHODS = [
   "findUnique",
+  "findUniqueOrThrow",
   "findFirst",
   "findMany",
   "create",

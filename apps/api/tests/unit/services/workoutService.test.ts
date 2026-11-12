@@ -449,7 +449,8 @@ describe("WorkoutService.completeWorkoutLog", () => {
   beforeEach(() => {
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
     prisma.workoutLog.findFirst.mockResolvedValue({ completedAt: null });
-    prisma.workoutLog.update.mockResolvedValue({ id: LOG_ID });
+    prisma.workoutLog.updateMany.mockResolvedValue({ count: 1 });
+    prisma.workoutLog.findUniqueOrThrow.mockResolvedValue({ id: LOG_ID });
   });
 
   it("looks the log up by owner, workout and id", async () => {
@@ -477,8 +478,8 @@ describe("WorkoutService.completeWorkoutLog", () => {
         DATA,
       );
 
-      expect(prisma.workoutLog.update).toHaveBeenCalledWith({
-        where: { id: LOG_ID },
+      expect(prisma.workoutLog.updateMany).toHaveBeenCalledWith({
+        where: { id: LOG_ID, completedAt: null },
         data: {
           completedAt: new Date("2026-11-12T10:00:00.000Z"),
           durationSecs: 300,
@@ -487,5 +488,14 @@ describe("WorkoutService.completeWorkoutLog", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("rejects with a conflict when another request completed it first", async () => {
+    prisma.workoutLog.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(
+      workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID, DATA),
+    ).rejects.toThrow(new ConflictError("Workout log is already completed"));
+    expect(prisma.workoutLog.findUniqueOrThrow).not.toHaveBeenCalled();
   });
 });

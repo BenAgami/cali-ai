@@ -231,10 +231,15 @@ export class WorkoutService {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     await this.assertOpenWorkoutLog(userId, workoutId, logId);
 
-    return this.prisma.workoutLog.update({
-      where: { id: logId },
+    // Guarded on completedAt so a concurrent request cannot complete it twice.
+    const { count } = await this.prisma.workoutLog.updateMany({
+      where: { id: logId, completedAt: null },
       data: { completedAt: new Date(), durationSecs: data.durationSecs },
     });
+    if (count === 0)
+      throw new ConflictError("Workout log is already completed");
+
+    return this.prisma.workoutLog.findUniqueOrThrow({ where: { id: logId } });
   }
 }
 

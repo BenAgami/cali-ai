@@ -137,6 +137,28 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       expect(response.status).toBe(StatusCodes.CONFLICT);
     });
 
+    it("completes a run only once when two requests race", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const started = await startWorkout(app, token, workout.id);
+      const logId = started.body.data.id;
+
+      const responses = await Promise.all([
+        completeWorkout(app, token, workout.id, logId, { durationSecs: 60 }),
+        completeWorkout(app, token, workout.id, logId, { durationSecs: 90 }),
+      ]);
+
+      expect(responses.map((response) => response.status).sort()).toEqual([
+        StatusCodes.OK,
+        StatusCodes.CONFLICT,
+      ]);
+      const winner = responses.find((response) => response.body.success)!;
+      const dbLog = await prisma.workoutLog.findUniqueOrThrow({
+        where: { id: logId },
+      });
+      expect(dbLog.durationSecs).toBe(winner.body.data.durationSecs);
+    });
+
     it("returns 404 for another user's run", async () => {
       const owner = await newUser();
       const other = await newUser();
