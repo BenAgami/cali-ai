@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05.2-10-PLAN.md
-last_updated: "2026-11-12T21:11:47.388Z"
+stopped_at: Completed 05.2-08-PLAN.md
+last_updated: "2026-11-12T21:12:30.341Z"
 progress:
   total_phases: 12
   completed_phases: 3
   total_plans: 53
-  completed_plans: 46
+  completed_plans: 47
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05.2 (fix-pr-review-findings-for-phase-5) — EXECUTING
-Plan: 7 of 14
+Plan: 8 of 14
 
 ## Performance Metrics
 
@@ -87,6 +87,7 @@ _Updated after each plan completion_
 | Phase 05.2 P05 | 40min | 2 tasks | 9 files |
 | Phase 05.2 P01 | 25min | 2 tasks | 5 files |
 | Phase 05.2 P10 | 10min | 2 tasks | 6 files |
+| Phase 05.2 P08 | 15min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,7 @@ Recent decisions affecting current work:
 - [Phase 05.2]: 05.2-04: PENDING sessions count as unrecorded when closing stale runs; AU-9 non-atomic Start accepted as risk
 - [Phase 05.2]: 05.2-05: recorded sets use offset pagination (limit 1-100, default 50); unknown untrackable reasons answer generic advice
 - [Phase 05.2]: 05.2-10: retry limit is per user, so one limit 429 shows the limit message on every FAILED row
+- [Phase 05.2]: 05.2-08: feedbackService owns the LLM deadline (AbortSignal.timeout); unusable attempts are logged and the last LlmError is rethrown
 
 ### Roadmap Evolution
 
@@ -153,6 +155,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-12T21:11:47.380Z
-Stopped at: Completed 05.2-10-PLAN.md
+Last session: 2026-11-12T21:12:30.334Z
+Stopped at: Completed 05.2-08-PLAN.md
 Resume file: None
