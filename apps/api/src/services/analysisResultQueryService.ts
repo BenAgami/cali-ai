@@ -174,8 +174,7 @@ export class AnalysisResultQueryService {
     }
 
     const sessions = await this.prisma.workoutSession.findMany({
-      // A PENDING session never received a capture (e.g. the upload failed
-      // before it was accepted), so there is nothing to show or open.
+      // PENDING means no capture was accepted, so there is nothing to show.
       where: {
         workoutId,
         userId,

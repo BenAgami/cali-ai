@@ -1,7 +1,7 @@
 export type RecordedSetRun<T> = {
-  /** Null groups the sets recorded outside any workout run. */
+  /** Null for sets recorded outside any run. */
   runId: number | null;
-  /** Time of the group's newest set. */
+  /** The group's newest set. */
   performedAt: string;
   items: T[];
 };

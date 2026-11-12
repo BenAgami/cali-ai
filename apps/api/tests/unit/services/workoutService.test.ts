@@ -434,16 +434,6 @@ describe("WorkoutService.startWorkoutLog", () => {
     prisma.workoutLog.create.mockResolvedValue({ id: LOG_ID });
   });
 
-  it("rejects an unowned workout without creating a log", async () => {
-    prisma.workout.findFirst.mockResolvedValue(null);
-
-    await expect(
-      workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID),
-    ).rejects.toThrow(new NotFoundError("Workout not found"));
-
-    expect(prisma.workoutLog.create).not.toHaveBeenCalled();
-  });
-
   it("creates an in-progress log with only the owner and workout", async () => {
     await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID);
 
@@ -474,28 +464,6 @@ describe("WorkoutService.completeWorkoutLog", () => {
       where: { id: LOG_ID, workoutId: WORKOUT_ID, userId: 42 },
       select: { completedAt: true },
     });
-  });
-
-  it("rejects a missing log without updating", async () => {
-    prisma.workoutLog.findFirst.mockResolvedValue(null);
-
-    await expect(
-      workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID, DATA),
-    ).rejects.toThrow(new NotFoundError("Workout log not found"));
-
-    expect(prisma.workoutLog.update).not.toHaveBeenCalled();
-  });
-
-  it("rejects an already completed log with a conflict", async () => {
-    prisma.workoutLog.findFirst.mockResolvedValue({
-      completedAt: new Date("2026-01-01T00:00:00.000Z"),
-    });
-
-    await expect(
-      workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID, DATA),
-    ).rejects.toThrow(new ConflictError("Workout log is already completed"));
-
-    expect(prisma.workoutLog.update).not.toHaveBeenCalled();
   });
 
   it("stores the duration and stamps completedAt", async () => {

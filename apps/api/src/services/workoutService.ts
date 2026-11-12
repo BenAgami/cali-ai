@@ -210,13 +210,8 @@ export class WorkoutService {
     return this.prisma.workoutLog.create({ data: { userId, workoutId } });
   }
 
-  async completeWorkoutLog(
-    userUuid: string,
-    workoutId: number,
-    logId: number,
-    data: CompleteWorkoutLogValues,
-  ) {
-    const userId = await getUserIdByUuid(this.prisma, userUuid);
+  /** The run must be the user's, for that workout, and not yet completed. */
+  async assertOpenWorkoutLog(userId: number, workoutId: number, logId: number) {
     const log = await this.prisma.workoutLog.findFirst({
       where: { id: logId, workoutId, userId },
       select: { completedAt: true },
@@ -225,6 +220,16 @@ export class WorkoutService {
     if (log.completedAt !== null) {
       throw new ConflictError("Workout log is already completed");
     }
+  }
+
+  async completeWorkoutLog(
+    userUuid: string,
+    workoutId: number,
+    logId: number,
+    data: CompleteWorkoutLogValues,
+  ) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    await this.assertOpenWorkoutLog(userId, workoutId, logId);
 
     return this.prisma.workoutLog.update({
       where: { id: logId },

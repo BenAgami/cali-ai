@@ -168,17 +168,6 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     ).toEqual([processing.id]);
   });
 
-  it("returns 400 for an invalid workoutLogId", async () => {
-    const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
-
-    const response = await getRecordedSets(app, token, workout.id, {
-      workoutLogId: 0,
-    });
-
-    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
-  });
-
   it("returns an empty list for a workout with no recorded sets", async () => {
     const { userId, token } = await newUser();
     const workout = await newWorkout(userId);

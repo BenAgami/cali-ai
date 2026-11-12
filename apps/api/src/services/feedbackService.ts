@@ -142,9 +142,7 @@ export const validateFormFeedback = (
         title: finding.label,
         cue: match?.cue ?? finding.cue,
         detail: match?.detail ?? "",
-        // The finding's reps are server-selected, so an empty list from the
-        // model (which would leave the correction tied to no rep) falls back
-        // to them.
+        // An empty list would tie the correction to no rep, so use the finding's.
         repNumbers: uniqueSorted(
           match && match.repNumbers.length > 0
             ? match.repNumbers

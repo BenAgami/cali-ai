@@ -145,8 +145,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     useState<UploadErrorCode | null>(null);
 
   const missingPrerequisites = getMissingProfilePrerequisites(profile);
-  // A failed fetch leaves the profile undefined, so tell it apart from loading
-  // or the recorder would spin forever.
+  // A failed fetch also leaves the profile undefined; don't read it as loading.
   const isLoadingPrerequisites =
     profile === undefined && (!isProfileError || isFetchingProfile);
   const hasPrerequisitesError =

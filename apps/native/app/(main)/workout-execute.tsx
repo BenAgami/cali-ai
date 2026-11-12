@@ -77,11 +77,7 @@ const WorkoutExecuteScreen: React.FC = () => {
   };
 
   const handleDone = () => {
-    if (!id || !workout) return;
-    if (runId === undefined) {
-      router.replace("/(main)/(tabs)/workouts");
-      return;
-    }
+    if (!id || !workout || runId === undefined) return;
     completeMutation.mutate(
       {
         workoutId: id,
@@ -259,7 +255,7 @@ const WorkoutExecuteScreen: React.FC = () => {
                     setNumber: String(execution.currentSet),
                     exerciseCode: ex.exercise.code,
                     exerciseDisplayName: ex.exercise.displayName,
-                    ...(runId !== undefined && { runId: String(runId) }),
+                    runId: String(runId),
                     source: "execute",
                   },
                 })
@@ -278,7 +274,7 @@ const WorkoutExecuteScreen: React.FC = () => {
           )}
 
         <ScrollView style={styles.recordedRows}>
-          {(runId === undefined ? [] : recorded.items).map((item) => (
+          {recorded.items.map((item) => (
             <RecordedSetCard
               key={item.sessionId}
               item={item}

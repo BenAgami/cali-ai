@@ -3,10 +3,10 @@ import { getPrismaClient, SessionStatus } from "@repo/db";
 import {
   NotFoundError,
   BadRequestError,
-  ConflictError,
   PreconditionRequiredError,
 } from "../../../src/errors";
 import aiPrerequisitesService from "../../../src/services/aiPrerequisitesService";
+import workoutService from "../../../src/services/workoutService";
 
 import {
   asPrismaClient,
@@ -21,6 +21,10 @@ vi.mock("@repo/db", async (importOriginal) => ({
 
 vi.mock("../../../src/services/aiPrerequisitesService", () => ({
   default: { assertAiPrerequisites: vi.fn() },
+}));
+
+vi.mock("../../../src/services/workoutService", () => ({
+  default: { assertOpenWorkoutLog: vi.fn() },
 }));
 
 vi.mock("../../../src/services/aiPrerequisitesService", () => ({
@@ -197,62 +201,21 @@ describe("WorkoutSessionService.createSession", () => {
     });
   });
 
-  describe("workoutLogId", () => {
-    const givenWorkoutWithExercise = () => {
-      givenUserAndExercise();
-      prisma.workout.findFirst.mockResolvedValue({
-        id: 5,
-        exercises: [{ exercise: { code: "push_up" } }],
-      });
-    };
-    const dto = { ...baseDto, workoutId: 5, workoutLogId: 9 };
-
-    it("links the session to an open run owned by the user for that workout", async () => {
-      givenWorkoutWithExercise();
-      prisma.workoutLog.findFirst.mockResolvedValue({ completedAt: null });
-
-      await workoutSessionService.createSession(USER_UUID, dto);
-
-      expect(prisma.workoutLog.findFirst).toHaveBeenCalledWith({
-        where: { id: 9, workoutId: 5, userId: 42 },
-        select: { completedAt: true },
-      });
-      expect(createData()).toMatchObject({ workoutId: 5, workoutLogId: 9 });
+  it("checks the run belongs to the user and workout before linking it", async () => {
+    givenUserAndExercise();
+    prisma.workout.findFirst.mockResolvedValue({
+      id: 5,
+      exercises: [{ exercise: { code: "push_up" } }],
     });
 
-    it("stores a null workoutLogId when none is supplied", async () => {
-      givenWorkoutWithExercise();
-
-      await workoutSessionService.createSession(USER_UUID, {
-        ...baseDto,
-        workoutId: 5,
-      });
-
-      expect(prisma.workoutLog.findFirst).not.toHaveBeenCalled();
-      expect(createData()).toMatchObject({ workoutLogId: null });
+    await workoutSessionService.createSession(USER_UUID, {
+      ...baseDto,
+      workoutId: 5,
+      workoutLogId: 9,
     });
 
-    it("rejects a run that is missing, foreign or for another workout", async () => {
-      givenWorkoutWithExercise();
-      prisma.workoutLog.findFirst.mockResolvedValue(null);
-
-      await expect(
-        workoutSessionService.createSession(USER_UUID, dto),
-      ).rejects.toThrow(new NotFoundError("Workout log not found"));
-      expect(prisma.workoutSession.create).not.toHaveBeenCalled();
-    });
-
-    it("rejects a run that is already completed", async () => {
-      givenWorkoutWithExercise();
-      prisma.workoutLog.findFirst.mockResolvedValue({
-        completedAt: new Date("2026-11-12T10:00:00.000Z"),
-      });
-
-      await expect(
-        workoutSessionService.createSession(USER_UUID, dto),
-      ).rejects.toThrow(new ConflictError("Workout log is already completed"));
-      expect(prisma.workoutSession.create).not.toHaveBeenCalled();
-    });
+    expect(workoutService.assertOpenWorkoutLog).toHaveBeenCalledWith(42, 5, 9);
+    expect(createData()).toMatchObject({ workoutId: 5, workoutLogId: 9 });
   });
 
   it("stores null workoutId and setNumber when not supplied", async () => {

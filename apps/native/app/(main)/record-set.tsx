@@ -20,10 +20,10 @@ import {
 } from "@repo/common";
 import AiPrerequisiteSteps from "@src/components/AiPrerequisiteSteps";
 import FramingGuide from "@src/components/form/FramingGuide";
+import { RETRY } from "@src/constants/formMessages";
 import {
   COUNTDOWN_HINT,
   PROFILE_LOAD_ERROR,
-  RETRY_PROFILE,
   RETRY_UPLOAD,
   STOP,
 } from "@src/constants/recordingMessages";
@@ -140,7 +140,7 @@ const Recorder: React.FC<RecorderProps> = ({
                 onPress={() => void recorder.refetchPrerequisites()}
                 accessibilityRole="button"
               >
-                <Text style={styles.primaryLabel}>{RETRY_PROFILE}</Text>
+                <Text style={styles.primaryLabel}>{RETRY}</Text>
               </Pressable>
             </View>
           ) : (
@@ -396,7 +396,7 @@ const RecordSetScreen: React.FC = () => {
   }
 
   const workoutId = toPositiveIntOrNull(params.workoutId);
-  // The API rejects a setNumber or run without a workoutId, so drop them with it.
+  // The API rejects a setNumber or run without a workoutId.
   const setNumber =
     workoutId === null ? null : toPositiveIntOrNull(params.setNumber);
   const workoutLogId =

@@ -26,7 +26,6 @@ export type UploadErrorCode = keyof typeof UPLOAD_ERROR_MESSAGES;
 export const RETRY_UPLOAD = "Retry upload";
 export const PROFILE_LOAD_ERROR =
   "Couldn't load your profile. Check your connection and retry.";
-export const RETRY_PROFILE = "Retry";
 export const STOP = "Stop";
 export const COUNTDOWN_HINT = "Hold this position";
 

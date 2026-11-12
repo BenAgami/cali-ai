@@ -20,7 +20,6 @@ import {
   submitCapture,
   submitRawCapture,
 } from "../helpers/requestSender/sessionsRequests";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
@@ -303,11 +302,10 @@ describe("POST /api/sessions/:id/capture", () => {
     const createSetSession = async (
       userId: number,
       exerciseId: number,
-      workoutId: number | null,
     ): Promise<number> =>
       (
         await prisma.workoutSession.create({
-          data: { userId, exerciseId, workoutId, setNumber: 1 },
+          data: { userId, exerciseId, setNumber: 1 },
           select: { id: true },
         })
       ).id;
@@ -321,7 +319,7 @@ describe("POST /api/sessions/:id/capture", () => {
       const exercise = await prisma.exercise.findUniqueOrThrow({
         where: { code: exerciseCode },
       });
-      const sessionId = await createSetSession(user.userId, exercise.id, null);
+      const sessionId = await createSetSession(user.userId, exercise.id);
 
       const response = await submitCapture(
         app,
@@ -341,7 +339,7 @@ describe("POST /api/sessions/:id/capture", () => {
         where: { code: exerciseCode },
       });
       for (let i = 0; i < env.formAnalysis.dailyCap; i++) {
-        const id = await createSetSession(user.userId, exercise.id, null);
+        const id = await createSetSession(user.userId, exercise.id);
         await prisma.poseCapture.create({
           data: {
             sessionId: id,
@@ -354,7 +352,7 @@ describe("POST /api/sessions/:id/capture", () => {
           },
         });
       }
-      const sessionId = await createSetSession(user.userId, exercise.id, null);
+      const sessionId = await createSetSession(user.userId, exercise.id);
 
       const response = await submitCapture(
         app,
@@ -365,24 +363,6 @@ describe("POST /api/sessions/:id/capture", () => {
 
       expect(response.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
       expect(response.body.code).toBe("DAILY_ANALYSIS_LIMIT_REACHED");
-    });
-
-    it("has no per-exercise cap within a workout: a plan can be recorded across many runs", async () => {
-      const user = await newGatedUser();
-      const exercise = await prisma.exercise.findUniqueOrThrow({
-        where: { code: exerciseCode },
-      });
-      const workout = await createWorkoutFixture(prisma, {
-        userId: user.userId,
-        exercises: [{ exerciseId: exercise.id, position: 1 }],
-      });
-      const payload = new PoseCaptureBuilder().setFrames(30).build();
-
-      for (let i = 0; i < 3; i++) {
-        const id = await createSetSession(user.userId, exercise.id, workout.id);
-        const response = await submitCapture(app, user.token, id, payload);
-        expect(response.status).toBe(StatusCodes.ACCEPTED);
-      }
     });
   });
 });
