@@ -183,6 +183,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   const [countdownSecondsLeft, setCountdownSecondsLeft] =
     useState(COUNTDOWN_SECS);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [hasHeldUpload, setHasHeldUpload] = useState(false);
   const [uploadErrorCode, setUploadErrorCode] =
     useState<UploadErrorCode | null>(null);
 
@@ -196,6 +197,9 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
 
   const phaseRef = useRef<RecordedSetPhase>(phase);
   phaseRef.current = phase;
+  const prerequisitesRef = useRef(prerequisites);
+  prerequisitesRef.current = prerequisites;
+  const isRecordingRef = useRef(false);
   const onSubmittedRef = useRef(onSubmitted);
   onSubmittedRef.current = onSubmitted;
   const latestFrameRef = useRef<PoseFrame | null>(null);
@@ -349,6 +353,9 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   useEffect(() => {
     if (phase !== "countdown" || countdownSecondsLeft > 0) return;
     bufferRef.current = [];
+    payloadRef.current = null;
+    setHasHeldUpload(false);
+    isRecordingRef.current = true;
     recordingStartedAtRef.current = Date.now();
     setElapsedSec(0);
     setSetupResult(NOT_READY);
@@ -383,6 +390,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         markRecordedSetDone({ workoutId, setNumber });
       }
       payloadRef.current = null;
+      setHasHeldUpload(false);
       setStage("submitted");
       onSubmittedRef.current();
     } catch (error) {
@@ -390,7 +398,16 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         error instanceof ApiError &&
         error.status === Number(StatusCodes.PRECONDITION_REQUIRED)
       ) {
-        void prerequisites.refetchStatus();
+        const status = await prerequisitesRef.current.refetchStatus();
+        if (status === "ready") {
+          // The server still refuses while the fresh profile looks complete:
+          // don't loop.
+          setUploadErrorCode("UPLOAD_FAILED");
+          setStage("uploadError");
+          return;
+        }
+        // payloadRef and sessionIdRef are kept for the resume effect below.
+        setHasHeldUpload(true);
         setStage("setup");
         return;
       }
@@ -400,7 +417,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   }, [
     exerciseCode,
     exerciseDisplayName,
-    prerequisites,
     setNumber,
     source,
     track,
@@ -411,7 +427,8 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   // keepCount drops the idle tail after the set (see evaluateSetEnd).
   const finish = useCallback(
     (keepCount?: number) => {
-      if (phaseRef.current !== "recording") return;
+      if (!isRecordingRef.current) return;
+      isRecordingRef.current = false;
       const recorded = bufferRef.current;
       const frames =
         keepCount === undefined ? recorded : recorded.slice(0, keepCount);
@@ -438,6 +455,19 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
 
   // Seconds until the set ends by itself, once that is about to happen.
   const [stopsInSecs, setStopsInSecs] = useState<number | null>(null);
+  // Upload the held recording once the user has met the prerequisites.
+  useEffect(() => {
+    if (
+      stage !== "setup" ||
+      !hasHeldUpload ||
+      prerequisites.status !== "ready"
+    ) {
+      return;
+    }
+    setHasHeldUpload(false);
+    void runUpload();
+  }, [stage, hasHeldUpload, prerequisites.status, runUpload]);
+
   const finishRef = useRef(finish);
   finishRef.current = finish;
   useEffect(() => {
@@ -477,6 +507,8 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     payloadRef.current = null;
     sessionIdRef.current = null;
     bufferRef.current = [];
+    isRecordingRef.current = false;
+    setHasHeldUpload(false);
     setUploadErrorCode(null);
     setStage("setup");
   }, []);
