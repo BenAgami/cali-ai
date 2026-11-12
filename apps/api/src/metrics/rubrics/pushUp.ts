@@ -120,6 +120,7 @@ export const pushUpRubric: ExerciseRubric = {
   positives: {
     depthFeature: "minElbowDeg",
     depthStdMax: 8,
+    lockoutFeature: "maxElbowDeg",
     fullRangeTags: ["PU_INCOMPLETE_LOCKOUT"],
     rushedTag: "PU_RUSHED_TEMPO",
   },

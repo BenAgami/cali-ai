@@ -20,7 +20,7 @@ const rep = (
   startSec: repNumber * 2,
   endSec: repNumber * 2 + 1.5,
   durationSec: 1.5,
-  features: { minElbowDeg: 90 },
+  features: { minElbowDeg: 90, maxElbowDeg: 170 },
   dimensionScores: {},
   tags: [],
   ...overrides,
@@ -177,6 +177,17 @@ describe("buildPositives", () => {
 
   it("skips FULL_RANGE when a lockout tag fired", () => {
     const set = reps(5, { 2: [["PU_INCOMPLETE_LOCKOUT", "LOW"]] });
+    const kinds = buildPositives(set, dims("FAIR", "POOR"), pushUp).map(
+      (p) => p.kind,
+    );
+    expect(kinds).not.toContain("FULL_RANGE");
+    expect(kinds).toContain("CONSISTENT_DEPTH");
+  });
+
+  it("skips FULL_RANGE when a rep has no lockout measurement", () => {
+    const set = reps(5).map((r, i) =>
+      i === 2 ? { ...r, features: { minElbowDeg: 90 } } : r,
+    );
     const kinds = buildPositives(set, dims("FAIR", "POOR"), pushUp).map(
       (p) => p.kind,
     );

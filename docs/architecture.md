@@ -84,7 +84,7 @@ findings are reported. The LLM only writes the wording of those findings. The
 raw score is stored for trends and is never returned by the API.
 
 Versions stored with every result: `metrics-v1` (metrics pipeline),
-`rubric-v1` (calibrated thresholds, see `05-RUBRICS.md` and
+`rubric-v2` (calibrated thresholds, see `05-RUBRICS.md` and
 `05-CALIBRATION.md`) and `form-feedback-v1` (prompt), plus the LLM model.
 
 ## 2.4 Database (Postgres)

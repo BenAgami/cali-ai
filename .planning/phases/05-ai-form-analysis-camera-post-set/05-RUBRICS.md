@@ -1,7 +1,7 @@
 ---
 status: calibrated
 approved: 2026-11-09
-rubric_version: rubric-v1
+rubric_version: rubric-v2
 metrics_version: metrics-v1
 phase: 05-ai-form-analysis-camera-post-set
 ---
@@ -129,7 +129,7 @@ Planner proposal: RESEARCH used 0.4/0.4/0.2; pull-up CORE is lowered because it 
 - Keep at most 2 corrections, at most one per dimension unless only one dimension has detected tags.
 - Positives (max 3, in this order, each with rep numbers):
   1. assessed dimension at Good or better;
-  2. full lockout/stand on every rep;
+  2. full lockout/stand on every rep (the lockout feature must be measured on every rep: push_up/dip/pull_up maxElbowDeg, squat maxKneeDeg; an unmeasured rep never earns it);
   3. consistent depth (std of depth feature: push_up/dip minElbowDeg < 8 deg, squat hipBelowKnee < 0.05, pull_up mouthBelowBar < 0.05);
   4. steady tempo (no rushed tag and duration coefficient of variation < 0.25);
   5. always-last fallback "You finished N reps".
@@ -183,3 +183,4 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - Front matter: `status` approved -> calibrated, `rubric_version` rubric-v0 -> rubric-v1 (calibration).
 - All other thresholds, ramps and band cutoffs unchanged by calibration; push-up, dip and pull-up values confirmed against the user's verdicts (calibration).
 - 2026-11-12 / 11: removed the per-exercise-per-workout cap (`FORM_ANALYSIS_EXERCISE_WORKOUT_CAP`, `EXERCISE_ANALYSIS_LIMIT_REACHED`). Workouts are plans and each start is now its own run (`WorkoutLog`), so a lifetime per-plan count was wrong. No scoring value changed, so `RUBRIC_VERSION` is unchanged.
+- 2026-11-12 / 8 (rubric-v1 -> rubric-v2): the "full lockout/stand" positive now requires the lockout feature (`maxElbowDeg`, squat `maxKneeDeg`) to be measured on every rep. Before, it was awarded whenever the incomplete-lockout tag had not fired, including when the joints were hidden and the tag could not be evaluated. Scores, tags and thresholds are unchanged; only which positives appear changes.

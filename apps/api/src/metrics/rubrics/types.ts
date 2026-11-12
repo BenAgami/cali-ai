@@ -54,6 +54,7 @@ export type ExerciseRubric = {
   positives: {
     depthFeature: string;
     depthStdMax: number;
+    lockoutFeature: string;
     fullRangeTags: string[];
     rushedTag: string | null;
   };

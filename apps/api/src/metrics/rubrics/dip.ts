@@ -124,6 +124,7 @@ export const dipRubric: ExerciseRubric = {
   positives: {
     depthFeature: "minElbowDeg",
     depthStdMax: 8,
+    lockoutFeature: "maxElbowDeg",
     fullRangeTags: ["DIP_INCOMPLETE_LOCKOUT"],
     rushedTag: null,
   },

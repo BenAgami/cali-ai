@@ -173,6 +173,7 @@ export const squatRubric: ExerciseRubric = {
   positives: {
     depthFeature: "hipBelowKnee",
     depthStdMax: 0.05,
+    lockoutFeature: "maxKneeDeg",
     fullRangeTags: ["SQ_INCOMPLETE_STAND"],
     rushedTag: "SQ_RUSHED_TEMPO",
   },

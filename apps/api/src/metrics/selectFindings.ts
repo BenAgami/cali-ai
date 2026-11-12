@@ -121,12 +121,20 @@ export const buildPositives = (
     }
   }
 
-  const { depthFeature, depthStdMax, fullRangeTags, rushedTag } =
-    rubric.positives;
+  const {
+    depthFeature,
+    depthStdMax,
+    lockoutFeature,
+    fullRangeTags,
+    rushedTag,
+  } = rubric.positives;
   const hasTag = (tags: string[]): boolean =>
     reps.some((rep) => rep.tags.some((t) => tags.indexOf(t.tag) !== -1));
 
-  if (!hasTag(fullRangeTags)) {
+  const isLockoutMeasured = reps.every((rep) =>
+    Number.isFinite(rep.features[lockoutFeature]),
+  );
+  if (isLockoutMeasured && !hasTag(fullRangeTags)) {
     featurePositives.push({
       kind: "FULL_RANGE",
       text: "You finished every rep at full extension.",

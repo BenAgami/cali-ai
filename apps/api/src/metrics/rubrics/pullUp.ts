@@ -203,6 +203,7 @@ export const pullUpRubric: ExerciseRubric = {
   positives: {
     depthFeature: "mouthBelowBar",
     depthStdMax: 0.05,
+    lockoutFeature: "maxElbowDeg",
     fullRangeTags: ["PL_NO_FULL_HANG"],
     rushedTag: "PL_RUSHED_TEMPO",
   },
