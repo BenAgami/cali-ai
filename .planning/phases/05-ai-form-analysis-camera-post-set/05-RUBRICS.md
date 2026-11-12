@@ -159,8 +159,9 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 
 - `FORM_ANALYSIS_DAILY_CAP` = 15 accepted captures per user per rolling 24 h; over the cap -> 429 `DAILY_ANALYSIS_LIMIT_REACHED`.
 - There is no per-exercise-per-workout cap (removed 2026-11-12): a workout is a reusable plan, so counting captures per plan blocked users from re-running it. The daily cap is the only cost guard.
-- Retries of the same failed capture (`retryAnalysis`) reuse the stored capture, create no new capture and do not count toward the daily cap. Only accepted new captures (past the consent gate and the daily cap check, stored and enqueued) count. A rejected (428/429) attempt stores nothing and so does not count.
+- Retries of a failed capture (`retryAnalysis`) reuse the stored capture and do not count toward the daily cap. They have their own cap, `FORM_ANALYSIS_DAILY_RETRY_CAP` = 5 accepted retries per user per rolling 24 h across all sessions; over it -> 429 `DAILY_RETRY_LIMIT_REACHED`. Only accepted retries count: a refused retry (409, 428 or 429) is not recorded.
 - Check order at capture: consent (428), then daily cap (429).
+- Check order at retry: consent (428), then retry cap (429). Both caps are checked inside the write transaction behind a per-user lock, so concurrent requests cannot exceed them.
 - LLM: primary model at effort `low`, max 1200 output tokens, one in-attempt repair.
 
 ## 12. Open items for the user
@@ -187,3 +188,4 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - 2026-11-12 / 5 (rubric-v2): common forbidden topics `height`, `weight` -> `body height`, `body weight`, `how tall`, `how heavy`, and feedback validation matches a topic by word start (`pain` also catches "painful"). The bare words blocked normal coaching ("shift your weight") and made valid feedback fail validation.
 - 2026-11-12 (metrics-v1 -> metrics-v2): a set in which no dimension can be scored is now UNTRACKABLE with KEY_JOINTS_HIDDEN instead of SCORED with score 0 (POOR). The same keypoints can therefore give a different outcome, so `METRICS_VERSION` is bumped. No rubric value changed. Calibration Run 3 (rubric-v2, metrics-v2) matches Run 2 on every clip's score, band and tags; see `05-CALIBRATION.md`.
 - 2026-11-12 / 8: DIMENSION_GOOD positive wording no longer names the band (the system prompt forbids it). Selection unchanged, so `RUBRIC_VERSION` is unchanged.
+- 2026-11-12 / 11: new retry cap `FORM_ANALYSIS_DAILY_RETRY_CAP` (default 5 per user per rolling 24 h, 429 `DAILY_RETRY_LIMIT_REACHED`); both caps now checked under a per-user lock. No scoring value changed, so `RUBRIC_VERSION` is unchanged.
