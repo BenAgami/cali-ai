@@ -14,9 +14,7 @@ import {
   evaluateSetup,
   exitEdgeOf,
   FORM_CAPTURE_SETUP,
-  getMissingAiPrerequisites,
   SETUP_WINDOW_FRAMES,
-  type AiPrerequisiteCode,
   type FormAnalysisExercise,
   type PoseCapturePayload,
   type SetupCheckResult,
@@ -37,6 +35,7 @@ import { useSpokenCues } from "@src/hooks/useSpokenCues";
 import type { PoseFrame } from "@src/pose/types";
 import { usePoseSource } from "@src/pose/usePoseSource";
 import { markRecordedSetDone } from "@src/state/recordedSetStore";
+import { getMissingProfilePrerequisites } from "@src/utils/aiPrerequisites";
 
 export type RecordedSetPhase =
   | "prerequisites"
@@ -136,14 +135,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   const [uploadErrorCode, setUploadErrorCode] =
     useState<UploadErrorCode | null>(null);
 
-  const missingPrerequisites: AiPrerequisiteCode[] = profile
-    ? getMissingAiPrerequisites({
-        experienceLevel: profile.experienceLevel,
-        hasActiveGoal: profile.goals.length > 0,
-        hasBodyMetric: profile.bodyMetric !== null,
-        aiConsentVersion: profile.aiConsentVersion,
-      })
-    : [];
+  const missingPrerequisites = getMissingProfilePrerequisites(profile);
   const isLoadingPrerequisites = profile === undefined;
 
   let phase: RecordedSetPhase = stage;

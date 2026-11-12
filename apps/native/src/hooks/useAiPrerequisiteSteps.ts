@@ -7,8 +7,8 @@ import { useAcceptAiConsent } from "@src/hooks/mutations/useAcceptAiConsent";
 import { useSaveBodyMetrics } from "@src/hooks/mutations/useSaveBodyMetrics";
 import { useBodyMetricsForm } from "@src/hooks/useBodyMetricsForm";
 import { AI_ERROR_FALLBACK } from "@src/constants/aiMessages";
+import { getMissingProfilePrerequisites } from "@src/utils/aiPrerequisites";
 import {
-  getMissingAiPrerequisites,
   type AiPrerequisiteCode,
   type ExperienceLevel,
   type GoalType,
@@ -26,14 +26,7 @@ export const useAiPrerequisiteSteps = () => {
   const queryClient = useQueryClient();
   const { data: profile, isLoading, refetch } = useProfile();
 
-  const missing: AiPrerequisiteCode[] = profile
-    ? getMissingAiPrerequisites({
-        experienceLevel: profile.experienceLevel,
-        hasActiveGoal: profile.goals.length > 0,
-        hasBodyMetric: profile.bodyMetric !== null,
-        aiConsentVersion: profile.aiConsentVersion,
-      })
-    : [];
+  const missing = getMissingProfilePrerequisites(profile);
   const step: AiPrerequisiteStep = missing.at(0) ?? "READY";
 
   const [levelDraft, setLevelDraft] = useState<ExperienceLevel | null>(null);
