@@ -36,7 +36,6 @@ type AnalysisTrackerValue = {
   track: (item: TrackedAnalysis) => void;
   retry: (sessionId: number) => Promise<void>;
   markSeen: (sessionId: number) => void;
-  entriesForWorkout: (workoutId: number) => TrackedAnalysis[];
   toast: AnalysisToastState | null;
   dismissToast: () => void;
 };
@@ -143,12 +142,6 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
 
   const dismissToast = useCallback(() => setToast(null), []);
 
-  const entriesForWorkout = useCallback(
-    (workoutId: number) =>
-      tracked.filter((entry) => entry.workoutId === workoutId),
-    [tracked],
-  );
-
   // Re-attach sessions still PROCESSING on the server after an app restart.
   useEffect(() => {
     let isCancelled = false;
@@ -184,7 +177,6 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
       track,
       retry,
       markSeen,
-      entriesForWorkout,
       toast,
       dismissToast,
     }),
@@ -195,7 +187,6 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
       track,
       retry,
       markSeen,
-      entriesForWorkout,
       toast,
       dismissToast,
     ],
