@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 05.2-02-PLAN.md
-last_updated: "2026-11-12T20:57:38.554Z"
+stopped_at: Completed 05.2-04-PLAN.md
+last_updated: "2026-11-12T20:57:40.322Z"
 progress:
   total_phases: 12
   completed_phases: 3
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05.2 (fix-pr-review-findings-for-phase-5) — EXECUTING
-Plan: 3 of 14
+Plan: 4 of 14
 
 ## Performance Metrics
 
@@ -83,6 +83,7 @@ _Updated after each plan completion_
 | Phase 05 P17 | n/a | 3 tasks | 20 files |
 | Phase 05.2 P06 | 10min | 3 tasks | 11 files |
 | Phase 05.2 P02 | 25min | 3 tasks | 11 files |
+| Phase 05.2 P04 | 15min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,7 @@ Recent decisions affecting current work:
 - [Phase 05]: 05-14: band cutoffs already match approved rubric; no segmentation params changed
 - [Phase 05]: 05-17: fixed fixture dump rotation (180 deg tag), squat ROM ramp tightened, rubric-v1
 - [Phase 05]: 05-18: device UAT 23/23 on a Galaxy S25+; hands-free start (D-22), auto-stop with spoken 3-2-1 (D-23) and spoken cues (expo-speech) added during UAT
+- [Phase 05.2]: 05.2-04: PENDING sessions count as unrecorded when closing stale runs; AU-9 non-atomic Start accepted as risk
 
 ### Roadmap Evolution
 
@@ -146,6 +148,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-12T20:57:38.546Z
-Stopped at: Completed 05.2-02-PLAN.md
+Last session: 2026-11-12T20:57:40.315Z
+Stopped at: Completed 05.2-04-PLAN.md
 Resume file: None
