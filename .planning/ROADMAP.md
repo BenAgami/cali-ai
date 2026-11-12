@@ -182,7 +182,7 @@ Plans:
 - [x] 05.2-06-PLAN.md — Native status constants (X-01), withQuery helper (R-23), naming (R-26), workout screen strings (AU-8)
 - [ ] 05.2-07-PLAN.md — Daily cap inside the capture transaction under a per-user lock (R-13), R-14, R-15, R-19, AU-1
 - [x] 05.2-08-PLAN.md — Logged LLM refusals with accurate errors (R-12) and one LLM deadline owner (R-18)
-- [ ] 05.2-09-PLAN.md — Recorder fixes: X-01, retry-limit 429, stale run, held upload after 428 (R-06), single finish (R-08), R-24
+- [x] 05.2-09-PLAN.md — Recorder fixes: X-01, retry-limit 429, stale run, held upload after 428 (R-06), single finish (R-08), R-24
 - [x] 05.2-10-PLAN.md — Recorded-sets list: retry-limit message instead of a dead Retry (R-02 app), cache invalidation (R-03), AU-3
 - [ ] 05.2-11-PLAN.md — Per-user daily retry cap (R-02 API) under the same lock, with docs
 - [ ] 05.2-12-PLAN.md — Native paging of recorded sets (R-04 native)
