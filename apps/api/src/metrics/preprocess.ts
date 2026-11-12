@@ -144,8 +144,3 @@ export const chooseNearSide = (series: PoseSeries): Side | null => {
     ? "right"
     : "left";
 };
-
-export const jointTrack = (
-  series: PoseSeries,
-  index: number,
-): (Point | null)[] => series.points.map((row) => row[index] ?? null);

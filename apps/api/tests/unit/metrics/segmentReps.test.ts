@@ -1,5 +1,5 @@
 import { angleAt } from "../../../src/metrics/geometry";
-import { jointTrack, toPoseSeries } from "../../../src/metrics/preprocess";
+import { toPoseSeries } from "../../../src/metrics/preprocess";
 import { segmentReps } from "../../../src/metrics/segmentReps";
 import type { SegmentationParams } from "../../../src/metrics/types";
 import { buildSyntheticCapture } from "../helpers/syntheticPose";
@@ -19,7 +19,7 @@ const HIGH: SegmentationParams = {
 const buildSignal = (
   repCount: number,
   repSec = REP_SEC,
-  options: { leadSec?: number; startLow?: boolean } = {},
+  options: { leadSec?: number } = {},
 ): { signal: number[]; times: number[] } => {
   const lead = options.leadSec ?? 1;
   const total = lead * 2 + repCount * repSec;
@@ -122,9 +122,9 @@ describe("buildSyntheticCapture", () => {
       aspectRatio: 16 / 9,
     });
     const series = toPoseSeries(payload, "push_up");
-    const shoulder = jointTrack(series, 11);
-    const elbow = jointTrack(series, 13);
-    const wrist = jointTrack(series, 15);
+    const shoulder = series.points.map((row) => row[11] ?? null);
+    const elbow = series.points.map((row) => row[13] ?? null);
+    const wrist = series.points.map((row) => row[15] ?? null);
     const angles = elbow.flatMap((e, i) =>
       e && shoulder[i] && wrist[i] ? [angleAt(shoulder[i], e, wrist[i])] : [],
     );

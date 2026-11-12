@@ -3,7 +3,6 @@ import type { PoseCapturePayload } from "@repo/common";
 import { angleAt } from "../../../src/metrics/geometry";
 import {
   chooseNearSide,
-  jointTrack,
   toPoseSeries,
   UnsupportedCaptureError,
 } from "../../../src/metrics/preprocess";
@@ -87,7 +86,8 @@ describe("toPoseSeries", () => {
     });
     for (const i of [4, 5]) frames[i][13] = [0, 0, 0.1];
     for (const i of [10, 11, 12, 13, 14]) frames[i][13] = [0, 0, 0.1];
-    const track = jointTrack(toPoseSeries(payloadOf(frames), "push_up"), 13);
+    const series = toPoseSeries(payloadOf(frames), "push_up");
+    const track = series.points.map((row) => row[13] ?? null);
     expect(track[4]).not.toBeNull();
     expect(track[5]).not.toBeNull();
     for (const i of [10, 11, 12, 13, 14]) expect(track[i]).toBeNull();
@@ -100,7 +100,7 @@ describe("toPoseSeries", () => {
       payloadOf(frames, { aspectRatio: 1 }),
       "push_up",
     );
-    const track = jointTrack(series, 13);
+    const track = series.points.map((row) => row[13] ?? null);
     const worst = Math.max(...track.map((p) => Math.abs(p![0] - 0.5)));
     expect(worst).toBeLessThanOrEqual(0.04);
   });
