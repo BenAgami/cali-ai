@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
+import { StatusCodes } from "http-status-codes";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { useAuth } from "@src/context/AuthContext";
@@ -29,7 +30,11 @@ const ProfileScreen: React.FC = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!token || (error instanceof ApiError && error.status === 401)) {
+    if (
+      !token ||
+      (error instanceof ApiError &&
+        error.status === Number(StatusCodes.UNAUTHORIZED))
+    ) {
       router.replace("/(auth)/login");
     }
   }, [token, authLoading, error]);

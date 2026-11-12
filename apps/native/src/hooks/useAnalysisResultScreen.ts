@@ -1,13 +1,12 @@
 import { useCallback, useEffect } from "react";
 import { router } from "expo-router";
+import { StatusCodes } from "http-status-codes";
 import type { AnalysisStatusEvent, FormAnalysisResponse } from "@repo/common";
 
 import { ApiError } from "@src/api";
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
 import { useSessionAnalysis } from "@src/hooks/queries/useSessionAnalysis";
 import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
-
-const CONFLICT_STATUS = 409;
 
 export type AnalysisResultState =
   | "loading"
@@ -64,7 +63,7 @@ export const useAnalysisResultScreen = (
     state = data.outcome === "SCORED" ? "scored" : "untrackable";
   } else if (error !== null) {
     state =
-      error instanceof ApiError && error.status === CONFLICT_STATUS
+      error instanceof ApiError && error.status === Number(StatusCodes.CONFLICT)
         ? "notReady"
         : "error";
   } else if (sessionId === undefined) {
