@@ -4,6 +4,7 @@ import { env } from "../config/env";
 import { getLlmProvider, LlmError, type FormFeedbackDraft } from "../lib/llm";
 import type { LlmEffort } from "../lib/llm/types";
 import type { Logger } from "../lib/logger";
+import { forbiddenTopicPattern } from "../metrics/rubrics/shared";
 import type { FindingSeverity, ScoredFormMetrics } from "../metrics/types";
 import {
   buildFormFeedbackPrompt,
@@ -24,9 +25,6 @@ const BANNED_PATTERNS: RegExp[] = [
   /\b(valgus|varus|injur(?:y|ies|ed|e)|diagnos\w*|medical|physio\w*|rehab\w*|bmi|body fat|overweight|underweight|kg|kilograms?|lbs?|pounds|cm|centimet(?:er|re)s?)\b/i,
   /\b(your (?:height|size|build|stature)|you weigh|you(?:'re| are) (?:tall|short|heavy|light|big|small)|(?:at|for|with|given) your (?:body ?)?weight|(?:taller|shorter|heavier|lighter) (?:athletes?|people|lifters?))\b/i,
 ];
-
-const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export type ValidatedCorrection = {
   tag: string;
@@ -64,9 +62,7 @@ export const validateFormFeedback = (
   metrics: ScoredFormMetrics,
 ): FormFeedbackValidation => {
   const issues: string[] = [];
-  const forbiddenPatterns = metrics.forbiddenTopics.map(
-    (topic) => new RegExp(`\\b${escapeRegExp(topic)}\\w*`, "i"),
-  );
+  const forbiddenPatterns = metrics.forbiddenTopics.map(forbiddenTopicPattern);
 
   const checkText = (label: string, text: string, maxLength?: number) => {
     if (maxLength !== undefined && text.length > maxLength) {

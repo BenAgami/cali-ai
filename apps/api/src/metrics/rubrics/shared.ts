@@ -27,6 +27,17 @@ export const COMMON_FORBIDDEN_TOPICS = [
   "body composition",
 ];
 
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Matches a forbidden topic at the start of a word, so "pain" also catches
+ * "painful" and "pains". Shared by feedback validation and the rubric-wording
+ * test so the two cannot drift apart.
+ */
+export const forbiddenTopicPattern = (topic: string): RegExp =>
+  new RegExp(`\\b${escapeRegExp(topic)}`, "i");
+
 const SEVERITY_ORDER: Record<FindingSeverity, number> = {
   LOW: 1,
   MEDIUM: 2,

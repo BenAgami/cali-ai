@@ -1,6 +1,7 @@
 import { FORM_ANALYSIS_EXERCISES } from "@repo/common";
 
 import { getRubric } from "../../../../src/metrics/rubrics";
+import { forbiddenTopicPattern } from "../../../../src/metrics/rubrics/shared";
 
 // The model quotes a correction's label and cue, and feedback validation
 // rejects any text naming a forbidden topic. Rubric wording that contains one
@@ -8,13 +9,7 @@ import { getRubric } from "../../../../src/metrics/rubrics";
 describe.each(FORM_ANALYSIS_EXERCISES)("%s rubric wording", (exerciseCode) => {
   it("never contains one of its own forbidden topics", () => {
     const rubric = getRubric(exerciseCode);
-    const patterns = rubric.forbiddenTopics.map(
-      (topic) =>
-        new RegExp(
-          `\\b${topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\w*`,
-          "i",
-        ),
-    );
+    const patterns = rubric.forbiddenTopics.map(forbiddenTopicPattern);
 
     for (const rule of [...rubric.repTags, ...rubric.setTags]) {
       for (const text of [rule.label, rule.cue]) {
