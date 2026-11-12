@@ -102,6 +102,10 @@ const Recorder: React.FC<RecorderProps> = ({
   const { colors } = useTheme();
   const prerequisites = useAiPrerequisiteSteps();
   const recorder = useRecordedSet({
+    prerequisites: {
+      status: prerequisites.status,
+      refetchStatus: prerequisites.refetchStatus,
+    },
     workoutId,
     workoutLogId,
     setNumber,
@@ -123,16 +127,16 @@ const Recorder: React.FC<RecorderProps> = ({
         style={[styles.fill, { backgroundColor: colors.background }]}
       >
         <ScrollView contentContainerStyle={styles.padded}>
-          {recorder.isLoadingPrerequisites ? (
+          {prerequisites.status === "loading" ? (
             <ActivityIndicator size="large" color={colors.text} />
-          ) : recorder.hasPrerequisitesError ? (
+          ) : prerequisites.status === "error" ? (
             <View style={styles.centered}>
               <Text style={[styles.body, { color: colors.text }]}>
                 {PROFILE_LOAD_ERROR}
               </Text>
               <Pressable
                 style={styles.primary}
-                onPress={() => void recorder.refetchPrerequisites()}
+                onPress={() => void prerequisites.refetch()}
                 accessibilityRole="button"
               >
                 <Text style={styles.primaryLabel}>{RETRY}</Text>

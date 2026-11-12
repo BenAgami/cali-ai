@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { userApi, userKeys } from "@src/api";
@@ -12,9 +12,26 @@ import {
   type AiPrerequisiteCode,
   type ExperienceLevel,
   type GoalType,
+  type UserProfile,
 } from "@repo/common";
 
 export type AiPrerequisiteStep = AiPrerequisiteCode | "READY";
+
+export type AiPrerequisiteStatus = "loading" | "error" | "missing" | "ready";
+
+// A failed fetch also leaves the profile undefined; don't read it as loading.
+const toPrerequisiteStatus = (
+  profile: UserProfile | undefined,
+  isError: boolean,
+  isFetching: boolean,
+): AiPrerequisiteStatus => {
+  if (profile === undefined) {
+    return isError && !isFetching ? "error" : "loading";
+  }
+  return getMissingProfilePrerequisites(profile).length > 0
+    ? "missing"
+    : "ready";
+};
 
 const PROFILE_ERROR = "Choose a level and enter a goal.";
 
@@ -24,7 +41,18 @@ const PROFILE_ERROR = "Choose a level and enter a goal.";
  */
 export const useAiPrerequisiteSteps = () => {
   const queryClient = useQueryClient();
-  const { data: profile, isLoading, refetch } = useProfile();
+  const {
+    data: profile,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useProfile();
+  const status = toPrerequisiteStatus(profile, isError, isFetching);
+  const refetchStatus = useCallback(async () => {
+    const result = await refetch();
+    return toPrerequisiteStatus(result.data, result.isError, false);
+  }, [refetch]);
 
   const missing = getMissingProfilePrerequisites(profile);
   const step: AiPrerequisiteStep = missing.at(0) ?? "READY";
@@ -79,6 +107,8 @@ export const useAiPrerequisiteSteps = () => {
 
   return {
     step,
+    status,
+    refetchStatus,
     isLoading,
     refetch,
     experienceLevel,

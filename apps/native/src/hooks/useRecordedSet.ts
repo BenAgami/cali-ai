@@ -33,12 +33,11 @@ import {
   type UploadErrorCode,
 } from "@src/constants/recordingMessages";
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
-import { useProfile } from "@src/hooks/queries/useProfile";
+import type { AiPrerequisiteStatus } from "@src/hooks/useAiPrerequisiteSteps";
 import { useSpokenCues } from "@src/hooks/useSpokenCues";
 import type { PoseFrame } from "@src/pose/types";
 import { usePoseSource } from "@src/pose/usePoseSource";
 import { markRecordedSetDone } from "@src/state/recordedSetStore";
-import { getMissingProfilePrerequisites } from "@src/utils/aiPrerequisites";
 
 export type RecordedSetPhase =
   | "prerequisites"
@@ -148,6 +147,10 @@ const submitOrRestart = async (
 };
 
 interface UseRecordedSetParams {
+  prerequisites: {
+    status: AiPrerequisiteStatus;
+    refetchStatus: () => Promise<AiPrerequisiteStatus>;
+  };
   workoutId: number | null;
   workoutLogId: number | null;
   setNumber: number | null;
@@ -159,6 +162,7 @@ interface UseRecordedSetParams {
 
 export const useRecordedSet = (params: UseRecordedSetParams) => {
   const {
+    prerequisites,
     workoutId,
     workoutLogId,
     setNumber,
@@ -168,12 +172,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     onSubmitted,
   } = params;
   const { track } = useAnalysisTracker();
-  const {
-    data: profile,
-    isError: isProfileError,
-    isFetching: isFetchingProfile,
-    refetch: refetchProfile,
-  } = useProfile();
   const { hasPermission, requestPermission } = useCameraPermission();
   const [cameraPosition, setCameraPosition] = useState<"front" | "back">(
     "front",
@@ -188,24 +186,10 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   const [uploadErrorCode, setUploadErrorCode] =
     useState<UploadErrorCode | null>(null);
 
-  const missingPrerequisites = getMissingProfilePrerequisites(profile);
-  // A failed fetch also leaves the profile undefined; don't read it as loading.
-  const isLoadingPrerequisites =
-    profile === undefined && (!isProfileError || isFetchingProfile);
-  const hasPrerequisitesError =
-    profile === undefined && isProfileError && !isFetchingProfile;
-
   let phase: RecordedSetPhase = stage;
   if (stage === "setup") {
-    if (
-      isLoadingPrerequisites ||
-      hasPrerequisitesError ||
-      missingPrerequisites.length > 0
-    ) {
-      phase = "prerequisites";
-    } else if (!hasPermission) {
-      phase = "permission";
-    }
+    if (prerequisites.status !== "ready") phase = "prerequisites";
+    else if (!hasPermission) phase = "permission";
   }
   const isPoseActive =
     phase === "setup" || phase === "countdown" || phase === "recording";
@@ -406,7 +390,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         error instanceof ApiError &&
         error.status === Number(StatusCodes.PRECONDITION_REQUIRED)
       ) {
-        void refetchProfile();
+        void prerequisites.refetchStatus();
         setStage("setup");
         return;
       }
@@ -416,7 +400,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   }, [
     exerciseCode,
     exerciseDisplayName,
-    refetchProfile,
+    prerequisites,
     setNumber,
     source,
     track,
@@ -529,10 +513,6 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
 
   return {
     phase,
-    missingPrerequisites,
-    isLoadingPrerequisites,
-    hasPrerequisitesError,
-    refetchPrerequisites: refetchProfile,
     hasPermission,
     requestPermission,
     device,
