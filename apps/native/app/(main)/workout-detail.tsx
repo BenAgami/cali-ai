@@ -27,6 +27,14 @@ import type { WorkoutExerciseHydrated } from "@repo/common";
 
 type DetailParams = { id?: string };
 
+// Date and time, so two runs on the same day can be told apart.
+const RUN_TITLE_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
+
 const formatExerciseRow = (ex: WorkoutExerciseHydrated): string => {
   const parts: string[] = [];
   parts.push(`${ex.sets} × `);
@@ -159,7 +167,10 @@ const WorkoutDetailScreen: React.FC = () => {
                     <Text style={[styles.runTitle, { color: colors.text }]}>
                       {run.runId === null
                         ? EARLIER_SETS_TITLE
-                        : new Date(run.performedAt).toLocaleDateString()}
+                        : new Date(run.firstPerformedAt).toLocaleString(
+                            undefined,
+                            RUN_TITLE_FORMAT,
+                          )}
                     </Text>
                     {run.items.map((item) => (
                       <RecordedSetCard
