@@ -69,6 +69,41 @@ describe("computeOverall", () => {
   });
 });
 
+describe("computeOverall with nothing to score", () => {
+  const weights = { ROM: 0.5, CORE: 0.5, SYMMETRY: 0 };
+
+  it("returns null when no dimension has a score", () => {
+    expect(
+      computeOverall(
+        { ROM: dim(null), CORE: dim(null), SYMMETRY: dim(null, false) },
+        weights,
+      ),
+    ).toBeNull();
+  });
+
+  it("returns null when every dimension is unassessed", () => {
+    expect(
+      computeOverall(
+        {
+          ROM: dim(null, false),
+          CORE: dim(null, false),
+          SYMMETRY: dim(null, false),
+        },
+        weights,
+      ),
+    ).toBeNull();
+  });
+
+  it("still returns 0 for a genuine zero score", () => {
+    expect(
+      computeOverall(
+        { ROM: dim(0), CORE: dim(0), SYMMETRY: dim(null, false) },
+        weights,
+      ),
+    ).toBe(0);
+  });
+});
+
 describe("buildDimensions", () => {
   it("scores assessed dimensions and marks others unassessed", () => {
     const result = buildDimensions(

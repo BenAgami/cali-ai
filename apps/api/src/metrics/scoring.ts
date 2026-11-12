@@ -39,11 +39,14 @@ export const buildDimensions = (
   return result;
 };
 
-/** Weighted mean over assessed dimensions with a score, weights renormalised. */
+/**
+ * Weighted mean over assessed dimensions with a score, weights renormalised.
+ * Null when no dimension has a score, so the caller never invents a number.
+ */
 export const computeOverall = (
   dimensions: Record<FormDimension, DimensionScore>,
   weights: Record<FormDimension, number>,
-): number => {
+): number | null => {
   let weighted = 0;
   let totalWeight = 0;
   for (const dimension of FORM_DIMENSIONS) {
@@ -52,5 +55,5 @@ export const computeOverall = (
     weighted += weights[dimension] * score;
     totalWeight += weights[dimension];
   }
-  return totalWeight === 0 ? 0 : Math.round(weighted / totalWeight);
+  return totalWeight === 0 ? null : Math.round(weighted / totalWeight);
 };

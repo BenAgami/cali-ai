@@ -74,6 +74,10 @@ export const computeFormMetrics = (
 
   const dimensions = buildDimensions(reps, rubric);
   const overallScore = computeOverall(dimensions, rubric.weights);
+  // Every rep's features were unusable (joints missing), so there is no score.
+  if (overallScore === null) {
+    return untrackable(exerciseCode, ["KEY_JOINTS_HIDDEN"]);
+  }
 
   return {
     outcome: "SCORED",
