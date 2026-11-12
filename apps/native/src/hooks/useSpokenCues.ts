@@ -51,13 +51,13 @@ export const useSpokenCues = (input: {
   }, [phase, countdownSecondsLeft]);
 
   // Declared before the start/stop effect so "Recording stopped" is not cut.
-  const wasWarningRef = useRef(false);
+  const isWarningSpokenRef = useRef(false);
   useEffect(() => {
     if (stopsInSecs !== null) {
-      wasWarningRef.current = true;
+      isWarningSpokenRef.current = true;
       say(String(stopsInSecs));
-    } else if (wasWarningRef.current) {
-      wasWarningRef.current = false;
+    } else if (isWarningSpokenRef.current) {
+      isWarningSpokenRef.current = false;
       // The user came back: drop a warning that is still being read out.
       if (phase === "recording") void Speech.stop();
     }
