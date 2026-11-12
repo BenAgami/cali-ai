@@ -6,7 +6,7 @@ import {
   GenerateWorkoutBody,
   WorkoutGenerationPreviewResponse,
   UpdateWorkoutBody,
-  WorkoutLogBody,
+  CompleteWorkoutLogBody,
   WorkoutResponse,
   WorkoutLogResponse,
   RecordedSet,
@@ -136,7 +136,15 @@ registry.registerPath({
   description:
     "Up to 50 sets, newest first, with processing status, stage, outcome and band. The raw score is never returned.",
   security: [bearerAuth],
-  request: { params: workoutIdParam },
+  request: {
+    params: workoutIdParam,
+    query: z.object({
+      workoutLogId: z.number().int().optional().openapi({
+        description: "Only the sets recorded during this workout run",
+        example: 1,
+      }),
+    }),
+  },
   responses: {
     200: successResponse(z.array(RecordedSet), "Recorded sets"),
     400: errorResponse("Invalid workout ID"),
@@ -188,20 +196,41 @@ registry.registerPath({
   method: "post",
   path: "/workouts/{id}/logs",
   tags: ["Workouts"],
-  summary: "Log a completed workout",
+  summary: "Start a workout run",
+  description:
+    "Opens an in-progress run of the workout plan. Recorded sets attach to it through workoutLogId; complete it with PATCH.",
+  security: [bearerAuth],
+  request: { params: workoutIdParam },
+  responses: {
+    201: successResponse(WorkoutLogResponse, "Workout run started"),
+    400: errorResponse("Invalid workout ID"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/workouts/{id}/logs/{logId}",
+  tags: ["Workouts"],
+  summary: "Complete a workout run",
   security: [bearerAuth],
   request: {
-    params: workoutIdParam,
+    params: workoutIdParam.extend({
+      logId: z.number().int().openapi({ example: 1 }),
+    }),
     body: {
       required: true,
-      content: { "application/json": { schema: WorkoutLogBody } },
+      content: { "application/json": { schema: CompleteWorkoutLogBody } },
     },
   },
   responses: {
-    201: successResponse(WorkoutLogResponse, "Workout log created"),
+    200: successResponse(WorkoutLogResponse, "Workout run completed"),
     400: errorResponse("Validation error"),
     401: errorResponse("Unauthorized"),
-    404: errorResponse("Workout not found"),
+    404: errorResponse("Workout log not found"),
+    409: errorResponse("Workout log is already completed"),
     500: errorResponse("Internal server error"),
   },
 });

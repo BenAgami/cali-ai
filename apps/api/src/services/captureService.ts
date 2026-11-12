@@ -59,7 +59,6 @@ export class CaptureService {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     await aiPrerequisitesService.assertAiPrerequisites(userId);
     await this.assertUnderDailyCap(userId);
-    await this.assertUnderExerciseWorkoutCap(userId, sessionId);
 
     const keypoints = await encodeCapture(payload);
     const jobId = newJobId();
@@ -120,34 +119,6 @@ export class CaptureService {
       throw new TooManyRequestsError(
         "You've reached today's limit for form analysis. Try again tomorrow.",
         "DAILY_ANALYSIS_LIMIT_REACHED",
-      );
-    }
-  }
-
-  /** Retries reuse the stored capture row, so they never count here. */
-  private async assertUnderExerciseWorkoutCap(
-    userId: number,
-    sessionId: number,
-  ): Promise<void> {
-    const session = await this.prisma.workoutSession.findUnique({
-      where: { id: sessionId },
-      select: { workoutId: true, exerciseId: true },
-    });
-    if (!session?.workoutId) return;
-
-    const acceptedCount = await this.prisma.poseCapture.count({
-      where: {
-        session: {
-          userId,
-          workoutId: session.workoutId,
-          exerciseId: session.exerciseId,
-        },
-      },
-    });
-    if (acceptedCount >= env.formAnalysis.exerciseWorkoutCap) {
-      throw new TooManyRequestsError(
-        "You've already analysed this exercise twice in this workout.",
-        "EXERCISE_ANALYSIS_LIMIT_REACHED",
       );
     }
   }

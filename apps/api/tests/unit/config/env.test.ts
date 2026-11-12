@@ -173,7 +173,6 @@ describe("LLM and generation env", () => {
     expect(parsed.AI_GENERATION_DAILY_CAP).toBe(10);
     expect(parsed.AI_GENERATION_DEADLINE_MS).toBe(60000);
     expect(parsed.FORM_ANALYSIS_DAILY_CAP).toBe(15);
-    expect(parsed.FORM_ANALYSIS_EXERCISE_WORKOUT_CAP).toBe(2);
   });
 
   it("requires ANTHROPIC_API_KEY in production", () => {

@@ -5,7 +5,7 @@ import type {
   CreateWorkoutValues,
   GenerateWorkoutValues,
   UpdateWorkoutValues,
-  WorkoutLogValues,
+  CompleteWorkoutLogValues,
 } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
@@ -18,8 +18,16 @@ type ListWorkoutsQuery = {
   offset?: number;
 };
 
+type RecordedSetsQuery = {
+  workoutLogId?: number;
+};
+
 type WorkoutIdParam = {
   id: string;
+};
+
+type WorkoutLogIdParam = WorkoutIdParam & {
+  logId: string;
 };
 
 /**
@@ -75,7 +83,7 @@ export const getWorkoutById = async (
  * @route GET /api/workouts/:id/recorded-sets
  */
 export const listRecordedSets = async (
-  req: Request<WorkoutIdParam>,
+  req: Request<WorkoutIdParam, unknown, unknown, RecordedSetsQuery>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
@@ -84,6 +92,7 @@ export const listRecordedSets = async (
   const data = await analysisResultQueryService.listRecordedSets(
     userUuid,
     Number(req.params.id),
+    req.query.workoutLogId,
   );
 
   res.status(StatusCodes.OK).json({
@@ -156,26 +165,47 @@ export const deleteWorkout = async (
 };
 
 /**
- * Start workout (create log)
+ * Start a workout run (create an in-progress log)
  * @route POST /api/workouts/:id/logs
  */
 export const startWorkout = async (
-  req: Request<WorkoutIdParam, unknown, WorkoutLogValues>,
+  req: Request<WorkoutIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
   const workoutId = Number(req.params.id);
-  const log = await workoutService.startWorkoutLog(
-    userUuid,
-    workoutId,
-    req.body,
-  );
+  const log = await workoutService.startWorkoutLog(userUuid, workoutId);
 
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Workout started successfully",
+    data: log,
+  });
+};
+
+/**
+ * Complete a workout run
+ * @route PATCH /api/workouts/:id/logs/:logId
+ */
+export const completeWorkout = async (
+  req: Request<WorkoutLogIdParam, unknown, CompleteWorkoutLogValues>,
+  res: Response,
+) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const log = await workoutService.completeWorkoutLog(
+    userUuid,
+    Number(req.params.id),
+    Number(req.params.logId),
+    req.body,
+  );
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "Workout completed successfully",
     data: log,
   });
 };

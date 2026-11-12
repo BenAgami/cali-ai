@@ -2,7 +2,7 @@ import { getPrismaClient } from "@repo/db";
 import type {
   CreateWorkoutValues,
   UpdateWorkoutValues,
-  WorkoutLogValues,
+  CompleteWorkoutLogValues,
   WorkoutExerciseInput,
 } from "@repo/common";
 
@@ -13,7 +13,6 @@ import {
 } from "../utils/prismaErrorCodes";
 
 import { lookAheadTake, paginate } from "../utils/pagination";
-import { parseOptionalDate } from "../utils/parseDate";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 
 type ListWorkoutsInput = {
@@ -199,11 +198,8 @@ export class WorkoutService {
     await this.prisma.workout.delete({ where: { id: workoutId } });
   }
 
-  async startWorkoutLog(
-    userUuid: string,
-    workoutId: number,
-    data: WorkoutLogValues,
-  ) {
+  /** Starting a plan opens a run; it stays in progress until completed. */
+  async startWorkoutLog(userUuid: string, workoutId: number) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     const workout = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
@@ -211,15 +207,28 @@ export class WorkoutService {
     });
     if (!workout) throw new NotFoundError("Workout not found");
 
-    const completedAt = parseOptionalDate(data.completedAt, "completedAt");
+    return this.prisma.workoutLog.create({ data: { userId, workoutId } });
+  }
 
-    return this.prisma.workoutLog.create({
-      data: {
-        userId,
-        workoutId,
-        durationSecs: data.durationSecs,
-        ...(completedAt ? { completedAt } : {}),
-      },
+  async completeWorkoutLog(
+    userUuid: string,
+    workoutId: number,
+    logId: number,
+    data: CompleteWorkoutLogValues,
+  ) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const log = await this.prisma.workoutLog.findFirst({
+      where: { id: logId, workoutId, userId },
+      select: { completedAt: true },
+    });
+    if (!log) throw new NotFoundError("Workout log not found");
+    if (log.completedAt !== null) {
+      throw new ConflictError("Workout log is already completed");
+    }
+
+    return this.prisma.workoutLog.update({
+      where: { id: logId },
+      data: { completedAt: new Date(), durationSecs: data.durationSecs },
     });
   }
 }

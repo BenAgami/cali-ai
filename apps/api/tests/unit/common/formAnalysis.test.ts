@@ -126,6 +126,7 @@ describe("recordedSetSchema", () => {
       recordedSetSchema.safeParse({
         sessionId: 1,
         workoutId: 2,
+        workoutLogId: null,
         setNumber: 1,
         exerciseCode: "squat",
         exerciseDisplayName: "Squat",

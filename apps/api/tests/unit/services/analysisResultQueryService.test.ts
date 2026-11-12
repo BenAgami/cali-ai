@@ -103,6 +103,7 @@ describe("AnalysisResultQueryService", () => {
     const row = (overrides: Record<string, unknown> = {}) => ({
       id: 11,
       workoutId: 9,
+      workoutLogId: 4,
       setNumber: 1,
       performedAt: ANALYZED_AT,
       processingStatus: SessionStatus.COMPLETED,
@@ -163,6 +164,20 @@ describe("AnalysisResultQueryService", () => {
         analysisStageProgress: 0.5,
       });
       expect(JSON.stringify(result)).not.toContain("formScore");
+    });
+
+    it("scopes the query to one run and maps workoutLogId when given", async () => {
+      prisma.workout.findFirst.mockResolvedValue({ id: 9 });
+      prisma.workoutSession.findMany.mockResolvedValue([row()]);
+
+      const result = await service.listRecordedSets(USER, 9, 4);
+
+      expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { workoutId: 9, userId: USER_ID, workoutLogId: 4 },
+        }),
+      );
+      expect(result[0]).toMatchObject({ workoutLogId: 4 });
     });
   });
 

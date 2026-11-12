@@ -367,47 +367,22 @@ describe("POST /api/sessions/:id/capture", () => {
       expect(response.body.code).toBe("DAILY_ANALYSIS_LIMIT_REACHED");
     });
 
-    it("returns 429 EXERCISE_ANALYSIS_LIMIT_REACHED on the third capture of an exercise in one workout, but accepts it in another workout", async () => {
+    it("has no per-exercise cap within a workout: a plan can be recorded across many runs", async () => {
       const user = await newGatedUser();
       const exercise = await prisma.exercise.findUniqueOrThrow({
         where: { code: exerciseCode },
       });
-      const workoutA = await createWorkoutFixture(prisma, {
-        userId: user.userId,
-        exercises: [{ exerciseId: exercise.id, position: 1 }],
-      });
-      const workoutB = await createWorkoutFixture(prisma, {
+      const workout = await createWorkoutFixture(prisma, {
         userId: user.userId,
         exercises: [{ exerciseId: exercise.id, position: 1 }],
       });
       const payload = new PoseCaptureBuilder().setFrames(30).build();
 
-      for (let i = 0; i < env.formAnalysis.exerciseWorkoutCap; i++) {
-        const id = await createSetSession(
-          user.userId,
-          exercise.id,
-          workoutA.id,
-        );
-        const ok = await submitCapture(app, user.token, id, payload);
-        expect(ok.status).toBe(StatusCodes.ACCEPTED);
+      for (let i = 0; i < 3; i++) {
+        const id = await createSetSession(user.userId, exercise.id, workout.id);
+        const response = await submitCapture(app, user.token, id, payload);
+        expect(response.status).toBe(StatusCodes.ACCEPTED);
       }
-
-      const third = await createSetSession(
-        user.userId,
-        exercise.id,
-        workoutA.id,
-      );
-      const blocked = await submitCapture(app, user.token, third, payload);
-      expect(blocked.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
-      expect(blocked.body.code).toBe("EXERCISE_ANALYSIS_LIMIT_REACHED");
-
-      const other = await createSetSession(
-        user.userId,
-        exercise.id,
-        workoutB.id,
-      );
-      const accepted = await submitCapture(app, user.token, other, payload);
-      expect(accepted.status).toBe(StatusCodes.ACCEPTED);
     });
   });
 });

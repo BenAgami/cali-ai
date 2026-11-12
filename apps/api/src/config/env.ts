@@ -71,12 +71,6 @@ export const envSchema = z
       .min(1)
       .max(1000)
       .default(15),
-    FORM_ANALYSIS_EXERCISE_WORKOUT_CAP: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(100)
-      .default(2),
   })
   .superRefine((v, ctx) => {
     if (v.NODE_ENV === "production" && !v.ANTHROPIC_API_KEY) {
@@ -170,7 +164,6 @@ export const env = {
   },
   formAnalysis: {
     dailyCap: parsedData.FORM_ANALYSIS_DAILY_CAP,
-    exerciseWorkoutCap: parsedData.FORM_ANALYSIS_EXERCISE_WORKOUT_CAP,
   },
   r2: {
     accountId: parsedData.R2_ACCOUNT_ID,

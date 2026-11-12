@@ -93,6 +93,60 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     expect(JSON.stringify(response.body)).not.toContain("formScore");
   });
 
+  it("filters to one run when workoutLogId is given and exposes workoutLogId", async () => {
+    const { userId, token } = await newUser();
+    const workout = await newWorkout(userId);
+    const runA = await prisma.workoutLog.create({
+      data: { userId, workoutId: workout.id },
+    });
+    const runB = await prisma.workoutLog.create({
+      data: { userId, workoutId: workout.id },
+    });
+    const inRunA = await prisma.workoutSession.create({
+      data: {
+        userId,
+        exerciseId,
+        workoutId: workout.id,
+        workoutLogId: runA.id,
+        setNumber: 1,
+      },
+      select: { id: true },
+    });
+    await prisma.workoutSession.create({
+      data: {
+        userId,
+        exerciseId,
+        workoutId: workout.id,
+        workoutLogId: runB.id,
+        setNumber: 1,
+      },
+    });
+
+    const all = await getRecordedSets(app, token, workout.id);
+    const filtered = await getRecordedSets(app, token, workout.id, {
+      workoutLogId: runA.id,
+    });
+
+    expect(all.body.data).toHaveLength(2);
+    expect(filtered.status).toBe(StatusCodes.OK);
+    expect(filtered.body.data).toHaveLength(1);
+    expect(filtered.body.data[0]).toMatchObject({
+      sessionId: inRunA.id,
+      workoutLogId: runA.id,
+    });
+  });
+
+  it("returns 400 for an invalid workoutLogId", async () => {
+    const { userId, token } = await newUser();
+    const workout = await newWorkout(userId);
+
+    const response = await getRecordedSets(app, token, workout.id, {
+      workoutLogId: 0,
+    });
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+  });
+
   it("returns an empty list for a workout with no recorded sets", async () => {
     const { userId, token } = await newUser();
     const workout = await newWorkout(userId);

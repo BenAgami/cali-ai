@@ -235,32 +235,6 @@ describe("CaptureService", () => {
       }
     });
 
-    it("rejects with 429 EXERCISE_ANALYSIS_LIMIT_REACHED at the per-exercise cap", async () => {
-      stubPending();
-      prisma.poseCapture.count
-        .mockResolvedValueOnce(1)
-        .mockResolvedValueOnce(2);
-
-      const error: unknown = await service
-        .submitCapture(USER, SESSION_ID, payload)
-        .catch((e: unknown) => e);
-
-      expect(error).toBeInstanceOf(TooManyRequestsError);
-      expect((error as TooManyRequestsError).code).toBe(
-        "EXERCISE_ANALYSIS_LIMIT_REACHED",
-      );
-      expect(prisma.poseCapture.count).toHaveBeenLastCalledWith({
-        where: {
-          session: {
-            userId: USER_ID,
-            workoutId: WORKOUT_ID,
-            exerciseId: EXERCISE_ID,
-          },
-        },
-      });
-      expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
-    });
-
     it("checks the daily cap before the per-exercise cap", async () => {
       stubPending();
       prisma.poseCapture.count.mockResolvedValue(99);

@@ -9,147 +9,182 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { startWorkout } from "../helpers/requestSender/workoutsRequests";
+import {
+  completeWorkout,
+  startWorkout,
+} from "../helpers/requestSender/workoutsRequests";
 import { createWorkoutFixture } from "../helpers/db/workoutHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("POST /api/workouts/:id/logs", () => {
+describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
+  let exerciseId: number;
+
+  const newUser = async () => {
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email!.toLowerCase() },
+      select: { id: true },
+    });
+    return { userId: user.id, token: res.body.data.token as string };
+  };
+
+  const newWorkout = (userId: number) =>
+    createWorkoutFixture(prisma, {
+      userId,
+      name: "My Workout",
+      exercises: [{ exerciseId, position: 0 }],
+    });
 
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
+    exerciseId = (await createExercise(prisma)).id;
   });
 
   afterAll(async () => {
     await teardownIntegrationTest(prisma);
   });
 
-  it("should create a workout log linked to the workout", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
-    const dbUser = await prisma.user.findUnique({
-      where: { email: registerUserDto.email!.toLowerCase() },
-      select: { id: true },
+  describe("POST (start a run)", () => {
+    it("creates an in-progress run linked to the workout", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+
+      const response = await startWorkout(app, token, workout.id);
+
+      expect(response.status).toBe(StatusCodes.CREATED);
+      expect(response.body.data.workoutId).toBe(workout.id);
+      expect(typeof response.body.data.startedAt).toBe("string");
+      expect(response.body.data.completedAt).toBeNull();
+      expect(response.body.data.durationSecs).toBeNull();
+
+      const dbLog = await prisma.workoutLog.findUniqueOrThrow({
+        where: { id: response.body.data.id },
+      });
+      expect(dbLog.completedAt).toBeNull();
     });
 
-    const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
-      userId: dbUser!.id,
-      name: "My Workout",
-      exercises: [{ exerciseId: exercise.id, position: 0 }],
+    it("lets the same plan be started again as a new run", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+
+      const first = await startWorkout(app, token, workout.id);
+      const second = await startWorkout(app, token, workout.id);
+
+      expect(second.status).toBe(StatusCodes.CREATED);
+      expect(second.body.data.id).not.toBe(first.body.data.id);
     });
 
-    const response = await startWorkout(app, token, workout.id, {
-      durationSecs: 1800,
+    it("returns 404 for another user's workout", async () => {
+      const owner = await newUser();
+      const other = await newUser();
+      const workout = await newWorkout(owner.userId);
+
+      const response = await startWorkout(app, other.token, workout.id);
+
+      expect(response.status).toBe(StatusCodes.NOT_FOUND);
     });
 
-    expect(response.status).toBe(StatusCodes.CREATED);
-    expect(typeof response.body.data.id).toBe("number");
-    expect(response.body.data.workoutId).toBe(workout.id);
-    expect(response.body.data.durationSecs).toBe(1800);
+    it("returns 404 for a non-existent workout id", async () => {
+      const { token } = await newUser();
 
-    const dbLog = await prisma.workoutLog.findUnique({
-      where: { id: response.body.data.id },
+      const response = await startWorkout(app, token, 999999);
+
+      expect(response.status).toBe(StatusCodes.NOT_FOUND);
     });
-    expect(dbLog).not.toBeNull();
+
+    it("returns 401 without an auth token", async () => {
+      const response = await startWorkout(app, undefined, 1);
+
+      expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+    });
   });
 
-  it("should accept optional completedAt", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
-    const dbUser = await prisma.user.findUnique({
-      where: { email: registerUserDto.email!.toLowerCase() },
-      select: { id: true },
+  describe("PATCH (complete a run)", () => {
+    it("records the duration and completion time", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const started = await startWorkout(app, token, workout.id);
+
+      const response = await completeWorkout(
+        app,
+        token,
+        workout.id,
+        started.body.data.id,
+        { durationSecs: 1800 },
+      );
+
+      expect(response.status).toBe(StatusCodes.OK);
+      expect(response.body.data.durationSecs).toBe(1800);
+      expect(typeof response.body.data.completedAt).toBe("string");
     });
 
-    const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
-      userId: dbUser!.id,
-      name: "My Workout",
-      exercises: [{ exerciseId: exercise.id, position: 0 }],
+    it("returns 409 when the run is already completed", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const started = await startWorkout(app, token, workout.id);
+      const logId = started.body.data.id;
+      await completeWorkout(app, token, workout.id, logId, {
+        durationSecs: 60,
+      });
+
+      const response = await completeWorkout(app, token, workout.id, logId, {
+        durationSecs: 90,
+      });
+
+      expect(response.status).toBe(StatusCodes.CONFLICT);
     });
 
-    const completedAt = "2026-05-01T12:00:00.000Z";
-    const response = await startWorkout(app, token, workout.id, {
-      durationSecs: 1800,
-      completedAt,
+    it("returns 404 for another user's run", async () => {
+      const owner = await newUser();
+      const other = await newUser();
+      const workout = await newWorkout(owner.userId);
+      const started = await startWorkout(app, owner.token, workout.id);
+
+      const response = await completeWorkout(
+        app,
+        other.token,
+        workout.id,
+        started.body.data.id,
+        { durationSecs: 60 },
+      );
+
+      expect(response.status).toBe(StatusCodes.NOT_FOUND);
     });
 
-    expect(response.status).toBe(StatusCodes.CREATED);
-    expect(new Date(response.body.data.completedAt).toISOString()).toBe(
-      completedAt,
-    );
-  });
+    it("returns 404 when the run belongs to a different workout", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const otherWorkout = await newWorkout(userId);
+      const started = await startWorkout(app, token, workout.id);
 
-  it("should return 404 for another user's workout", async () => {
-    const userADto = new RegisterUserBuilder().build();
-    await registerUser(app, userADto);
-    const dbUserA = await prisma.user.findUnique({
-      where: { email: userADto.email!.toLowerCase() },
-      select: { id: true },
+      const response = await completeWorkout(
+        app,
+        token,
+        otherWorkout.id,
+        started.body.data.id,
+        { durationSecs: 60 },
+      );
+
+      expect(response.status).toBe(StatusCodes.NOT_FOUND);
     });
 
-    const userBDto = new RegisterUserBuilder().build();
-    const userBRes = await registerUser(app, userBDto);
-    const tokenB = userBRes.body.data.token;
+    it("returns 400 for a negative durationSecs", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const started = await startWorkout(app, token, workout.id);
 
-    const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
-      userId: dbUserA!.id,
-      name: "User A Workout",
-      exercises: [{ exerciseId: exercise.id, position: 0 }],
+      const response = await completeWorkout(
+        app,
+        token,
+        workout.id,
+        started.body.data.id,
+        { durationSecs: -5 },
+      );
+
+      expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     });
-
-    const response = await startWorkout(app, tokenB, workout.id, {
-      durationSecs: 1800,
-    });
-
-    expect(response.status).toBe(StatusCodes.NOT_FOUND);
-  });
-
-  it("should return 404 for non-existent workout id", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
-
-    const response = await startWorkout(app, token, 999999, {
-      durationSecs: 1800,
-    });
-
-    expect(response.status).toBe(StatusCodes.NOT_FOUND);
-  });
-
-  it("should return 401 without auth token", async () => {
-    const response = await startWorkout(app, undefined, 1, {
-      durationSecs: 1800,
-    });
-
-    expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
-  });
-
-  it("should return 400 for negative durationSecs", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
-    const dbUser = await prisma.user.findUnique({
-      where: { email: registerUserDto.email!.toLowerCase() },
-      select: { id: true },
-    });
-
-    const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
-      userId: dbUser!.id,
-      name: "My Workout",
-      exercises: [{ exerciseId: exercise.id, position: 0 }],
-    });
-
-    const response = await startWorkout(app, token, workout.id, {
-      durationSecs: -5,
-    });
-
-    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
   });
 });

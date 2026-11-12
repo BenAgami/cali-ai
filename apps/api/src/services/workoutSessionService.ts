@@ -1,7 +1,7 @@
 import { getPrismaClient, SessionStatus } from "@repo/db";
 import type { CreateWorkoutSessionValues } from "@repo/common";
 
-import { BadRequestError, NotFoundError } from "../errors";
+import { BadRequestError, ConflictError, NotFoundError } from "../errors";
 
 import { normalizeString } from "../utils/normalizeString";
 import { lookAheadTake, paginate } from "../utils/pagination";
@@ -63,6 +63,25 @@ export class WorkoutSessionService {
     }
   }
 
+  private async assertWorkoutLogIsOpen(
+    userId: number,
+    workoutId: number,
+    workoutLogId: number,
+  ) {
+    const log = await this.prisma.workoutLog.findFirst({
+      where: { id: workoutLogId, workoutId, userId },
+      select: { completedAt: true },
+    });
+
+    if (!log) {
+      throw new NotFoundError("Workout log not found");
+    }
+
+    if (log.completedAt !== null) {
+      throw new ConflictError("Workout log is already completed");
+    }
+  }
+
   async createSession(userUuid: string, data: CreateWorkoutSessionValues) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     await aiPrerequisitesService.assertAiPrerequisites(userId);
@@ -76,6 +95,13 @@ export class WorkoutSessionService {
         data.workoutId,
         exercise.code,
       );
+      if (data.workoutLogId !== undefined) {
+        await this.assertWorkoutLogIsOpen(
+          userId,
+          data.workoutId,
+          data.workoutLogId,
+        );
+      }
     }
 
     const performedAt = parseOptionalDate(data.performedAt, "performedAt");
@@ -85,6 +111,7 @@ export class WorkoutSessionService {
         userId,
         exerciseId: exercise.id,
         workoutId: data.workoutId ?? null,
+        workoutLogId: data.workoutLogId ?? null,
         setNumber: data.setNumber ?? null,
         notes: data.notes,
         performedAt,

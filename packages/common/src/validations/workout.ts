@@ -22,14 +22,13 @@ export const updateWorkoutSchema = z.object({
   exercises: z.array(workoutExerciseInputSchema).min(1).max(50).optional(),
 });
 
-export const workoutLogSchema = z.object({
+export const completeWorkoutLogSchema = z.object({
   durationSecs: z.number().int().min(0).max(86_400),
-  completedAt: z.iso.datetime().optional(),
 });
 
 export type CreateWorkoutValues = z.infer<typeof createWorkoutSchema>;
 export type UpdateWorkoutValues = z.infer<typeof updateWorkoutSchema>;
-export type WorkoutLogValues = z.infer<typeof workoutLogSchema>;
+export type CompleteWorkoutLogValues = z.infer<typeof completeWorkoutLogSchema>;
 export type WorkoutExerciseInput = z.infer<typeof workoutExerciseInputSchema>;
 
 // ── Responses ──────────────────────────────────────────────────────────────
@@ -74,8 +73,9 @@ export const workoutLogResponseSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   workoutId: z.number().int(),
-  durationSecs: z.number().int(),
-  completedAt: z.string(),
+  startedAt: z.string(),
+  completedAt: z.string().nullable(),
+  durationSecs: z.number().int().nullable(),
   createdAt: z.string(),
 });
 

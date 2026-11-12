@@ -16,12 +16,21 @@ export const createWorkoutSessionSchema = z
     performedAt: z.iso.datetime().optional(),
     workoutId: z.number().int().positive().optional(),
     setNumber: z.number().int().min(1).max(50).optional(),
+    workoutLogId: z.number().int().positive().optional(),
   })
   .refine(
     (value) => value.setNumber === undefined || value.workoutId !== undefined,
     {
       message: "setNumber requires workoutId",
       path: ["setNumber"],
+    },
+  )
+  .refine(
+    (value) =>
+      value.workoutLogId === undefined || value.workoutId !== undefined,
+    {
+      message: "workoutLogId requires workoutId",
+      path: ["workoutLogId"],
     },
   );
 
@@ -35,6 +44,7 @@ export const workoutSessionResponseSchema = z.object({
   exerciseId: z.number().int(),
   processingStatus: z.enum(SESSION_STATUSES),
   workoutId: z.number().int().nullable(),
+  workoutLogId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   notes: z.string().nullable(),
   performedAt: z.string(),

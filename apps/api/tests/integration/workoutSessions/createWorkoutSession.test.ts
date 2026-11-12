@@ -165,6 +165,74 @@ describe("POST /api/workout-sessions", () => {
     expect(JSON.stringify(response.body)).not.toContain("formScore");
   });
 
+  describe("workoutLogId", () => {
+    const setup = async () => {
+      const { token, userId } = await registerReadyUser();
+      const workout = await createWorkoutFixture(prisma, {
+        userId,
+        exercises: [{ exerciseId: pushUp.id, position: 1 }],
+      });
+      const run = await prisma.workoutLog.create({
+        data: { userId, workoutId: workout.id },
+      });
+      return { token, userId, workout, run };
+    };
+
+    it("should link the session to an open run of that workout", async () => {
+      const { token, workout, run } = await setup();
+
+      const response = await createWorkoutSession(app, token, {
+        exerciseCode: "push_up",
+        workoutId: workout.id,
+        workoutLogId: run.id,
+        setNumber: 1,
+      });
+
+      expect(response.status).toBe(StatusCodes.CREATED);
+      expect(response.body.data.workoutLogId).toBe(run.id);
+    });
+
+    it("should return 400 for workoutLogId without workoutId", async () => {
+      const { token, run } = await setup();
+
+      const response = await createWorkoutSession(app, token, {
+        exerciseCode: "push_up",
+        workoutLogId: run.id,
+      });
+
+      expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+    });
+
+    it("should return 404 for another user's run", async () => {
+      const { workout, run } = await setup();
+      const other = await registerReadyUser();
+
+      const response = await createWorkoutSession(app, other.token, {
+        exerciseCode: "push_up",
+        workoutId: workout.id,
+        workoutLogId: run.id,
+      });
+
+      expect(response.status).toBe(StatusCodes.NOT_FOUND);
+    });
+
+    it("should return 409 when the run is already completed", async () => {
+      const { token, workout, run } = await setup();
+      await prisma.workoutLog.update({
+        where: { id: run.id },
+        data: { completedAt: new Date(), durationSecs: 60 },
+      });
+
+      const response = await createWorkoutSession(app, token, {
+        exerciseCode: "push_up",
+        workoutId: workout.id,
+        workoutLogId: run.id,
+      });
+
+      expect(response.status).toBe(StatusCodes.CONFLICT);
+    });
+  });
+
   it("should return 404 for another user's workout", async () => {
     const owner = await registerReadyUser();
     const { token } = await registerReadyUser();

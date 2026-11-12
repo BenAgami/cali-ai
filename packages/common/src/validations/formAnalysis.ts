@@ -222,6 +222,7 @@ export type FormAnalysisResponse = z.infer<typeof formAnalysisResponseSchema>;
 export const recordedSetSchema = z.object({
   sessionId: z.number().int(),
   workoutId: z.number().int(),
+  workoutLogId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   exerciseCode: z.string(),
   exerciseDisplayName: z.string(),

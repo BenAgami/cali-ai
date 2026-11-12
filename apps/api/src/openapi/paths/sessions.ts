@@ -47,7 +47,7 @@ registry.registerPath({
     413: errorResponse("Compressed body exceeds 1 MiB"),
     428: errorResponse("AI prerequisites missing"),
     429: errorResponse(
-      "Daily or per-exercise-per-workout form-analysis limit reached (DAILY_ANALYSIS_LIMIT_REACHED, EXERCISE_ANALYSIS_LIMIT_REACHED)",
+      "Daily form-analysis limit reached (DAILY_ANALYSIS_LIMIT_REACHED)",
     ),
     503: errorResponse("Queue unavailable"),
     500: errorResponse("Internal server error"),

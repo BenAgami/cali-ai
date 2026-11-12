@@ -161,6 +161,7 @@ export class AnalysisResultQueryService {
   async listRecordedSets(
     userUuid: string,
     workoutId: number,
+    workoutLogId?: number,
   ): Promise<RecordedSet[]> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
@@ -173,12 +174,13 @@ export class AnalysisResultQueryService {
     }
 
     const sessions = await this.prisma.workoutSession.findMany({
-      where: { workoutId, userId },
+      where: { workoutId, userId, workoutLogId },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
       take: RECORDED_SETS_LIMIT,
       select: {
         id: true,
         workoutId: true,
+        workoutLogId: true,
         setNumber: true,
         performedAt: true,
         processingStatus: true,
@@ -197,6 +199,7 @@ export class AnalysisResultQueryService {
         return {
           sessionId: session.id,
           workoutId: session.workoutId,
+          workoutLogId: session.workoutLogId,
           setNumber: session.setNumber,
           exerciseCode: session.exercise.code,
           exerciseDisplayName: session.exercise.displayName,
