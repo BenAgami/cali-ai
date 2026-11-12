@@ -20,7 +20,7 @@ describe("push_up rubric", () => {
   it("is registered with the approved version and assessability", () => {
     expect(RUBRIC_VERSION).toBe("rubric-v1");
     expect(getRubric("push_up").exerciseCode).toBe("push_up");
-    expect(pushUpRubric.assessed).toEqual({
+    expect(pushUpRubric.isAssessed).toEqual({
       ROM: true,
       CORE: true,
       SYMMETRY: false,

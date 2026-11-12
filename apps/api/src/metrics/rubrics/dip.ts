@@ -22,7 +22,7 @@ import type { ExerciseRubric } from "./types";
 // 05-RUBRICS sections 3, 4, 5, 6 and 8 (dip)
 export const dipRubric: ExerciseRubric = {
   exerciseCode: "dip",
-  assessed: { ROM: true, CORE: true, SYMMETRY: false },
+  isAssessed: { ROM: true, CORE: true, SYMMETRY: false },
   weights: { ROM: 0.5, CORE: 0.5, SYMMETRY: 0 },
   buildSetContext: () => ({}),
   primarySignal: (series, side) => {

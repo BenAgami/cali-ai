@@ -101,14 +101,16 @@ export const toPoseSeries = (
   const visibility = payload.frames.map((frame) =>
     frame.keypoints.map(([, , v]) => v),
   );
-  const rawValid = visibility.map((row) => row.map((v) => v >= MIN_VISIBILITY));
+  const isRawValid = visibility.map((row) =>
+    row.map((v) => v >= MIN_VISIBILITY),
+  );
 
   const points: (Point | null)[][] = payload.frames.map(() =>
     new Array<Point | null>(BLAZEPOSE_KEYPOINT_COUNT).fill(null),
   );
   for (let joint = 0; joint < BLAZEPOSE_KEYPOINT_COUNT; joint += 1) {
     const masked = rawPoints.map((row, f) =>
-      rawValid[f][joint] ? row[joint] : null,
+      isRawValid[f][joint] ? row[joint] : null,
     );
     const processed = smooth(fillGaps(masked));
     processed.forEach((p, f) => {
@@ -125,7 +127,7 @@ export const toPoseSeries = (
     points,
     rawPoints,
     visibility,
-    rawValid,
+    isRawValid,
   };
 };
 

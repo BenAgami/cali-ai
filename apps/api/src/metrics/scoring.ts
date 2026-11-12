@@ -26,7 +26,7 @@ export const buildDimensions = (
 ): Record<FormDimension, DimensionScore> => {
   const result = {} as Record<FormDimension, DimensionScore>;
   for (const dimension of FORM_DIMENSIONS) {
-    const score = rubric.assessed[dimension]
+    const score = rubric.isAssessed[dimension]
       ? aggregateDimension(
           reps.flatMap((rep) => rep.dimensionScores[dimension] ?? []),
         )

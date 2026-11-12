@@ -73,7 +73,7 @@ export const checkTrackability = (
     reasons.add("LOW_CONFIDENCE");
   }
 
-  const visibleFrames = series.rawValid.filter((row) =>
+  const visibleFrames = series.isRawValid.filter((row) =>
     keys.every((k) => row[k]),
   ).length;
   if (

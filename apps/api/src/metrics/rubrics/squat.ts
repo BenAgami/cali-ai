@@ -42,7 +42,7 @@ const isKneeReliable = (series: PoseSeries, side: Side): boolean =>
 
 export const squatRubric: ExerciseRubric = {
   exerciseCode: "squat",
-  assessed: { ROM: true, CORE: true, SYMMETRY: false },
+  isAssessed: { ROM: true, CORE: true, SYMMETRY: false },
   weights: { ROM: 0.5, CORE: 0.5, SYMMETRY: 0 },
   buildSetContext: (series, side) => {
     const s = sideIndices(requireSide(side));

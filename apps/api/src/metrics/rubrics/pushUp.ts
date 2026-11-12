@@ -24,7 +24,7 @@ const bodyLine = (offset: number): number =>
 
 export const pushUpRubric: ExerciseRubric = {
   exerciseCode: "push_up",
-  assessed: { ROM: true, CORE: true, SYMMETRY: false },
+  isAssessed: { ROM: true, CORE: true, SYMMETRY: false },
   weights: { ROM: 0.5, CORE: 0.5, SYMMETRY: 0 },
   buildSetContext: () => ({}),
   primarySignal: (series, side) => {

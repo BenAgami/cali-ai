@@ -6,7 +6,7 @@ const BASE = { reps: 5, view: "side" as const, aspectRatio: 16 / 9 };
 describe("dip rubric", () => {
   it("is side-on: SYMMETRY not assessed", () => {
     expect(dipRubric.exerciseCode).toBe("dip");
-    expect(dipRubric.assessed.SYMMETRY).toBe(false);
+    expect(dipRubric.isAssessed.SYMMETRY).toBe(false);
     expect(dipRubric.weights).toEqual({ ROM: 0.5, CORE: 0.5, SYMMETRY: 0 });
     expect(dipRubric.forbiddenTopics).toEqual(
       expect.arrayContaining(["shoulder shrug", "bar width", "injury"]),

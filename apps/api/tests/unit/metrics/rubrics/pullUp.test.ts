@@ -20,7 +20,7 @@ const repsWith = (mouthBelowBar: number[]): RepMetrics[] =>
 
 describe("pull_up rubric", () => {
   it("assesses all three dimensions with the approved weights", () => {
-    expect(pullUpRubric.assessed).toEqual({
+    expect(pullUpRubric.isAssessed).toEqual({
       ROM: true,
       CORE: true,
       SYMMETRY: true,

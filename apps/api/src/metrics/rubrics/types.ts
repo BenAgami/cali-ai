@@ -34,7 +34,7 @@ export type SetTagRule = {
 /** Exercise-specific part of 05-RUBRICS; 05-14 orchestrates it generically. */
 export type ExerciseRubric = {
   exerciseCode: FormAnalysisExercise;
-  assessed: Record<FormDimension, boolean>;
+  isAssessed: Record<FormDimension, boolean>;
   weights: Record<FormDimension, number>;
   buildSetContext: (series: PoseSeries, side: Side | null) => SetContext;
   primarySignal: (

@@ -80,7 +80,7 @@ const shoulderTilt = (series: PoseSeries, frame: number): number => {
 
 export const pullUpRubric: ExerciseRubric = {
   exerciseCode: "pull_up",
-  assessed: { ROM: true, CORE: true, SYMMETRY: true },
+  isAssessed: { ROM: true, CORE: true, SYMMETRY: true },
   weights: { ROM: 0.5, CORE: 0.1, SYMMETRY: 0.4 },
   buildSetContext: (series) => {
     const frames = frameIndices(series);

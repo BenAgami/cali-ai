@@ -19,7 +19,7 @@ const repsWith = (hipBelowKnee: number[]): RepMetrics[] =>
 describe("squat rubric", () => {
   it("is side-on: SYMMETRY not assessed", () => {
     expect(getRubric("squat")).toBe(squatRubric);
-    expect(squatRubric.assessed).toEqual({
+    expect(squatRubric.isAssessed).toEqual({
       ROM: true,
       CORE: true,
       SYMMETRY: false,

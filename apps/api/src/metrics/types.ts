@@ -24,7 +24,7 @@ export type PoseSeries = {
   /** [frame][33] */
   visibility: number[][];
   /** [frame][33] visibility >= 0.5 before gap fill */
-  rawValid: boolean[][];
+  isRawValid: boolean[][];
 };
 
 export type RepCycle = {
