@@ -67,7 +67,6 @@ export class AnalysisResultQueryService {
                 description: true,
                 correction: true,
                 repNumbers: true,
-                sortOrder: true,
               },
             },
           },
@@ -124,9 +123,9 @@ export class AnalysisResultQueryService {
       throw new InternalError("Stored analysis is not readable");
     }
 
-    const findings = [...result.findings].sort(
-      (a, b) => a.sortOrder - b.sortOrder,
-    );
+    // The query orders by findingType then sortOrder, so each filtered subset
+    // below is already in sortOrder.
+    const { findings } = result;
 
     return this.validated({
       ...base,

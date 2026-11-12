@@ -61,7 +61,9 @@ const scoredResult = (overrides: Record<string, unknown> = {}) => ({
   },
   untrackableReasons: [],
   analyzedAt: ANALYZED_AT,
+  // Supplied in the query's order: findingType asc, then sortOrder asc.
   findings: [
+    finding({ description: "First", repNumbers: [1, 2], sortOrder: 0 }),
     finding({ description: "Second", sortOrder: 1 }),
     finding({
       findingType: "CORRECTION",
@@ -72,7 +74,6 @@ const scoredResult = (overrides: Record<string, unknown> = {}) => ({
       severity: "HIGH",
       repNumbers: [6, 7],
     }),
-    finding({ description: "First", repNumbers: [1, 2], sortOrder: 0 }),
   ],
   ...overrides,
 });
@@ -276,6 +277,33 @@ describe("AnalysisResultQueryService", () => {
         advice: buildUntrackableAdvice(["WRONG_VIEW"], "push_up"),
       });
       expect(JSON.stringify(result)).not.toContain("formScore");
+    });
+
+    it("answers stored reasons that are all unknown with generic advice", async () => {
+      prisma.workoutSession.findFirst.mockResolvedValue(
+        session({
+          analysisResult: {
+            outcome: "UNTRACKABLE",
+            formScore: null,
+            scoreBreakdown: {},
+            summaryFeedback: null,
+            rawFeedback: {},
+            untrackableReasons: ["RENAMED_REASON"],
+            analyzedAt: ANALYZED_AT,
+            findings: [],
+          },
+        }),
+      );
+
+      const result = await service.getSessionAnalysis(USER, SESSION_ID);
+
+      expect(result).toMatchObject({
+        outcome: "UNTRACKABLE",
+        reasons: [],
+        advice: [
+          "We couldn't analyse this recording. Try again with your whole body in view.",
+        ],
+      });
     });
 
     it("throws NotFoundError for a session the user does not own", async () => {
