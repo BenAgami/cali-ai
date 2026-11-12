@@ -186,7 +186,7 @@ Plans:
 - [x] 05.2-10-PLAN.md — Recorded-sets list: retry-limit message instead of a dead Retry (R-02 app), cache invalidation (R-03), AU-3
 - [x] 05.2-11-PLAN.md — Per-user daily retry cap (R-02 API) under the same lock, with docs
 - [x] 05.2-12-PLAN.md — Native paging of recorded sets (R-04 native)
-- [ ] 05.2-13-PLAN.md — Atomic result + COMPLETED write (R-05) and worker uses assertAiPrerequisites (R-17)
+- [x] 05.2-13-PLAN.md — Atomic result + COMPLETED write (R-05) and worker uses assertAiPrerequisites (R-17)
 - [ ] 05.2-14-PLAN.md — Document the common test layout (R-28), final gates and device UAT
 
 ### Phase 6: Real-Time Form Cues (DEFERRED)
