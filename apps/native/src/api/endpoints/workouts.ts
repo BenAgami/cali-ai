@@ -10,24 +10,16 @@ import type {
 } from "@repo/common";
 
 import { apiClient } from "../client";
+import { withQuery } from "../withQuery";
 import { WORKOUT_ROUTES } from "@src/constants/routes";
 
 const GENERATE_TIMEOUT_MS = 75_000;
 
 export const workoutApi = {
-  list: (params?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<WorkoutListResponse> => {
-    const query = new URLSearchParams();
-    if (params?.limit !== undefined) query.set("limit", String(params.limit));
-    if (params?.offset !== undefined)
-      query.set("offset", String(params.offset));
-    const qs = query.toString();
-    return apiClient.get<WorkoutListResponse>(
-      qs ? `${WORKOUT_ROUTES.list}?${qs}` : WORKOUT_ROUTES.list,
-    );
-  },
+  list: (
+    params: { limit?: number; offset?: number } = {},
+  ): Promise<WorkoutListResponse> =>
+    apiClient.get<WorkoutListResponse>(withQuery(WORKOUT_ROUTES.list, params)),
 
   get: (id: number): Promise<WorkoutWithExercises> =>
     apiClient.get<WorkoutWithExercises>(WORKOUT_ROUTES.detail(id)),
@@ -58,12 +50,8 @@ export const workoutApi = {
   recordedSets: (
     workoutId: number,
     workoutLogId?: number,
-  ): Promise<RecordedSet[]> => {
-    const url = WORKOUT_ROUTES.recordedSets(workoutId);
-    const query = new URLSearchParams();
-    if (workoutLogId !== undefined)
-      query.set("workoutLogId", String(workoutLogId));
-    const qs = query.toString();
-    return apiClient.get<RecordedSet[]>(qs ? `${url}?${qs}` : url);
-  },
+  ): Promise<RecordedSet[]> =>
+    apiClient.get<RecordedSet[]>(
+      withQuery(WORKOUT_ROUTES.recordedSets(workoutId), { workoutLogId }),
+    ),
 };

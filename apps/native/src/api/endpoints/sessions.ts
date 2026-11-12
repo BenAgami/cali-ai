@@ -9,6 +9,7 @@ import type {
 } from "@repo/common";
 
 import { apiClient } from "../client";
+import { withQuery } from "../withQuery";
 import { SESSION_ROUTES } from "@src/constants/routes";
 
 type SessionStatusValue = (typeof SESSION_STATUSES)[number];
@@ -41,6 +42,6 @@ export const sessionsApi = {
     limit = DEFAULT_LIST_LIMIT,
   ): Promise<WorkoutSessionListResponse> =>
     apiClient.get<WorkoutSessionListResponse>(
-      `${SESSION_ROUTES.list}?processingStatus=${processingStatus}&limit=${limit}`,
+      withQuery(SESSION_ROUTES.list, { processingStatus, limit }),
     ),
 };
