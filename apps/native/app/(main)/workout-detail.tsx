@@ -13,11 +13,16 @@ import { router, useLocalSearchParams } from "expo-router";
 
 import AiDisclaimer from "@src/components/AiDisclaimer";
 import RecordedSetCard from "@src/components/form/RecordedSetCard";
-import { RECORDED_SETS_TITLE } from "@src/constants/formMessages";
+import {
+  EARLIER_SETS_TITLE,
+  RECORDED_SETS_TITLE,
+} from "@src/constants/formMessages";
 import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
+import { groupRecordedSetsByRun } from "@src/utils/groupRecordedSetsByRun";
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useDeleteWorkout } from "@src/hooks/mutations/useDeleteWorkout";
+import { useStartWorkoutRun } from "@src/hooks/mutations/useStartWorkoutRun";
 import type { WorkoutExerciseHydrated } from "@repo/common";
 
 type DetailParams = { id?: string };
@@ -44,6 +49,7 @@ const WorkoutDetailScreen: React.FC = () => {
   const id = params.id ? Number(params.id) : undefined;
   const { data, isLoading, error } = useWorkoutDetail(id);
   const deleteMutation = useDeleteWorkout();
+  const startRunMutation = useStartWorkoutRun();
   const recorded = useWorkoutRecordedSets(id);
 
   const handleOpenResult = (sessionId: number) => {
@@ -55,7 +61,15 @@ const WorkoutDetailScreen: React.FC = () => {
 
   const handleStart = () => {
     if (!id) return;
-    router.push({ pathname: "/workout-execute", params: { id: String(id) } });
+    startRunMutation.mutate(id, {
+      onSuccess: (run) =>
+        router.push({
+          pathname: "/workout-execute",
+          params: { id: String(id), runId: String(run.id) },
+        }),
+      onError: () =>
+        Alert.alert("Could not start", "Check your connection and try again."),
+    });
   };
 
   const handleEdit = () => {
@@ -140,14 +154,25 @@ const WorkoutDetailScreen: React.FC = () => {
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>
                   {RECORDED_SETS_TITLE}
                 </Text>
-                {recorded.items.map((item) => (
-                  <RecordedSetCard
-                    key={item.sessionId}
-                    item={item}
-                    onOpen={handleOpenResult}
-                    onRetry={(sessionId) => void recorded.retrySet(sessionId)}
-                    isRetrying={recorded.retryingIds.has(item.sessionId)}
-                  />
+                {groupRecordedSetsByRun(recorded.items).map((run) => (
+                  <View key={run.runId ?? "earlier"}>
+                    <Text style={[styles.runTitle, { color: colors.text }]}>
+                      {run.runId === null
+                        ? EARLIER_SETS_TITLE
+                        : new Date(run.performedAt).toLocaleDateString()}
+                    </Text>
+                    {run.items.map((item) => (
+                      <RecordedSetCard
+                        key={item.sessionId}
+                        item={item}
+                        onOpen={handleOpenResult}
+                        onRetry={(sessionId) =>
+                          void recorded.retrySet(sessionId)
+                        }
+                        isRetrying={recorded.retryingIds.has(item.sessionId)}
+                      />
+                    ))}
+                  </View>
                 ))}
               </View>
             )}
@@ -159,9 +184,13 @@ const WorkoutDetailScreen: React.FC = () => {
             )}
             <Pressable
               onPress={handleStart}
+              disabled={startRunMutation.isPending}
               style={({ pressed }) => [
                 styles.primaryCta,
-                { backgroundColor: pressed ? "#006EE6" : "#007AFF" },
+                {
+                  backgroundColor: pressed ? "#006EE6" : "#007AFF",
+                  opacity: startRunMutation.isPending ? 0.7 : 1,
+                },
               ]}
               accessibilityRole="button"
               accessibilityLabel={
@@ -170,7 +199,9 @@ const WorkoutDetailScreen: React.FC = () => {
                   : "Start workout"
               }
             >
-              <Text style={styles.primaryCtaText}>Start</Text>
+              <Text style={styles.primaryCtaText}>
+                {startRunMutation.isPending ? "Starting…" : "Start"}
+              </Text>
             </Pressable>
 
             <View style={styles.secondaryRow}>
@@ -224,6 +255,7 @@ const styles = StyleSheet.create({
   subtle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
   list: { marginTop: 24 },
   sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8 },
+  runTitle: { fontSize: 14, fontWeight: "600", marginTop: 8, marginBottom: 6 },
   row: {
     padding: 14,
     borderRadius: 10,

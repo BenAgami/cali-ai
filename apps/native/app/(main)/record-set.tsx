@@ -32,6 +32,7 @@ import { baseColors } from "@src/theme/colors";
 
 type RecordSetParams = {
   workoutId?: string;
+  runId?: string;
   setNumber?: string;
   exerciseCode?: string;
   exerciseDisplayName?: string;
@@ -86,6 +87,7 @@ const OrientationDebug: React.FC<{ cameraPosition: string }> = ({
 
 interface RecorderProps {
   workoutId: number | null;
+  workoutLogId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
   exerciseDisplayName: string;
@@ -94,6 +96,7 @@ interface RecorderProps {
 
 const Recorder: React.FC<RecorderProps> = ({
   workoutId,
+  workoutLogId,
   setNumber,
   exerciseCode,
   exerciseDisplayName,
@@ -103,6 +106,7 @@ const Recorder: React.FC<RecorderProps> = ({
   const prerequisites = useAiPrerequisiteSteps();
   const recorder = useRecordedSet({
     workoutId,
+    workoutLogId,
     setNumber,
     exerciseCode,
     exerciseDisplayName,
@@ -377,13 +381,16 @@ const RecordSetScreen: React.FC = () => {
   }
 
   const workoutId = toPositiveIntOrNull(params.workoutId);
-  // The API rejects a setNumber without a workoutId, so drop it with the workout.
+  // The API rejects a setNumber or run without a workoutId, so drop them with it.
   const setNumber =
     workoutId === null ? null : toPositiveIntOrNull(params.setNumber);
+  const workoutLogId =
+    workoutId === null ? null : toPositiveIntOrNull(params.runId);
 
   return (
     <Recorder
       workoutId={workoutId}
+      workoutLogId={workoutLogId}
       setNumber={setNumber}
       exerciseCode={exerciseCode}
       exerciseDisplayName={params.exerciseDisplayName ?? exerciseCode}

@@ -3,7 +3,7 @@ import type {
   GenerateWorkoutValues,
   WorkoutGenerationPreview,
   UpdateWorkoutValues,
-  WorkoutLogValues,
+  CompleteWorkoutLogValues,
   WorkoutWithExercises,
   WorkoutListResponse,
   WorkoutLogResponse,
@@ -50,9 +50,23 @@ export const workoutApi = {
   remove: (id: number): Promise<void> =>
     apiClient.delete<void>(WORKOUT_ROUTES.detail(id)),
 
-  startLog: (id: number, data: WorkoutLogValues): Promise<WorkoutLogResponse> =>
-    apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), data),
+  startLog: (id: number): Promise<WorkoutLogResponse> =>
+    apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), {}),
 
-  recordedSets: (workoutId: number): Promise<RecordedSet[]> =>
-    apiClient.get<RecordedSet[]>(WORKOUT_ROUTES.recordedSets(workoutId)),
+  completeLog: (
+    id: number,
+    logId: number,
+    data: CompleteWorkoutLogValues,
+  ): Promise<WorkoutLogResponse> =>
+    apiClient.patch<WorkoutLogResponse>(WORKOUT_ROUTES.log(id, logId), data),
+
+  recordedSets: (
+    workoutId: number,
+    workoutLogId?: number,
+  ): Promise<RecordedSet[]> => {
+    const url = WORKOUT_ROUTES.recordedSets(workoutId);
+    return apiClient.get<RecordedSet[]>(
+      workoutLogId === undefined ? url : `${url}?workoutLogId=${workoutLogId}`,
+    );
+  },
 };

@@ -13,8 +13,11 @@ export const workoutKeys = {
 export const analysisKeys = {
   all: ["analysis"] as const,
   session: (sessionId: number) => ["analysis", "session", sessionId] as const,
-  recordedSets: (workoutId: number) =>
-    ["analysis", "recordedSets", workoutId] as const,
+  /** With a run id the key extends the workout-wide one, so invalidating the workout covers its runs. */
+  recordedSets: (workoutId: number, runId?: number) =>
+    runId === undefined
+      ? (["analysis", "recordedSets", workoutId] as const)
+      : (["analysis", "recordedSets", workoutId, runId] as const),
 };
 
 export const exerciseKeys = {

@@ -1,20 +1,10 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import type { WorkoutLogResponse } from "@repo/common";
 
-import { workoutApi, workoutKeys } from "@src/api";
-import type { WorkoutLogValues, WorkoutLogResponse } from "@repo/common";
+import { workoutApi } from "@src/api";
 
-interface StartWorkoutVariables {
-  workoutId: number;
-  data: WorkoutLogValues;
-}
-
-export const useStartWorkout = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<WorkoutLogResponse, Error, StartWorkoutVariables>({
-    mutationFn: ({ workoutId, data }) => workoutApi.startLog(workoutId, data),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: workoutKeys.all });
-    },
+/** Starting a plan opens a run; the response carries the run's id. */
+export const useStartWorkoutRun = () =>
+  useMutation<WorkoutLogResponse, Error, number>({
+    mutationFn: (workoutId) => workoutApi.startLog(workoutId),
   });
-};

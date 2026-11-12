@@ -19,8 +19,6 @@ export const UPLOAD_ERROR_MESSAGES = {
   UPLOAD_FAILED: "Upload failed. Check your connection and retry.",
   DAILY_LIMIT:
     "You've reached today's limit for form analysis. Try again tomorrow.",
-  EXERCISE_LIMIT:
-    "You've already analysed this exercise twice in this workout.",
 } as const;
 
 export type UploadErrorCode = keyof typeof UPLOAD_ERROR_MESSAGES;

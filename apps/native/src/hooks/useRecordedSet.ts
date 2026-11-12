@@ -74,7 +74,6 @@ const DEFAULT_ASPECT_RATIO = 9 / 16;
 const HTTP_PRECONDITION_REQUIRED = 428;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const DAILY_LIMIT_CODE = "DAILY_ANALYSIS_LIMIT_REACHED";
-const EXERCISE_LIMIT_CODE = "EXERCISE_ANALYSIS_LIMIT_REACHED";
 const KEEP_AWAKE_TAG = "recorded-set";
 
 /**
@@ -94,15 +93,19 @@ const toScreenIssue = (
 const NOT_READY: SetupCheckResult = { isReady: false, issue: "NOT_DETECTED" };
 
 const toUploadErrorCode = (error: unknown): UploadErrorCode => {
-  if (error instanceof ApiError && error.status === HTTP_TOO_MANY_REQUESTS) {
-    if (error.code === DAILY_LIMIT_CODE) return "DAILY_LIMIT";
-    if (error.code === EXERCISE_LIMIT_CODE) return "EXERCISE_LIMIT";
+  if (
+    error instanceof ApiError &&
+    error.status === HTTP_TOO_MANY_REQUESTS &&
+    error.code === DAILY_LIMIT_CODE
+  ) {
+    return "DAILY_LIMIT";
   }
   return "UPLOAD_FAILED";
 };
 
 interface UseRecordedSetParams {
   workoutId: number | null;
+  workoutLogId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
   exerciseDisplayName: string;
@@ -113,6 +116,7 @@ interface UseRecordedSetParams {
 export const useRecordedSet = (params: UseRecordedSetParams) => {
   const {
     workoutId,
+    workoutLogId,
     setNumber,
     exerciseCode,
     exerciseDisplayName,
@@ -319,6 +323,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         await sessionsApi.create({
           exerciseCode,
           workoutId: workoutId ?? undefined,
+          workoutLogId: workoutLogId ?? undefined,
           setNumber: setNumber ?? undefined,
         })
       ).id;
@@ -358,6 +363,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     source,
     track,
     workoutId,
+    workoutLogId,
   ]);
 
   // keepCount drops the idle tail after the set (see evaluateSetEnd).

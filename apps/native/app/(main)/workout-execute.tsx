@@ -14,14 +14,14 @@ import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useWorkoutExecution } from "@src/hooks/useWorkoutExecution";
-import { useStartWorkout } from "@src/hooks/mutations/useStartWorkout";
+import { useCompleteWorkoutRun } from "@src/hooks/mutations/useCompleteWorkoutRun";
 import RestTimer from "@src/components/RestTimer";
 import RecordedSetCard from "@src/components/form/RecordedSetCard";
 import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
 import { consumeRecordedSetDone } from "@src/state/recordedSetStore";
 import { isFormAnalysisExercise } from "@repo/common";
 
-type ExecuteParams = { id?: string };
+type ExecuteParams = { id?: string; runId?: string };
 
 const formatElapsed = (s: number): string => {
   const h = Math.floor(s / 3600);
@@ -54,9 +54,10 @@ const WorkoutExecuteScreen: React.FC = () => {
   const id = params.id ? Number(params.id) : undefined;
   const { data: workout, isLoading, error } = useWorkoutDetail(id);
   const execution = useWorkoutExecution(workout);
-  const startMutation = useStartWorkout();
-  const recorded = useWorkoutRecordedSets(id);
-  const { phase, currentSet, completeSet, startedAtMs } = execution;
+  const runId = params.runId ? Number(params.runId) : undefined;
+  const completeMutation = useCompleteWorkoutRun();
+  const recorded = useWorkoutRecordedSets(id, runId);
+  const { phase, currentSet, completeSet } = execution;
 
   // Returning from a submitted recording completes the set and starts rest.
   useFocusEffect(
@@ -75,19 +76,17 @@ const WorkoutExecuteScreen: React.FC = () => {
     });
   };
 
-  const thisRunSets = recorded.items.filter(
-    (item) => Date.parse(item.performedAt) >= startedAtMs,
-  );
-
   const handleDone = () => {
     if (!id || !workout) return;
-    startMutation.mutate(
+    if (runId === undefined) {
+      router.replace("/(main)/(tabs)/workouts");
+      return;
+    }
+    completeMutation.mutate(
       {
         workoutId: id,
-        data: {
-          durationSecs: execution.totalElapsedSecs,
-          completedAt: new Date().toISOString(),
-        },
+        runId,
+        data: { durationSecs: execution.totalElapsedSecs },
       },
       {
         onSuccess: () => {
@@ -176,19 +175,19 @@ const WorkoutExecuteScreen: React.FC = () => {
           </View>
           <Pressable
             onPress={handleDone}
-            disabled={startMutation.isPending}
+            disabled={completeMutation.isPending}
             style={({ pressed }) => [
               styles.doneButton,
               {
                 backgroundColor: pressed ? "#006EE6" : "#007AFF",
-                opacity: startMutation.isPending ? 0.7 : 1,
+                opacity: completeMutation.isPending ? 0.7 : 1,
               },
             ]}
             accessibilityRole="button"
             accessibilityLabel="Done"
           >
             <Text style={styles.doneButtonText}>
-              {startMutation.isPending ? "Saving…" : "Done"}
+              {completeMutation.isPending ? "Saving…" : "Done"}
             </Text>
           </Pressable>
         </ScrollView>
@@ -260,6 +259,7 @@ const WorkoutExecuteScreen: React.FC = () => {
                     setNumber: String(execution.currentSet),
                     exerciseCode: ex.exercise.code,
                     exerciseDisplayName: ex.exercise.displayName,
+                    ...(runId !== undefined && { runId: String(runId) }),
                     source: "execute",
                   },
                 })
@@ -278,7 +278,7 @@ const WorkoutExecuteScreen: React.FC = () => {
           )}
 
         <ScrollView style={styles.recordedRows}>
-          {thisRunSets.map((item) => (
+          {(runId === undefined ? [] : recorded.items).map((item) => (
             <RecordedSetCard
               key={item.sessionId}
               item={item}

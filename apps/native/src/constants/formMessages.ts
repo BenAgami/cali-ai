@@ -8,6 +8,7 @@ export const RECORD_AGAIN = "Record again";
 export const VIEW_FEEDBACK = "View feedback";
 export const ANALYSING_PREFIX = "Analysing...";
 export const RECORDED_SETS_TITLE = "Recorded sets";
+export const EARLIER_SETS_TITLE = "Earlier sets";
 export const RETRY = "Retry";
 export const NEW_BADGE = "New";
 export const QUEUED_LABEL = "Queued";

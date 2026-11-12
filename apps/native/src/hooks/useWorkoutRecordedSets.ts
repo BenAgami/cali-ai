@@ -21,8 +21,11 @@ const toEffectiveStatus = (
   return event.status === "QUEUED" ? "PROCESSING" : event.status;
 };
 
-export const useWorkoutRecordedSets = (workoutId: number | undefined) => {
-  const { data, isLoading, error, refetch } = useRecordedSets(workoutId);
+export const useWorkoutRecordedSets = (
+  workoutId: number | undefined,
+  runId?: number,
+) => {
+  const { data, isLoading, error, refetch } = useRecordedSets(workoutId, runId);
   const { tracked, statusBySession, unseenSessionIds, track, retry } =
     useAnalysisTracker();
   const [retryingIds, setRetryingIds] = useState<ReadonlySet<number>>(
