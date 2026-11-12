@@ -1,3 +1,5 @@
+import { FORM_BAND_LABELS } from "@repo/common";
+
 import { getRubric } from "../../../src/metrics/rubrics";
 import type { ExerciseRubric } from "../../../src/metrics/rubrics/types";
 import {
@@ -160,10 +162,27 @@ describe("buildPositives", () => {
       "COMPLETED_REPS",
     ]);
     expect(positives[0].text).toBe(
-      "Your range of motion was good across the set.",
+      "Your range of motion stayed consistent across the set.",
     );
     expect(positives[2].text).toBe("You finished 5 reps.");
     expect(positives[2].repNumbers).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it("never names a band in a dimension positive", () => {
+    const bandPattern = new RegExp(
+      Object.values(FORM_BAND_LABELS).join("|"),
+      "i",
+    );
+    const positives = buildPositives(
+      reps(5),
+      dims("GOOD", "EXCELLENT"),
+      pushUp,
+    ).filter((p) => p.kind === "DIMENSION_GOOD");
+
+    expect(positives).toHaveLength(2);
+    for (const positive of positives) {
+      expect(positive.text).not.toMatch(bandPattern);
+    }
   });
 
   it("adds FULL_RANGE, CONSISTENT_DEPTH and STEADY_TEMPO when earned", () => {

@@ -128,7 +128,7 @@ Planner proposal: RESEARCH used 0.4/0.4/0.2; pull-up CORE is lowered because it 
 - Weight: LOW 1, MEDIUM 2, HIGH 3. Rank = weight x affectedFraction; ties by dimension order ROM, CORE, SYMMETRY, then tag code.
 - Keep at most 2 corrections, at most one per dimension unless only one dimension has detected tags.
 - Positives (max 3, in this order, each with rep numbers):
-  1. assessed dimension at Good or better;
+  1. assessed dimension at Good or better, worded without the band ("Your <dimension> stayed consistent across the set."), since the LLM must never mention the band;
   2. full lockout/stand on every rep (the lockout feature must be measured on every rep: push_up/dip/pull_up maxElbowDeg, squat maxKneeDeg; an unmeasured rep never earns it; the wording is per exercise and never says "lock" or "full extension", since locking the knees is not something to praise: squat reads "You stood all the way up on every rep.");
   3. consistent depth (std of depth feature: push_up/dip minElbowDeg < 8 deg, squat hipBelowKnee < 0.05, pull_up mouthBelowBar < 0.05);
   4. steady tempo (no rushed tag and duration coefficient of variation < 0.25);
@@ -186,3 +186,4 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - 2026-11-12 / 8 (rubric-v1 -> rubric-v2): the "full lockout/stand" positive now requires the lockout feature (`maxElbowDeg`, squat `maxKneeDeg`) to be measured on every rep. Before, it was awarded whenever the incomplete-lockout tag had not fired, including when the joints were hidden and the tag could not be evaluated. The wording is now per exercise (`positives.fullRangeText`) and avoids "lock" and "full extension", so a squat is never praised for locking the knees. Scores, tags and thresholds are unchanged; only which positives appear, and their wording, change.
 - 2026-11-12 / 5 (rubric-v2): common forbidden topics `height`, `weight` -> `body height`, `body weight`, `how tall`, `how heavy`, and feedback validation matches a topic by word start (`pain` also catches "painful"). The bare words blocked normal coaching ("shift your weight") and made valid feedback fail validation.
 - 2026-11-12 (metrics-v1 -> metrics-v2): a set in which no dimension can be scored is now UNTRACKABLE with KEY_JOINTS_HIDDEN instead of SCORED with score 0 (POOR). The same keypoints can therefore give a different outcome, so `METRICS_VERSION` is bumped. No rubric value changed. Calibration Run 3 (rubric-v2, metrics-v2) matches Run 2 on every clip's score, band and tags; see `05-CALIBRATION.md`.
+- 2026-11-12 / 8: DIMENSION_GOOD positive wording no longer names the band (the system prompt forbids it). Selection unchanged, so `RUBRIC_VERSION` is unchanged.

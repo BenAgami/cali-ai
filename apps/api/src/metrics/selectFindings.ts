@@ -1,5 +1,4 @@
 import {
-  FORM_BAND_LABELS,
   FORM_DIMENSION_LABELS,
   FORM_DIMENSIONS,
   type FormDimension,
@@ -115,7 +114,7 @@ export const buildPositives = (
     if (isAssessed && (band === "EXCELLENT" || band === "GOOD")) {
       featurePositives.push({
         kind: "DIMENSION_GOOD",
-        text: `Your ${FORM_DIMENSION_LABELS[dimension].toLowerCase()} was ${FORM_BAND_LABELS[band].toLowerCase()} across the set.`,
+        text: `Your ${FORM_DIMENSION_LABELS[dimension].toLowerCase()} stayed consistent across the set.`,
         repNumbers: allReps,
       });
     }
