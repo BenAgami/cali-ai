@@ -50,8 +50,9 @@ export const useAnalysisResultScreen = (
       pathname: "/record-set",
       params: {
         workoutId: String(data.workoutId),
-        setNumber: data.setNumber === null ? "" : String(data.setNumber),
+        ...(data.setNumber !== null && { setNumber: String(data.setNumber) }),
         exerciseCode: data.exerciseCode,
+        exerciseDisplayName: data.exerciseDisplayName,
         source: "standalone",
       },
     });

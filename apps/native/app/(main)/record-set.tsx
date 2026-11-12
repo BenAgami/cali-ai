@@ -49,10 +49,10 @@ const formatElapsed = (totalSec: number): string => {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 };
 
-const toNumberOrNull = (value: string | undefined): number | null => {
+const toPositiveIntOrNull = (value: string | undefined): number | null => {
   if (value === undefined) return null;
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 };
 
 /** Dev-only readout of the one rotation signal the preview follows. */
@@ -376,10 +376,15 @@ const RecordSetScreen: React.FC = () => {
     );
   }
 
+  const workoutId = toPositiveIntOrNull(params.workoutId);
+  // The API rejects a setNumber without a workoutId, so drop it with the workout.
+  const setNumber =
+    workoutId === null ? null : toPositiveIntOrNull(params.setNumber);
+
   return (
     <Recorder
-      workoutId={toNumberOrNull(params.workoutId)}
-      setNumber={toNumberOrNull(params.setNumber)}
+      workoutId={workoutId}
+      setNumber={setNumber}
       exerciseCode={exerciseCode}
       exerciseDisplayName={params.exerciseDisplayName ?? exerciseCode}
       source={params.source === "execute" ? "execute" : "standalone"}
