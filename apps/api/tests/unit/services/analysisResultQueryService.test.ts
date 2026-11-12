@@ -146,7 +146,11 @@ describe("AnalysisResultQueryService", () => {
 
       expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { workoutId: 9, userId: USER_ID },
+          where: {
+            workoutId: 9,
+            userId: USER_ID,
+            processingStatus: { not: SessionStatus.PENDING },
+          },
           orderBy: [{ performedAt: "desc" }, { id: "desc" }],
           take: 50,
         }),
@@ -174,7 +178,12 @@ describe("AnalysisResultQueryService", () => {
 
       expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { workoutId: 9, userId: USER_ID, workoutLogId: 4 },
+          where: {
+            workoutId: 9,
+            userId: USER_ID,
+            workoutLogId: 4,
+            processingStatus: { not: SessionStatus.PENDING },
+          },
         }),
       );
       expect(result[0]).toMatchObject({ workoutLogId: 4 });

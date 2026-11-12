@@ -109,6 +109,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
         workoutId: workout.id,
         workoutLogId: runA.id,
         setNumber: 1,
+        processingStatus: SessionStatus.PROCESSING,
       },
       select: { id: true },
     });
@@ -119,6 +120,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
         workoutId: workout.id,
         workoutLogId: runB.id,
         setNumber: 1,
+        processingStatus: SessionStatus.PROCESSING,
       },
     });
 
@@ -134,6 +136,36 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
       sessionId: inRunA.id,
       workoutLogId: runA.id,
     });
+  });
+
+  it("omits PENDING sessions, which never received a capture", async () => {
+    const { userId, token } = await newUser();
+    const workout = await newWorkout(userId);
+    await prisma.workoutSession.create({
+      data: {
+        userId,
+        exerciseId,
+        workoutId: workout.id,
+        setNumber: 1,
+        processingStatus: SessionStatus.PENDING,
+      },
+    });
+    const processing = await prisma.workoutSession.create({
+      data: {
+        userId,
+        exerciseId,
+        workoutId: workout.id,
+        setNumber: 2,
+        processingStatus: SessionStatus.PROCESSING,
+      },
+      select: { id: true },
+    });
+
+    const response = await getRecordedSets(app, token, workout.id);
+
+    expect(
+      response.body.data.map((set: { sessionId: number }) => set.sessionId),
+    ).toEqual([processing.id]);
   });
 
   it("returns 400 for an invalid workoutLogId", async () => {
