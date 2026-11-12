@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { WorkoutLogResponse } from "@repo/common";
 
-import { workoutApi, workoutKeys } from "@src/api";
+import { analysisKeys, workoutApi, workoutKeys } from "@src/api";
 
 interface CompleteWorkoutRunVariables {
   workoutId: number;
@@ -16,6 +16,7 @@ export const useCompleteWorkoutRun = () => {
       workoutApi.completeLog(workoutId, runId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: workoutKeys.all });
+      void queryClient.invalidateQueries({ queryKey: analysisKeys.all });
     },
   });
 };
