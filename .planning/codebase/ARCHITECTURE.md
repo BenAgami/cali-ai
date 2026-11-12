@@ -22,7 +22,7 @@ Describe the current code, not the target design. The planned on-device pose pip
 - Auth (register, login, refresh, logout) with JWT access tokens and DB-backed refresh tokens (`apps/api/src/services/authService.ts`, `apps/api/src/services/refreshTokenService.ts`).
 - Users/profile, avatar upload URL via Cloudflare R2 presigned PUT (`apps/api/src/services/userService.ts`, `apps/api/src/lib/r2.ts`).
 - Exercise catalog (`apps/api/src/services/exerciseService.ts`).
-- Manual workouts: CRUD plus `startWorkout` which writes a `WorkoutLog` (`apps/api/src/services/workoutService.ts`).
+- Manual workouts: CRUD plus a run lifecycle: `startWorkoutLog` opens an in-progress `WorkoutLog` (a run of the plan) and `completeWorkoutLog` finishes it; recorded sets link to a run through `WorkoutSession.workoutLogId` (`apps/api/src/services/workoutService.ts`).
 - Workout sessions: `POST /api/workout-sessions` and `GET /api/workout-sessions`. Sessions are created with `processingStatus = PENDING` and nothing transitions them afterwards (`apps/api/src/services/workoutSessionService.ts`).
 - Health check (`apps/api/src/routes/health.ts`) and OpenAPI/Scalar docs in non-production (`apps/api/src/routes/openapi.ts`).
 
@@ -88,7 +88,7 @@ Note on route paths: the live mount is `/api/workout-sessions`. The JSDoc in `ap
 **Shared contracts (`packages/common/`):**
 - Purpose: Zod schemas and inferred types used by the API and by `apps/native`.
 - Location: `packages/common/src/validations/*.ts`, `packages/common/src/constants/messages.ts`.
-- Contains: Request schemas (e.g. `createWorkoutSessionSchema`, `createWorkoutSchema`, `workoutLogSchema`) and inferred `*Values` types, plus response shapes such as `WorkoutWithExercises`, `WorkoutListResponse`.
+- Contains: Request schemas (e.g. `createWorkoutSessionSchema`, `createWorkoutSchema`, `completeWorkoutLogSchema`) and inferred `*Values` types, plus response shapes such as `WorkoutWithExercises`, `WorkoutListResponse`.
 - Depends on: `zod` only.
 - Used by: `apps/api/src/routes`, `apps/api/src/controllers`, `apps/native/src/api/endpoints`, `apps/native/src/hooks`.
 
@@ -138,7 +138,7 @@ Note on route paths: the live mount is `/api/workout-sessions`. The JSDoc in `ap
 2. `workoutSessionService.createSession` looks up an active exercise by code (`NotFoundError` if missing), creates a `WorkoutSession` with `PENDING`.
 3. Nothing advances the status. There is no worker.
 
-**Workout execution (native, current):** `apps/native/app/(main)/workout-execute.tsx` runs the set/rest timer (`useWorkoutExecution`) and on completion calls `useStartWorkout`, which posts a `WorkoutLog` to `POST /api/workouts/:id/logs` (`workoutApi.startLog`). No camera or keypoint code is involved.
+**Workout execution (native, current):** `apps/native/app/(main)/workout-execute.tsx` runs the set/rest timer (`useWorkoutExecution`) and is opened with a `runId` created by `useStartWorkoutRun` on `workout-detail` (`POST /api/workouts/:id/logs`), and on completion `useCompleteWorkoutRun` patches the run (`PATCH /api/workouts/:id/logs/:logId`). No camera or keypoint code is involved.
 
 **Avatar upload:**
 1. Native requests a presigned URL (`POST /api/users/me/avatar-upload-url`, from `USER_ROUTES.avatarUploadUrl`).

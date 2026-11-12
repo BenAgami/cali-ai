@@ -117,7 +117,7 @@ Recent decisions affecting current work:
 - [Phase 04]: Generation save: foreign/failed generationId is 404, double save 409 GENERATION_ALREADY_SAVED; edits never clear aiModel
 - [Phase 04]: Sonnet (claude-sonnet-5-5, effort medium) is primary per D-22 eval; fallback rung is Sonnet at high effort. Haiku missed thresholds (58% catalogValid, 33% levelDiffers) with timeouts/UNAVAILABLE.
 - [Phase 05]: Pose runtime is MediaPipe PoseLandmarker via react-native-mediapipe-posedetection 0.4.0 (GPU, about 30 fps with targetFps 60); Android returns raw landscape landmarks so the adapter rotates per camera in portrait; C4 squat 88% marginal, pull-up/dim-light unverified
-- [Phase 05]: Form analysis caps: 15 accepted captures/day and 2 per exercise per workout; retries count toward neither
+- [Phase 05]: Form analysis caps: 15 accepted captures/day (the per-exercise-per-workout cap was removed 2026-11-12); retries do not count
 - [Phase 05]: 05-14: band cutoffs already match approved rubric; no segmentation params changed
 - [Phase 05]: 05-17: fixed fixture dump rotation (180 deg tag), squat ROM ramp tightened, rubric-v1
 - [Phase 05]: 05-18: device UAT 23/23 on a Galaxy S25+; hands-free start (D-22), auto-stop with spoken 3-2-1 (D-23) and spoken cues (expo-speech) added during UAT

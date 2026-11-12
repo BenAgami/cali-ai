@@ -158,16 +158,16 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 ## 11. Cost guard (Open Question 7)
 
 - `FORM_ANALYSIS_DAILY_CAP` = 15 accepted captures per user per rolling 24 h; over the cap -> 429 `DAILY_ANALYSIS_LIMIT_REACHED`.
-- `FORM_ANALYSIS_EXERCISE_WORKOUT_CAP` = 2 accepted captures per exercise per workout session; a third attempt for the same exercise in the same workout -> 429 `EXERCISE_ANALYSIS_LIMIT_REACHED`. Applies only to captures whose session is linked to a workout.
-- Retries of the same failed capture (`retryAnalysis`) reuse the stored capture, create no new capture and count toward neither cap. Only accepted new captures (past the consent gate and both cap checks, stored and enqueued) count. A rejected (428/429) attempt stores nothing and so does not count.
-- Check order at capture: consent (428), daily cap, then per-exercise-per-workout cap.
+- There is no per-exercise-per-workout cap (removed 2026-11-12): a workout is a reusable plan, so counting captures per plan blocked users from re-running it. The daily cap is the only cost guard.
+- Retries of the same failed capture (`retryAnalysis`) reuse the stored capture, create no new capture and do not count toward the daily cap. Only accepted new captures (past the consent gate and the daily cap check, stored and enqueued) count. A rejected (428/429) attempt stores nothing and so does not count.
+- Check order at capture: consent (428), then daily cap (429).
 - LLM: primary model at effort `low`, max 1200 output tokens, one in-attempt repair.
 
 ## 12. Open items for the user
 
 - [x] Approve/edit each of sections 3-11
 - [ ] Confirm 2 minimum reps
-- [x] Daily cap set to 15 and per-exercise-per-workout cap set to 2 (user edit)
+- [x] Daily cap set to 15 (user edit); the per-exercise-per-workout cap of 2 was later removed
 - [ ] Confirm pull-up weights 0.5/0.1/0.4
 - [ ] Confirm DIP_EXCESSIVE_DEPTH stays an advisory LOW tag
 
@@ -176,9 +176,10 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - Approved 2026-11-09. Sections 3-11 approved as written except the cap edit below; section 10 and all other thresholds unchanged.
 - 11 / daily cap: 30 -> 15 accepted captures per user per rolling 24 h.
 - 11 / new cap: at most 2 accepted captures per exercise per workout session (error `EXERCISE_ANALYSIS_LIMIT_REACHED`).
-- 11 / retries: unchanged, retries do not count toward either cap.
+- 11 / retries: unchanged, retries do not count toward the daily cap.
 - 12 / checklist wording: daily cap 15 and per-exercise-per-workout cap 2.
 - Front matter: `rubric_version` rubric-v0-draft -> rubric-v0 (at the user's request; plan text suggested keeping the draft marker until 05-17).
 - Calibration 2026-11-10 (rubric-v0 -> rubric-v1): squat / ROM ramp hipBelowKnee: 0.0..-0.30 -> 0.0..-0.15 (calibration). Shallow side takes went 90/87 -> 80/76; the flag thresholds are unchanged.
 - Front matter: `status` approved -> calibrated, `rubric_version` rubric-v0 -> rubric-v1 (calibration).
 - All other thresholds, ramps and band cutoffs unchanged by calibration; push-up, dip and pull-up values confirmed against the user's verdicts (calibration).
+- 2026-11-12 / 11: removed the per-exercise-per-workout cap (`FORM_ANALYSIS_EXERCISE_WORKOUT_CAP`, `EXERCISE_ANALYSIS_LIMIT_REACHED`). Workouts are plans and each start is now its own run (`WorkoutLog`), so a lifetime per-plan count was wrong. No scoring value changed, so `RUBRIC_VERSION` is unchanged.
