@@ -1,7 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import type { getPrismaClient } from "@repo/db";
+import { type getPrismaClient, SessionStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -88,7 +88,7 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       expect(second.body.data.id).not.toBe(first.body.data.id);
     });
 
-    it("drops a stale open run with no sets and keeps one with sets", async () => {
+    it("drops a stale open run with no sets and keeps one with a processing set", async () => {
       const { userId, token } = await newUser();
       const workout = await newWorkout(userId);
       const stale = new Date(Date.now() - 4 * 60 * 60 * 1000);
@@ -104,6 +104,7 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
           exerciseId,
           workoutId: workout.id,
           workoutLogId: withSet.id,
+          processingStatus: SessionStatus.PROCESSING,
         },
       });
 
@@ -116,6 +117,37 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       expect(
         await prisma.workoutLog.findUnique({ where: { id: withSet.id } }),
       ).not.toBeNull();
+    });
+
+    it("drops a stale open run whose only session never had a capture accepted", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const run = await prisma.workoutLog.create({
+        data: { userId, workoutId: workout.id },
+      });
+      const session = await prisma.workoutSession.create({
+        data: {
+          userId,
+          exerciseId,
+          workoutId: workout.id,
+          workoutLogId: run.id,
+          processingStatus: SessionStatus.PENDING,
+        },
+      });
+      await prisma.workoutLog.update({
+        where: { id: run.id },
+        data: { startedAt: new Date(Date.now() - 4 * 60 * 60 * 1000) },
+      });
+
+      await startWorkout(app, token, workout.id);
+
+      expect(
+        await prisma.workoutLog.findUnique({ where: { id: run.id } }),
+      ).toBeNull();
+      const detached = await prisma.workoutSession.findUniqueOrThrow({
+        where: { id: session.id },
+      });
+      expect(detached.workoutLogId).toBeNull();
     });
 
     it("returns 404 for another user's workout", async () => {

@@ -1,4 +1,4 @@
-import { getPrismaClient } from "@repo/db";
+import { getPrismaClient, SessionStatus } from "@repo/db";
 import { API_ERROR_CODES } from "@repo/common";
 
 import {
@@ -444,14 +444,16 @@ describe("WorkoutService.startWorkoutLog", () => {
     vi.useRealTimers();
   });
 
-  it("deletes open runs older than 3 hours that have no recorded sets", async () => {
+  it("deletes open runs older than 3 hours whose sessions are all PENDING", async () => {
     await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID);
 
     expect(prisma.workoutLog.deleteMany).toHaveBeenCalledWith({
       where: {
         ...OPEN_RUN,
         startedAt: { lt: RESUME_CUTOFF },
-        sessions: { none: {} },
+        sessions: {
+          none: { processingStatus: { not: SessionStatus.PENDING } },
+        },
       },
     });
   });
