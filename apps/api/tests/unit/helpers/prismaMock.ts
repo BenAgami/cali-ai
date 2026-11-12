@@ -33,12 +33,15 @@ const MODELS = [
   "workoutGeneration",
   "analysisResult",
   "analysisFinding",
+  "analysisRetry",
 ] as const;
 
 type MockDelegate = Record<(typeof DELEGATE_METHODS)[number], Mock>;
 
 export type PrismaMock = Record<(typeof MODELS)[number], MockDelegate> & {
   $transaction: Mock;
+  $queryRaw: Mock;
+  $executeRaw: Mock;
 };
 
 const createDelegate = (): MockDelegate =>
@@ -54,6 +57,9 @@ export const createPrismaMock = (): PrismaMock => {
       ? (arg as (tx: PrismaMock) => unknown)(mock)
       : Promise.all(arg as Promise<unknown>[]),
   );
+
+  mock.$queryRaw = vi.fn();
+  mock.$executeRaw = vi.fn();
 
   return mock;
 };

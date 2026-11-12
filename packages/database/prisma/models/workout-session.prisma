@@ -28,9 +28,10 @@ model WorkoutSession {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  analysisResult AnalysisResult?
-  poseCapture    PoseCapture?
-  userMilestones UserMilestone[]
+  analysisResult  AnalysisResult?
+  analysisRetries AnalysisRetry[]
+  poseCapture     PoseCapture?
+  userMilestones  UserMilestone[]
 
   @@index([userId, performedAt(sort: Desc)], map: "idx_sessions_user_performed_at_desc")
   @@index([userId, exerciseId, performedAt(sort: Desc)], map: "idx_sessions_user_exercise_performed_at_desc")
