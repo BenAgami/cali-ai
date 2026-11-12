@@ -221,4 +221,4 @@ Date: 2026-11-12 | METRICS_VERSION: metrics-v2 | RUBRIC_VERSION: rubric-v2
 
 1. All 16 clips give the same rep counts, outcomes, scores, bands and correction tags as Run 2. The only difference is the squat depth cue wording ("hips are level with your knees"), from the forbidden-topic rewording.
 2. The rubric-v2 change (the full-range positive needs a measured lockout on every rep) changes which positives appear, not any score; no clip's score or band moved.
-3. The metrics-v2 change (a set where no dimension can be scored is UNTRACKABLE / KEY_JOINTS_HIDDEN instead of SCORED with score 0) does not occur in any fixture: every scored clip has at least one scored dimension. It is pinned by `computeFormMetrics.noScore.test.ts`.
+3. The metrics-v2 change (a set where no dimension can be scored is UNTRACKABLE / KEY_JOINTS_HIDDEN instead of SCORED with score 0) does not occur in any fixture: every scored clip has at least one scored dimension. It is a guard: segmentation needs the same joints the features read, so a real capture cannot reach it today. `computeOverall` returning null is pinned in `scoring.test.ts`.
