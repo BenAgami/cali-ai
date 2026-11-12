@@ -72,7 +72,7 @@ export type WorkoutListResponse = z.infer<typeof workoutListResponseSchema>;
 export const workoutLogResponseSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
-  workoutId: z.number().int(),
+  workoutId: z.number().int().nullable(),
   startedAt: z.string(),
   completedAt: z.string().nullable(),
   durationSecs: z.number().int().nullable(),
