@@ -254,6 +254,40 @@ describe("feedbackService.generateFormFeedback", () => {
     },
   );
 
+  it.for(["REFUSAL", "INVALID_OUTPUT"] as const)(
+    "logs each unusable %s attempt and throws that error, not a validation failure",
+    async (code) => {
+      vi.mocked(log.warn).mockClear();
+      const { promise } = run([new LlmError(code), new LlmError(code)]);
+
+      const error: unknown = await promise.catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(LlmError);
+      expect(error).toMatchObject({ code });
+      expect((error as LlmError).message).not.toMatch(/validation/);
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ code, attempt: 1 }),
+        "Form feedback attempt returned no usable output",
+      );
+      expect(log.warn).toHaveBeenCalledWith(
+        expect.objectContaining({ code, attempt: 2 }),
+        "Form feedback attempt returned no usable output",
+      );
+    },
+  );
+
+  it("reports a validation failure when the last attempt was invalid after a refusal", async () => {
+    const { promise } = run([
+      new LlmError("REFUSAL"),
+      result(goodDraft({ positives: [] })),
+    ]);
+
+    await expect(promise).rejects.toMatchObject({
+      code: "INVALID_OUTPUT",
+      message: "Form feedback failed validation after repair",
+    });
+  });
+
   it.for(["TIMEOUT", "RATE_LIMITED", "UNAVAILABLE"] as const)(
     "rethrows a provider %s immediately",
     async (code) => {

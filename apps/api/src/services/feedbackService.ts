@@ -178,6 +178,7 @@ class FeedbackService {
     const { metrics, context, signal, log } = input;
     const deadline = Date.now() + input.timeoutMs;
     let previousIssues: string[] | undefined;
+    let lastLlmError: LlmError | undefined;
 
     for (let attempt = 1; attempt <= MAX_FORM_ATTEMPTS; attempt++) {
       const remaining = deadline - Date.now();
@@ -208,6 +209,11 @@ class FeedbackService {
           error instanceof LlmError &&
           (error.code === "REFUSAL" || error.code === "INVALID_OUTPUT")
         ) {
+          log.warn(
+            { err: error, attempt, code: error.code },
+            "Form feedback attempt returned no usable output",
+          );
+          lastLlmError = error;
           previousIssues = [GENERIC_FORM_ISSUE];
           continue;
         }
@@ -225,15 +231,19 @@ class FeedbackService {
         };
       }
       previousIssues = validation.issues;
+      lastLlmError = undefined;
       log.warn(
         { attempt, issues: validation.issues },
         "Form feedback failed validation",
       );
     }
 
-    throw new LlmError(
-      "INVALID_OUTPUT",
-      "Form feedback failed validation after repair",
+    throw (
+      lastLlmError ??
+      new LlmError(
+        "INVALID_OUTPUT",
+        "Form feedback failed validation after repair",
+      )
     );
   }
 }
