@@ -140,6 +140,7 @@ Recent decisions affecting current work:
 - [Phase 05.2]: 05.2-07: daily cap checked inside the capture transaction behind SELECT ... FOR UPDATE on the user row (proven 5/5 runs)
 - [Phase 05.2]: Retry row inserted last in the restart transaction so refused retries are never counted
 - [Phase 05.2]: R-05: result write and COMPLETED flip commit in one transaction via completeRunWithResult
+- [Phase 05.2]: PR review fixes: OUT_OF_FRAME reachable (device no longer clamps x/y); recorded sets paginated ({ items, page }); result and COMPLETED written in one transaction; form-feedback prompt v2 omits degree features.
 
 ### Roadmap Evolution
 

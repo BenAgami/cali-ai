@@ -79,7 +79,7 @@ Vitest 4, configured as two projects in `apps/api/vitest.config.ts`.
 
 **Unit tests** (`apps/api/tests/unit/`) — no database, no network, no `globalSetup`, no `setupFiles`; `pool: "threads"` with full file parallelism. `yarn workspace api test:unit` must pass with Docker stopped; if it doesn't, something under test reached a real client. The unit project supplies all env vars inline from `tests/unit/helpers/unitEnv.ts`, wired via `test.env` in `vitest.config.ts` — it never reads `.env.test` (gitignored, absent in CI). Add new env vars there when you add them to `src/config/env.ts`; `tests/unit/config/env.test.ts` asserts the two stay in sync.
 
-Layout mirrors `src/`: `tests/unit/{utils,errors,config,middlewares,services,controllers}/`. Test files are `*.test.ts` and live under `tests/` — never co-located in `src/`, because `tsconfig.json`'s `include`, the eslint `no-unsafe-*`/`unbound-method` relaxation, and the tsup build all key off that boundary.
+Layout mirrors `src/`: `tests/unit/{utils,errors,config,middlewares,services,controllers,metrics,prompts,workers,lib}/`. The one exception is `tests/unit/common/`, which tests `@repo/common` and mirrors `packages/common/src/validations/` file for file (`packages/common` has no test runner, and these tests share the API's synthetic pose fixtures). Test files are `*.test.ts` and live under `tests/` — never co-located in `src/`, because `tsconfig.json`'s `include`, the eslint `no-unsafe-*`/`unbound-method` relaxation, and the tsup build all key off that boundary.
 
 **Scripts:** `test` (both projects), `test:unit`, `test:integration`, `test:coverage`.
 

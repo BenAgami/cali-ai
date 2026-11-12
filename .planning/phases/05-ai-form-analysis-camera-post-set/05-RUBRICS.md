@@ -2,7 +2,7 @@
 status: calibrated
 approved: 2026-11-09
 rubric_version: rubric-v2
-metrics_version: metrics-v1
+metrics_version: metrics-v2
 phase: 05-ai-form-analysis-camera-post-set
 ---
 
@@ -189,3 +189,4 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - 2026-11-12 (metrics-v1 -> metrics-v2): a set in which no dimension can be scored is now UNTRACKABLE with KEY_JOINTS_HIDDEN instead of SCORED with score 0 (POOR). The same keypoints can therefore give a different outcome, so `METRICS_VERSION` is bumped. No rubric value changed. Calibration Run 3 (rubric-v2, metrics-v2) matches Run 2 on every clip's score, band and tags; see `05-CALIBRATION.md`.
 - 2026-11-12 / 8: DIMENSION_GOOD positive wording no longer names the band (the system prompt forbids it). Selection unchanged, so `RUBRIC_VERSION` is unchanged.
 - 2026-11-12 / 11: new retry cap `FORM_ANALYSIS_DAILY_RETRY_CAP` (default 5 per user per rolling 24 h, 429 `DAILY_RETRY_LIMIT_REACHED`); both caps now checked under a per-user lock. No scoring value changed, so `RUBRIC_VERSION` is unchanged.
+- 2026-11-12 / front matter: `metrics_version` aligned with the code (`metrics-v2`); no metric changed in Phase 5.2.
