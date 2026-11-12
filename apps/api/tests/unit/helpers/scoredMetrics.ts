@@ -1,4 +1,7 @@
-import type { ScoredFormMetrics } from "../../../src/metrics/types";
+import {
+  METRICS_VERSION,
+  type ScoredFormMetrics,
+} from "../../../src/metrics/types";
 
 export const makeScoredMetrics = (
   overrides: Partial<ScoredFormMetrics> = {},
@@ -54,7 +57,7 @@ export const makeScoredMetrics = (
     },
   ],
   forbiddenTopics: ["shoulder impingement", "wrist pain"],
-  metricsVersion: "metrics-v2",
+  metricsVersion: METRICS_VERSION,
   rubricVersion: "rubric-v0",
   ...overrides,
 });

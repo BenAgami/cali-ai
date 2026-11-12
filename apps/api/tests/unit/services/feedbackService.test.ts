@@ -13,6 +13,7 @@ import {
 } from "../helpers/fakeLlmProvider";
 import { COMMON_FORBIDDEN_TOPICS } from "../../../src/metrics/rubrics/shared";
 import { makeScoredMetrics } from "../helpers/scoredMetrics";
+import { FORM_FEEDBACK_PROMPT_VERSION } from "../../../src/prompts/formFeedbackPrompt";
 
 vi.mock("../../../src/lib/llm", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../src/lib/llm")>()),
@@ -93,7 +94,7 @@ describe("feedbackService.generateFormFeedback", () => {
 
     expect(outcome).toMatchObject({
       model: "claude-sonnet-5-5",
-      promptVersion: "form-feedback-v1",
+      promptVersion: FORM_FEEDBACK_PROMPT_VERSION,
       usage,
       attempts: 1,
     });

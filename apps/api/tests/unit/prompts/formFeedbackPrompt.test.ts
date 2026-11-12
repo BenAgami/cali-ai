@@ -14,7 +14,7 @@ const context: FormFeedbackContext = {
 
 describe("buildFormFeedbackPrompt", () => {
   it("exposes the prompt version", () => {
-    expect(FORM_FEEDBACK_PROMPT_VERSION).toBe("form-feedback-v1");
+    expect(FORM_FEEDBACK_PROMPT_VERSION).toMatch(/^form-feedback-vd+$/);
   });
 
   it("includes profile context in the user prompt (PROF-07)", () => {

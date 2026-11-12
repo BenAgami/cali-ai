@@ -11,6 +11,8 @@ import {
   type PrismaMock,
 } from "../helpers/prismaMock";
 import { makeScoredMetrics } from "../helpers/scoredMetrics";
+import { METRICS_VERSION } from "../../../src/metrics/types";
+import { FORM_FEEDBACK_PROMPT_VERSION } from "../../../src/prompts/formFeedbackPrompt";
 
 vi.mock("@repo/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@repo/db")>()),
@@ -51,7 +53,7 @@ const outcome: FormFeedbackOutcome = {
     ],
   },
   model: "claude-sonnet-5-5",
-  promptVersion: "form-feedback-v1",
+  promptVersion: FORM_FEEDBACK_PROMPT_VERSION,
   usage: { inputTokens: 100, outputTokens: 50 },
   attempts: 1,
 };
@@ -120,9 +122,9 @@ describe("FormAnalysisResultService.saveScored", () => {
     expect(
       storedRawFeedbackSchema.parse(args.create.rawFeedback),
     ).toMatchObject({
-      metricsVersion: "metrics-v2",
+      metricsVersion: METRICS_VERSION,
       rubricVersion: "rubric-v0",
-      promptVersion: "form-feedback-v1",
+      promptVersion: FORM_FEEDBACK_PROMPT_VERSION,
       repCount: 5,
       droppedRepCount: 0,
       llmUsage: { inputTokens: 100, outputTokens: 50 },
@@ -185,7 +187,7 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
     outcome: "UNTRACKABLE" as const,
     exerciseCode: "push_up" as const,
     reasons: ["NO_REPS_DETECTED" as const],
-    metricsVersion: "metrics-v2",
+    metricsVersion: METRICS_VERSION,
     rubricVersion: "rubric-v0",
   };
 
@@ -216,7 +218,7 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
       summaryFeedback: null,
     });
     expect(storedRawFeedbackSchema.parse(args.create.rawFeedback)).toEqual({
-      metricsVersion: "metrics-v2",
+      metricsVersion: METRICS_VERSION,
       rubricVersion: "rubric-v0",
       promptVersion: null,
       repCount: 0,

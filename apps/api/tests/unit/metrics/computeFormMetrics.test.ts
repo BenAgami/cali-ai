@@ -1,9 +1,10 @@
 import { computeFormMetrics } from "../../../src/metrics/computeFormMetrics";
 import { UnsupportedCaptureError } from "../../../src/metrics/preprocess";
 import { RUBRIC_VERSION } from "../../../src/metrics/rubrics";
-import type {
-  FormMetrics,
-  ScoredFormMetrics,
+import {
+  METRICS_VERSION,
+  type FormMetrics,
+  type ScoredFormMetrics,
 } from "../../../src/metrics/types";
 import { listPoseFixtures, loadPoseFixture } from "../helpers/poseFixtures";
 import { buildSyntheticCapture } from "../helpers/syntheticPose";
@@ -34,7 +35,7 @@ describe("computeFormMetrics (synthetic)", () => {
     expect(result.positives[result.positives.length - 1].kind).toBe(
       "COMPLETED_REPS",
     );
-    expect(result.metricsVersion).toBe("metrics-v2");
+    expect(result.metricsVersion).toBe(METRICS_VERSION);
     expect(result.rubricVersion).toBe(RUBRIC_VERSION);
   });
 

@@ -3,6 +3,8 @@ import type { PoseCapturePayload } from "@repo/common";
 
 import { LlmError } from "../../../src/lib/llm/types";
 import { UnsupportedCaptureError } from "../../../src/metrics/preprocess";
+import { METRICS_VERSION } from "../../../src/metrics/types";
+import { FORM_FEEDBACK_PROMPT_VERSION } from "../../../src/prompts/formFeedbackPrompt";
 import {
   encodeCapture,
   KEYPOINTS_FORMAT,
@@ -74,7 +76,7 @@ const payload = (): PoseCapturePayload => ({
 const outcome = {
   feedback: { summary: "ok", positives: [], corrections: [] },
   model: "claude-sonnet-5-5",
-  promptVersion: "form-feedback-v1",
+  promptVersion: FORM_FEEDBACK_PROMPT_VERSION,
   usage: { inputTokens: 1, outputTokens: 1 },
   attempts: 1,
 };
@@ -83,7 +85,7 @@ const untrackable = {
   outcome: "UNTRACKABLE" as const,
   exerciseCode: "push_up" as const,
   reasons: ["NO_REPS_DETECTED" as const],
-  metricsVersion: "metrics-v2",
+  metricsVersion: METRICS_VERSION,
   rubricVersion: "rubric-v0",
 };
 
