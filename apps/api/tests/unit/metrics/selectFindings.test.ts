@@ -175,6 +175,20 @@ describe("buildPositives", () => {
     ]);
   });
 
+  it("never praises locking or full extension of the knees in a squat", () => {
+    const set = reps(5).map((r) => ({
+      ...r,
+      features: { hipBelowKnee: -0.1, maxKneeDeg: 170 },
+    }));
+    const positive = buildPositives(
+      set,
+      dims("FAIR", "POOR"),
+      getRubric("squat"),
+    ).find((p) => p.kind === "FULL_RANGE");
+    expect(positive?.text).toBe("You stood all the way up on every rep.");
+    expect(positive?.text).not.toMatch(/lock|extension/i);
+  });
+
   it("skips FULL_RANGE when a lockout tag fired", () => {
     const set = reps(5, { 2: [["PU_INCOMPLETE_LOCKOUT", "LOW"]] });
     const kinds = buildPositives(set, dims("FAIR", "POOR"), pushUp).map(

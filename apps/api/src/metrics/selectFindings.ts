@@ -125,6 +125,7 @@ export const buildPositives = (
     depthFeature,
     depthStdMax,
     lockoutFeature,
+    fullRangeText,
     fullRangeTags,
     rushedTag,
   } = rubric.positives;
@@ -137,7 +138,7 @@ export const buildPositives = (
   if (isLockoutMeasured && !hasTag(fullRangeTags)) {
     featurePositives.push({
       kind: "FULL_RANGE",
-      text: "You finished every rep at full extension.",
+      text: fullRangeText,
       repNumbers: allReps,
     });
   }

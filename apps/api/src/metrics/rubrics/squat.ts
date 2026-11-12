@@ -174,6 +174,7 @@ export const squatRubric: ExerciseRubric = {
     depthFeature: "hipBelowKnee",
     depthStdMax: 0.05,
     lockoutFeature: "maxKneeDeg",
+    fullRangeText: "You stood all the way up on every rep.",
     fullRangeTags: ["SQ_INCOMPLETE_STAND"],
     rushedTag: "SQ_RUSHED_TEMPO",
   },

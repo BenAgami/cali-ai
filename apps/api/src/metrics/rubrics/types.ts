@@ -55,6 +55,7 @@ export type ExerciseRubric = {
     depthFeature: string;
     depthStdMax: number;
     lockoutFeature: string;
+    fullRangeText: string;
     fullRangeTags: string[];
     rushedTag: string | null;
   };

@@ -125,6 +125,7 @@ export const dipRubric: ExerciseRubric = {
     depthFeature: "minElbowDeg",
     depthStdMax: 8,
     lockoutFeature: "maxElbowDeg",
+    fullRangeText: "You pressed all the way up on every rep.",
     fullRangeTags: ["DIP_INCOMPLETE_LOCKOUT"],
     rushedTag: null,
   },

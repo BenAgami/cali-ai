@@ -121,6 +121,7 @@ export const pushUpRubric: ExerciseRubric = {
     depthFeature: "minElbowDeg",
     depthStdMax: 8,
     lockoutFeature: "maxElbowDeg",
+    fullRangeText: "You pressed all the way up on every rep.",
     fullRangeTags: ["PU_INCOMPLETE_LOCKOUT"],
     rushedTag: "PU_RUSHED_TEMPO",
   },

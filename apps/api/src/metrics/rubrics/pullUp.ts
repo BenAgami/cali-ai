@@ -204,6 +204,7 @@ export const pullUpRubric: ExerciseRubric = {
     depthFeature: "mouthBelowBar",
     depthStdMax: 0.05,
     lockoutFeature: "maxElbowDeg",
+    fullRangeText: "You lowered to a full hang on every rep.",
     fullRangeTags: ["PL_NO_FULL_HANG"],
     rushedTag: "PL_RUSHED_TEMPO",
   },
