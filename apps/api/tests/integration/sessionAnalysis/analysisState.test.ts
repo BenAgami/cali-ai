@@ -75,6 +75,7 @@ describe("session processing status transitions", () => {
       session.id,
       captureFixture(),
       "job-a",
+      userId,
     );
 
     const row = await reload(session.id);
@@ -88,10 +89,20 @@ describe("session processing status transitions", () => {
 
   it("rejects a second start with ConflictError and keeps one capture", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
 
     await expect(
-      service.startRunWithCapture(session.id, captureFixture(), "job-b"),
+      service.startRunWithCapture(
+        session.id,
+        captureFixture(),
+        "job-b",
+        userId,
+      ),
     ).rejects.toBeInstanceOf(ConflictError);
     expect(await captureCount(session.id)).toBe(1);
     expect((await reload(session.id)).bullmqJobId).toBe("job-a");
@@ -101,8 +112,18 @@ describe("session processing status transitions", () => {
     const session = await createSession();
 
     const results = await Promise.allSettled([
-      service.startRunWithCapture(session.id, captureFixture(), "job-1"),
-      service.startRunWithCapture(session.id, captureFixture(), "job-2"),
+      service.startRunWithCapture(
+        session.id,
+        captureFixture(),
+        "job-1",
+        userId,
+      ),
+      service.startRunWithCapture(
+        session.id,
+        captureFixture(),
+        "job-2",
+        userId,
+      ),
     ]);
 
     const fulfilled = results.filter((r) => r.status === "fulfilled");
@@ -115,7 +136,12 @@ describe("session processing status transitions", () => {
 
   it("discards advanceStage for a different job id", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
 
     await expect(
       service.advanceStage(session.id, "other-job", "ANALYZING_REPS", 0.5),
@@ -128,7 +154,12 @@ describe("session processing status transitions", () => {
 
   it("never moves the stage backwards", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
 
     await expect(
       service.advanceStage(session.id, "job-a", "WRITING_FEEDBACK"),
@@ -142,7 +173,12 @@ describe("session processing status transitions", () => {
 
   it("discards a failRun after completeRun", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
 
     await expect(service.completeRun(session.id, "job-a")).resolves.toBe(true);
     const completed = await reload(session.id);
@@ -159,7 +195,12 @@ describe("session processing status transitions", () => {
 
   it("keeps the last reached stage when a run fails", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
     await service.advanceStage(session.id, "job-a", "WRITING_FEEDBACK");
 
     await expect(
@@ -179,8 +220,18 @@ describe("session processing status transitions", () => {
   it("reaps only runs older than the stuck timeout", async () => {
     const stuck = await createSession();
     const fresh = await createSession();
-    await service.startRunWithCapture(stuck.id, captureFixture(), "job-a");
-    await service.startRunWithCapture(fresh.id, captureFixture(), "job-b");
+    await service.startRunWithCapture(
+      stuck.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
+    await service.startRunWithCapture(
+      fresh.id,
+      captureFixture(),
+      "job-b",
+      userId,
+    );
 
     const now = Date.now();
     await prisma.workoutSession.update({
@@ -206,7 +257,12 @@ describe("session processing status transitions", () => {
 
   it("restarts a failed run that still has its capture", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
     await service.failRun(session.id, "job-a", "ANALYSIS_ERROR");
 
     const { captureId } = await service.restartRun(session.id, "job-b");
@@ -225,7 +281,12 @@ describe("session processing status transitions", () => {
 
   it("refuses to restart a failed run whose keypoints were purged", async () => {
     const session = await createSession();
-    await service.startRunWithCapture(session.id, captureFixture(), "job-a");
+    await service.startRunWithCapture(
+      session.id,
+      captureFixture(),
+      "job-a",
+      userId,
+    );
     await service.failRun(session.id, "job-a", "ANALYSIS_ERROR");
     await prisma.poseCapture.updateMany({
       where: { sessionId: session.id },

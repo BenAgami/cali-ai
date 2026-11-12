@@ -1,13 +1,15 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
-import type {
-  AnalysisFailureReason,
-  ExperienceLevel,
-  AnalysisStage,
-  AnalysisStatusEvent,
+import { getPrismaClient, SessionStatus, type Prisma } from "@repo/db";
+import {
+  ANALYSIS_LIMIT_MESSAGES,
+  API_ERROR_CODES,
+  type AnalysisFailureReason,
+  type ExperienceLevel,
+  type AnalysisStage,
+  type AnalysisStatusEvent,
 } from "@repo/common";
 
 import { env } from "../config/env";
-import { ConflictError, NotFoundError } from "../errors";
+import { ConflictError, NotFoundError, TooManyRequestsError } from "../errors";
 import { publishAnalysisEvent } from "../lib/progressBus";
 import { logger, type Logger } from "../lib/logger";
 
@@ -57,6 +59,10 @@ const SNAPSHOT_SELECT = {
   bullmqJobId: true,
 } as const;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const dayAgo = (): Date => new Date(Date.now() - DAY_MS);
+
 export class AnalysisStateService {
   private get prisma() {
     return getPrismaClient();
@@ -82,6 +88,18 @@ export class AnalysisStateService {
     };
   }
 
+  /**
+   * Serializes one user's quota checks: READ COMMITTED gives each later
+   * statement a fresh snapshot, so the count after the lock sees the other
+   * transaction's committed insert.
+   */
+  private async lockUserQuota(
+    tx: Prisma.TransactionClient,
+    userId: number,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+  }
+
   async findOwnedSession(
     userUuid: string,
     sessionId: number,
@@ -104,8 +122,21 @@ export class AnalysisStateService {
     sessionId: number,
     capture: CaptureInsert,
     jobId: string,
+    userId: number,
   ): Promise<{ captureId: number }> {
     const captureId = await this.prisma.$transaction(async (tx) => {
+      await this.lockUserQuota(tx, userId);
+
+      const acceptedCount = await tx.poseCapture.count({
+        where: { session: { userId }, createdAt: { gte: dayAgo() } },
+      });
+      if (acceptedCount >= env.formAnalysis.dailyCap) {
+        throw new TooManyRequestsError(
+          ANALYSIS_LIMIT_MESSAGES.dailyAnalysis,
+          API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
+        );
+      }
+
       const { count } = await tx.workoutSession.updateMany({
         where: { id: sessionId, processingStatus: SessionStatus.PENDING },
         data: this.runResetData(jobId),

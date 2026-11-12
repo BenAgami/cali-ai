@@ -2,19 +2,13 @@ import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 
 import {
-  ANALYSIS_LIMIT_MESSAGES,
   API_ERROR_CODES,
   type captureAcceptedResponseSchema,
   type PoseCapturePayload,
 } from "@repo/common";
 import { getPrismaClient, SessionStatus } from "@repo/db";
 
-import { env } from "../config/env";
-import {
-  ConflictError,
-  ServiceUnavailableError,
-  TooManyRequestsError,
-} from "../errors";
+import { ConflictError, ServiceUnavailableError } from "../errors";
 import { logger } from "../lib/logger";
 import { ANALYSIS_JOB_NAME, formAnalysisQueue } from "../lib/queue";
 import { encodeCapture, KEYPOINTS_FORMAT } from "../utils/captureCodec";
@@ -31,7 +25,6 @@ import analysisStateService, {
 type CaptureAcceptedData = z.infer<typeof captureAcceptedResponseSchema>;
 
 const ENQUEUE_TIMEOUT_MS = 5_000;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 const newJobId = (): string => `analysis-${randomUUID()}`;
 
@@ -65,7 +58,6 @@ export class CaptureService {
     }
 
     await aiPrerequisitesService.assertAiPrerequisites(session.userId);
-    await this.assertUnderDailyCap(session.userId);
 
     const keypoints = await encodeCapture(payload);
     const jobId = newJobId();
@@ -84,6 +76,7 @@ export class CaptureService {
         appVersion: payload.appVersion ?? null,
       },
       jobId,
+      session.userId,
     );
 
     await this.enqueue(sessionId, captureId, jobId);
@@ -136,21 +129,6 @@ export class CaptureService {
       jobId: session.bullmqJobId,
       status: event.status,
     };
-  }
-
-  private async assertUnderDailyCap(userId: number): Promise<void> {
-    const acceptedLast24hCount = await this.prisma.poseCapture.count({
-      where: {
-        session: { userId },
-        createdAt: { gte: new Date(Date.now() - DAY_MS) },
-      },
-    });
-    if (acceptedLast24hCount >= env.formAnalysis.dailyCap) {
-      throw new TooManyRequestsError(
-        ANALYSIS_LIMIT_MESSAGES.dailyAnalysis,
-        API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
-      );
-    }
   }
 
   /**

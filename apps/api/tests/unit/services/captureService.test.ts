@@ -5,7 +5,6 @@ import {
   ConflictError,
   PreconditionRequiredError,
   ServiceUnavailableError,
-  TooManyRequestsError,
 } from "../../../src/errors";
 
 import {
@@ -133,10 +132,12 @@ describe("CaptureService", () => {
 
       const result = await service.submitCapture(USER, SESSION_ID, payload);
 
-      const [, insert, jobId] = vi.mocked(
+      const [, insert, jobId, ownerId] = vi.mocked(
         analysisStateService.startRunWithCapture,
       ).mock.calls[0];
       expect(jobId).toMatch(JOB_ID_PATTERN);
+      expect(ownerId).toBe(USER_ID);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
       expect(result).toEqual({
         sessionId: SESSION_ID,
         captureId: 11,
@@ -233,37 +234,8 @@ describe("CaptureService", () => {
       expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
         USER_ID,
       );
-      expect(prisma.poseCapture.count).not.toHaveBeenCalled();
       expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
       expect(formAnalysisQueue.add).not.toHaveBeenCalled();
-    });
-
-    it("rejects with 429 DAILY_ANALYSIS_LIMIT_REACHED at the daily cap", async () => {
-      vi.useFakeTimers({ now: new Date("2026-11-09T12:00:00Z") });
-      try {
-        stubPending();
-        prisma.poseCapture.count.mockResolvedValue(15);
-
-        const error: unknown = await service
-          .submitCapture(USER, SESSION_ID, payload)
-          .catch((e: unknown) => e);
-
-        expect(error).toBeInstanceOf(TooManyRequestsError);
-        expect((error as TooManyRequestsError).code).toBe(
-          "DAILY_ANALYSIS_LIMIT_REACHED",
-        );
-        expect(prisma.poseCapture.count).toHaveBeenCalledTimes(1);
-        expect(prisma.poseCapture.count).toHaveBeenCalledWith({
-          where: {
-            session: { userId: USER_ID },
-            createdAt: { gte: new Date("2026-11-08T12:00:00Z") },
-          },
-        });
-        expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
-        expect(formAnalysisQueue.add).not.toHaveBeenCalled();
-      } finally {
-        vi.useRealTimers();
-      }
     });
   });
 

@@ -3,7 +3,7 @@ import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { type getPrismaClient, SessionStatus } from "@repo/db";
-import { CAPTURE_LIMITS } from "@repo/common";
+import { API_ERROR_CODES, CAPTURE_LIMITS } from "@repo/common";
 
 import { env } from "../../../src/config/env";
 import { formAnalysisQueue } from "../../../src/lib/queue";
@@ -365,6 +365,65 @@ describe("POST /api/sessions/:id/capture", () => {
 
       expect(response.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
       expect(response.body.code).toBe("DAILY_ANALYSIS_LIMIT_REACHED");
+    });
+
+    it("never accepts more captures than the daily cap under concurrency", async () => {
+      const concurrentRequests = 5;
+      const user = await newGatedUser();
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      for (let i = 0; i < env.formAnalysis.dailyCap - 1; i++) {
+        const id = await createSetSession(user.userId, exercise.id);
+        await prisma.poseCapture.create({
+          data: {
+            sessionId: id,
+            keypointsFormat: "gzip-json-v1",
+            poseModelName: "movenet-lightning",
+            poseModelVersion: "4",
+            fps: 15,
+            frameCount: 1,
+            durationSec: 1,
+          },
+        });
+      }
+      const sessionIds = await Promise.all(
+        Array.from({ length: concurrentRequests }, () =>
+          createSetSession(user.userId, exercise.id),
+        ),
+      );
+
+      const responses = await Promise.all(
+        sessionIds.map((sessionId) =>
+          submitCapture(
+            app,
+            user.token,
+            sessionId,
+            new PoseCaptureBuilder().setFrames(30).build(),
+          ),
+        ),
+      );
+
+      const statuses = responses.map((response) => response.status).sort();
+      expect(statuses).toEqual([
+        StatusCodes.ACCEPTED,
+        ...Array<StatusCodes>(concurrentRequests - 1).fill(
+          StatusCodes.TOO_MANY_REQUESTS,
+        ),
+      ]);
+      const rejected = responses.filter(
+        (response) => response.status !== Number(StatusCodes.ACCEPTED),
+      );
+      for (const response of rejected) {
+        expect(response.body.code).toBe(
+          API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
+        );
+      }
+      expect(
+        await prisma.poseCapture.count({
+          where: { session: { userId: user.userId } },
+        }),
+      ).toBe(env.formAnalysis.dailyCap);
     });
   });
 });

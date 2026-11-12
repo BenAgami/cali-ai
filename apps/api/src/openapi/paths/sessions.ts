@@ -47,7 +47,7 @@ registry.registerPath({
     401: errorResponse("Unauthorized"),
     404: errorResponse("Session not found"),
     409: errorResponse(
-      "Analysis failed; use the retry route (ANALYSIS_FAILED)",
+      "Analysis failed; use the retry route (ANALYSIS_FAILED), or analysis already started by a concurrent request for this session",
     ),
     413: errorResponse("Compressed body exceeds 1 MiB"),
     428: errorResponse("AI prerequisites missing"),

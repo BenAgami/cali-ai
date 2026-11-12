@@ -1,6 +1,13 @@
 import { getPrismaClient, SessionStatus } from "@repo/db";
 
-import { ConflictError, NotFoundError } from "../../../src/errors";
+import { API_ERROR_CODES } from "@repo/common";
+
+import { env } from "../../../src/config/env";
+import {
+  ConflictError,
+  NotFoundError,
+  TooManyRequestsError,
+} from "../../../src/errors";
 
 import {
   asPrismaClient,
@@ -29,6 +36,7 @@ const { logger } = await import("../../../src/lib/logger");
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const JOB = "job-1";
+const USER_ID = 42;
 
 const capture = {
   keypoints: new Uint8Array([1, 2, 3]),
@@ -113,14 +121,52 @@ describe("AnalysisStateService.findOwnedSession", () => {
 });
 
 describe("AnalysisStateService.startRunWithCapture", () => {
+  beforeEach(() => {
+    prisma.poseCapture.count.mockResolvedValue(0);
+  });
+
+  it("locks the user before counting the last 24 hours of captures", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.poseCapture.create.mockResolvedValue({ id: 9 });
+    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+
+    await service.startRunWithCapture(5, capture, JOB, USER_ID);
+
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.poseCapture.count.mock.invocationCallOrder[0],
+    );
+    expect(prisma.poseCapture.count).toHaveBeenCalledWith({
+      where: {
+        session: { userId: USER_ID },
+        createdAt: { gte: new Date("2026-10-21T12:00:00Z") },
+      },
+    });
+  });
+
+  it("rejects at the daily cap and writes and publishes nothing", async () => {
+    prisma.poseCapture.count.mockResolvedValue(env.formAnalysis.dailyCap);
+
+    const error: unknown = await service
+      .startRunWithCapture(5, capture, JOB, USER_ID)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(TooManyRequestsError);
+    expect((error as TooManyRequestsError).code).toBe(
+      API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
+    );
+    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.poseCapture.create).not.toHaveBeenCalled();
+    expect(publishAnalysisEvent).not.toHaveBeenCalled();
+  });
+
   it("guards on PENDING, then stores the capture and publishes QUEUED", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockResolvedValue({ id: 9 });
     prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
 
-    await expect(service.startRunWithCapture(5, capture, JOB)).resolves.toEqual(
-      { captureId: 9 },
-    );
+    await expect(
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
+    ).resolves.toEqual({ captureId: 9 });
 
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: { id: 5, processingStatus: SessionStatus.PENDING },
@@ -138,7 +184,9 @@ describe("AnalysisStateService.startRunWithCapture", () => {
   it("throws ConflictError and does not create a capture when the PENDING guard matches nothing", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
 
-    await expect(service.startRunWithCapture(5, capture, JOB)).rejects.toThrow(
+    await expect(
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
+    ).rejects.toThrow(
       new ConflictError("Analysis already started for this session"),
     );
     expect(prisma.poseCapture.create).not.toHaveBeenCalled();
@@ -150,7 +198,7 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     prisma.poseCapture.create.mockRejectedValue(prismaError("P2002"));
 
     await expect(
-      service.startRunWithCapture(5, capture, JOB),
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
@@ -159,9 +207,9 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockRejectedValue(boom);
 
-    await expect(service.startRunWithCapture(5, capture, JOB)).rejects.toBe(
-      boom,
-    );
+    await expect(
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
+    ).rejects.toBe(boom);
   });
 });
 

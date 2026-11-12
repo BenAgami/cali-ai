@@ -109,6 +109,7 @@ describe("analysis worker (real Redis + Postgres)", () => {
       sessionId,
       captureInsert(await encodeCapture(payload), payload),
       jobId,
+      userId,
     );
     await formAnalysisQueue.add(
       ANALYSIS_JOB_NAME,
@@ -271,6 +272,7 @@ describe("analysis worker (real Redis + Postgres)", () => {
       session.id,
       captureInsert(Buffer.from("not gzip"), buildPayload()),
       jobId,
+      userId,
     );
 
     await formAnalysisQueue.add(
@@ -294,6 +296,7 @@ describe("analysis worker (real Redis + Postgres)", () => {
       session.id,
       captureInsert(await encodeCapture(payload), payload),
       currentJobId,
+      userId,
     );
 
     await formAnalysisQueue.add(
