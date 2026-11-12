@@ -22,6 +22,8 @@ import AiPrerequisiteSteps from "@src/components/AiPrerequisiteSteps";
 import FramingGuide from "@src/components/form/FramingGuide";
 import {
   COUNTDOWN_HINT,
+  PROFILE_LOAD_ERROR,
+  RETRY_PROFILE,
   RETRY_UPLOAD,
   STOP,
 } from "@src/constants/recordingMessages";
@@ -128,6 +130,19 @@ const Recorder: React.FC<RecorderProps> = ({
         <ScrollView contentContainerStyle={styles.padded}>
           {recorder.isLoadingPrerequisites ? (
             <ActivityIndicator size="large" color={colors.text} />
+          ) : recorder.hasPrerequisitesError ? (
+            <View style={styles.centered}>
+              <Text style={[styles.body, { color: colors.text }]}>
+                {PROFILE_LOAD_ERROR}
+              </Text>
+              <Pressable
+                style={styles.primary}
+                onPress={() => void recorder.refetchPrerequisites()}
+                accessibilityRole="button"
+              >
+                <Text style={styles.primaryLabel}>{RETRY_PROFILE}</Text>
+              </Pressable>
+            </View>
           ) : (
             <AiPrerequisiteSteps prerequisites={prerequisites} />
           )}

@@ -124,7 +124,12 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     onSubmitted,
   } = params;
   const { track } = useAnalysisTracker();
-  const { data: profile, refetch: refetchProfile } = useProfile();
+  const {
+    data: profile,
+    isError: isProfileError,
+    isFetching: isFetchingProfile,
+    refetch: refetchProfile,
+  } = useProfile();
   const { hasPermission, requestPermission } = useCameraPermission();
   const [cameraPosition, setCameraPosition] = useState<"front" | "back">(
     "front",
@@ -140,11 +145,20 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     useState<UploadErrorCode | null>(null);
 
   const missingPrerequisites = getMissingProfilePrerequisites(profile);
-  const isLoadingPrerequisites = profile === undefined;
+  // A failed fetch leaves the profile undefined, so tell it apart from loading
+  // or the recorder would spin forever.
+  const isLoadingPrerequisites =
+    profile === undefined && (!isProfileError || isFetchingProfile);
+  const hasPrerequisitesError =
+    profile === undefined && isProfileError && !isFetchingProfile;
 
   let phase: RecordedSetPhase = stage;
   if (stage === "setup") {
-    if (isLoadingPrerequisites || missingPrerequisites.length > 0) {
+    if (
+      isLoadingPrerequisites ||
+      hasPrerequisitesError ||
+      missingPrerequisites.length > 0
+    ) {
       phase = "prerequisites";
     } else if (!hasPermission) {
       phase = "permission";
@@ -473,6 +487,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     phase,
     missingPrerequisites,
     isLoadingPrerequisites,
+    hasPrerequisitesError,
     refetchPrerequisites: refetchProfile,
     hasPermission,
     requestPermission,
