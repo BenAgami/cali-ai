@@ -171,10 +171,23 @@ Plans:
 **Requirements source:** `.planning/phases/05-ai-form-analysis-camera-post-set/05-REVIEW-FINDINGS.md`
 **Depends on:** Phase 5
 **Executes before:** Phase 5.1 (numbered 5.2 because 5.1 was already taken)
-**Plans:** 0 plans
+**Plans:** 14 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 5.2 to break down)
+- [ ] 05.2-01-PLAN.md — Squash the workout_logs FK migrations (R-16) and add the AnalysisRetry model
+- [ ] 05.2-02-PLAN.md — Unclamped landmarks for OUT_OF_FRAME (R-01) and metrics cleanups (R-21, R-22, R-25, R-27)
+- [ ] 05.2-03-PLAN.md — Band-free positives (R-10), degree-free prompt v2 (R-11), version constants in tests (AU-2)
+- [ ] 05.2-04-PLAN.md — Shared API error codes, coded completed-run 409 (R-03 API), PENDING-aware stale runs (R-07)
+- [ ] 05.2-05-PLAN.md — Paginated recorded sets with shared schemas (R-04 API, AU-7), unknown-reason fallback (R-09), no re-sort (R-20)
+- [ ] 05.2-06-PLAN.md — Native status constants (X-01), withQuery helper (R-23), naming (R-26), workout screen strings (AU-8)
+- [ ] 05.2-07-PLAN.md — Daily cap inside the capture transaction under a per-user lock (R-13), R-14, R-15, R-19, AU-1
+- [ ] 05.2-08-PLAN.md — Logged LLM refusals with accurate errors (R-12) and one LLM deadline owner (R-18)
+- [ ] 05.2-09-PLAN.md — Recorder fixes: X-01, retry-limit 429, stale run, held upload after 428 (R-06), single finish (R-08), R-24
+- [ ] 05.2-10-PLAN.md — Recorded-sets list: retry-limit message instead of a dead Retry (R-02 app), cache invalidation (R-03), AU-3
+- [ ] 05.2-11-PLAN.md — Per-user daily retry cap (R-02 API) under the same lock, with docs
+- [ ] 05.2-12-PLAN.md — Native paging of recorded sets (R-04 native)
+- [ ] 05.2-13-PLAN.md — Atomic result + COMPLETED write (R-05) and worker uses assertAiPrerequisites (R-17)
+- [ ] 05.2-14-PLAN.md — Document the common test layout (R-28), final gates and device UAT
 
 ### Phase 6: Real-Time Form Cues (DEFERRED)
 
@@ -216,7 +229,7 @@ Phases execute in numeric order, except 5.2 (urgent PR fixes) runs before 5.1: 1
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
 | 5. Post-Set AI Form Analysis | 18/18          | Complete    | 2026-11-12 |
-| 5.2 Fix PR review findings   | 0/TBD          | Not started | -          |
+| 5.2 Fix PR review findings   | 0/14           | Not started | -          |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
