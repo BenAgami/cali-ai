@@ -3,6 +3,7 @@ import {
   LlmError,
   type FormFeedbackDraft,
 } from "../../../src/lib/llm";
+import { env } from "../../../src/config/env";
 import type { Logger } from "../../../src/lib/logger";
 import feedbackService, {
   validateFormFeedback,
@@ -61,22 +62,16 @@ const log = { warn: vi.fn() } as unknown as Logger;
 
 const run = (
   steps: FormFakeStep[],
-  overrides: {
-    metrics?: ReturnType<typeof makeScoredMetrics>;
-    timeoutMs?: number;
-  } = {},
+  overrides: { metrics?: ReturnType<typeof makeScoredMetrics> } = {},
 ) => {
   const provider = createFakeLlmProvider([], steps);
   vi.mocked(getLlmProvider).mockReturnValue(provider);
-  const signal = new AbortController().signal;
   const promise = feedbackService.generateFormFeedback({
     metrics: overrides.metrics ?? makeScoredMetrics(),
     context,
-    signal,
-    timeoutMs: overrides.timeoutMs ?? 20_000,
     log,
   });
-  return { provider, promise, signal };
+  return { provider, promise };
 };
 
 const lastIssues = (
@@ -88,7 +83,7 @@ const lastIssues = (
 
 describe("feedbackService.generateFormFeedback", () => {
   it("returns validated feedback merged with server finding data", async () => {
-    const { provider, promise, signal } = run([result(goodDraft())]);
+    const { provider, promise } = run([result(goodDraft())]);
 
     const outcome = await promise;
 
@@ -114,9 +109,10 @@ describe("feedbackService.generateFormFeedback", () => {
       }),
     ]);
     const req = provider.generateFormFeedback.mock.calls[0][0];
-    expect(req.signal).toBe(signal);
+    expect(req.signal).toBeInstanceOf(AbortSignal);
     expect(req.allowedTags).toEqual(["PU_HIP_SAG", "PU_SHALLOW_DEPTH"]);
-    expect(req.timeoutMs).toBeLessThanOrEqual(20_000);
+    expect(req.timeoutMs).toBeGreaterThan(0);
+    expect(req.timeoutMs).toBeLessThanOrEqual(env.analysis.llmTimeoutMs);
     expect(req.maxTokens).toBe(1200);
   });
 
@@ -298,24 +294,15 @@ describe("feedbackService.generateFormFeedback", () => {
     },
   );
 
-  it("throws TIMEOUT without calling when under 1000 ms remain", async () => {
-    const { provider, promise } = run([result(goodDraft())], {
-      timeoutMs: 999,
-    });
-
-    await expect(promise).rejects.toMatchObject({ code: "TIMEOUT" });
-    expect(provider.generateFormFeedback).not.toHaveBeenCalled();
-  });
-
   it("throws TIMEOUT instead of repairing when the budget is spent", async () => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["Date"] });
     try {
       const provider = createFakeLlmProvider(
         [],
         [result(goodDraft({ positives: [] }))],
       );
       provider.generateFormFeedback.mockImplementationOnce(() => {
-        vi.advanceTimersByTime(1500);
+        vi.advanceTimersByTime(env.analysis.llmTimeoutMs);
         return Promise.resolve(result(goodDraft({ positives: [] })) as never);
       });
       vi.mocked(getLlmProvider).mockReturnValue(provider);
@@ -324,8 +311,6 @@ describe("feedbackService.generateFormFeedback", () => {
         feedbackService.generateFormFeedback({
           metrics: makeScoredMetrics(),
           context,
-          signal: new AbortController().signal,
-          timeoutMs: 2000,
           log,
         }),
       ).rejects.toMatchObject({ code: "TIMEOUT" });

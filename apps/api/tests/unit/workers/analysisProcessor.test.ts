@@ -55,8 +55,6 @@ import {
 
 type JobData = { sessionId: number; captureId: number };
 
-const LLM_TIMEOUT_MS = 40_000;
-
 const payload = (): PoseCapturePayload => ({
   version: 1,
   poseModelName: "blazepose-lite",
@@ -119,10 +117,6 @@ beforeEach(() => {
   mockResults.saveUntrackable.mockResolvedValue(true);
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-});
-
 describe("processAnalysisJob", () => {
   const withCapture = async () =>
     mockState.getCaptureForJob.mockResolvedValue({
@@ -131,9 +125,8 @@ describe("processAnalysisJob", () => {
       keypointsFormat: KEYPOINTS_FORMAT,
     });
 
-  it("scores the set: stages, LLM call with signal and context, save, complete", async () => {
+  it("scores the set: stages, LLM call with context and log only, save, complete", async () => {
     await withCapture();
-    vi.useFakeTimers();
     const metrics = makeScoredMetrics();
     mockCompute.computeFormMetrics.mockReturnValue(metrics);
 
@@ -163,8 +156,6 @@ describe("processAnalysisJob", () => {
         heightCm: 180,
         weightKg: 75,
       },
-      signal: expect.any(AbortSignal) as AbortSignal,
-      timeoutMs: LLM_TIMEOUT_MS,
       log: mockChild,
     });
     expect(mockResults.saveScored).toHaveBeenCalledWith(
@@ -178,7 +169,6 @@ describe("processAnalysisJob", () => {
       { outcome: "SCORED", repCount: 5, band: "FAIR" },
       "Form metrics computed",
     );
-    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("completes an untrackable set without calling the LLM", async () => {
@@ -388,35 +378,6 @@ describe("processAnalysisJob", () => {
       expect(mockState.completeRun).not.toHaveBeenCalled();
     },
   );
-
-  it("aborts the LLM signal at the deadline and clears the timer on settle", async () => {
-    await withCapture();
-    let signal: AbortSignal | undefined;
-    mockFeedback.generateFormFeedback.mockImplementation(
-      (input: { signal: AbortSignal }) => {
-        signal = input.signal;
-        return new Promise((_resolve, reject) => {
-          input.signal.addEventListener("abort", () => {
-            reject(new LlmError("TIMEOUT"));
-          });
-        });
-      },
-    );
-    vi.useFakeTimers();
-
-    const result = processAnalysisJob(makeJob());
-    const assertion = expect(result).rejects.toMatchObject({
-      code: "TIMEOUT",
-    });
-    await vi.waitFor(() => expect(signal).toBeDefined());
-
-    expect(signal?.aborted).toBe(false);
-    await vi.advanceTimersByTimeAsync(LLM_TIMEOUT_MS);
-
-    await assertion;
-    expect(signal?.aborted).toBe(true);
-    expect(vi.getTimerCount()).toBe(0);
-  });
 });
 
 describe("onAnalysisJobFailed", () => {

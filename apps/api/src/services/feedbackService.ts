@@ -171,12 +171,13 @@ class FeedbackService {
   async generateFormFeedback(input: {
     metrics: ScoredFormMetrics;
     context: FormFeedbackContext;
-    signal: AbortSignal;
-    timeoutMs: number;
     log: Logger;
   }): Promise<FormFeedbackOutcome> {
-    const { metrics, context, signal, log } = input;
-    const deadline = Date.now() + input.timeoutMs;
+    const { metrics, context, log } = input;
+    // The service owns the run's LLM deadline: the signal cancels an in-flight
+    // request and `remaining` bounds each attempt.
+    const signal = AbortSignal.timeout(env.analysis.llmTimeoutMs);
+    const deadline = Date.now() + env.analysis.llmTimeoutMs;
     let previousIssues: string[] | undefined;
     let lastLlmError: LlmError | undefined;
 

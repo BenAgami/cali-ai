@@ -6,7 +6,6 @@ import {
   type PoseCapturePayload,
 } from "@repo/common";
 
-import { env } from "../config/env";
 import { LlmError } from "../lib/llm";
 import { logger } from "../lib/logger";
 import type { AnalysisJobData } from "../lib/queue";
@@ -153,11 +152,6 @@ export const processAnalysisJob = async (
     throw new UnrecoverableError("ANALYSIS_ERROR");
   }
 
-  const controller = new AbortController();
-  const deadline = setTimeout(() => {
-    controller.abort();
-  }, env.analysis.llmTimeoutMs);
-
   let outcome: FormFeedbackOutcome;
   try {
     outcome = await feedbackService.generateFormFeedback({
@@ -168,14 +162,10 @@ export const processAnalysisJob = async (
         heightCm: bodyMetric.heightCm,
         weightKg: bodyMetric.weightKg,
       },
-      signal: controller.signal,
-      timeoutMs: env.analysis.llmTimeoutMs,
       log,
     });
   } catch (error) {
     throw toProcessingError(error);
-  } finally {
-    clearTimeout(deadline);
   }
 
   const isSaved = await formAnalysisResultService.saveScored(
