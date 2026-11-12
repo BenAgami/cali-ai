@@ -277,6 +277,30 @@ describe("feedbackService.generateFormFeedback", () => {
     );
   });
 
+  it("falls back to the finding's reps when the model returns none for a correction", async () => {
+    const draft = goodDraft();
+    draft.corrections[0].repNumbers = [];
+    const { promise } = run([result(draft)]);
+
+    const outcome = await promise;
+
+    expect(outcome.attempts).toBe(1);
+    expect(outcome.feedback.corrections[0]).toMatchObject({
+      tag: "PU_HIP_SAG",
+      repNumbers: [3, 4, 5],
+    });
+  });
+
+  it("keeps the model's narrower reps when it supplies some", async () => {
+    const draft = goodDraft();
+    draft.corrections[0].repNumbers = [4];
+    const { promise } = run([result(draft)]);
+
+    const outcome = await promise;
+
+    expect(outcome.feedback.corrections[0].repNumbers).toEqual([4]);
+  });
+
   it("truncates positives beyond three instead of rejecting", async () => {
     const positives = [1, 2, 3, 4].map((n) => ({
       text: `Positive ${n}`,

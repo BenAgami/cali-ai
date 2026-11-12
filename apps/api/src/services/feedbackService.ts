@@ -142,7 +142,14 @@ export const validateFormFeedback = (
         title: finding.label,
         cue: match?.cue ?? finding.cue,
         detail: match?.detail ?? "",
-        repNumbers: uniqueSorted(match?.repNumbers ?? []),
+        // The finding's reps are server-selected, so an empty list from the
+        // model (which would leave the correction tied to no rep) falls back
+        // to them.
+        repNumbers: uniqueSorted(
+          match && match.repNumbers.length > 0
+            ? match.repNumbers
+            : finding.repNumbers,
+        ),
       };
     },
   );
