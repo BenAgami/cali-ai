@@ -37,13 +37,18 @@ registry.registerPath({
     },
   },
   responses: {
-    202: successResponse(CaptureAccepted, "Capture accepted and queued"),
+    202: successResponse(
+      CaptureAccepted,
+      "Capture accepted and queued. Resending to a session whose analysis already started returns that run; the resent body is not stored.",
+    ),
     400: errorResponse(
       "Validation error, or the body is not gzip (any other content type is rejected)",
     ),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Session not found"),
-    409: errorResponse("Session is not PENDING"),
+    409: errorResponse(
+      "Analysis failed; use the retry route (ANALYSIS_FAILED)",
+    ),
     413: errorResponse("Compressed body exceeds 1 MiB"),
     428: errorResponse("AI prerequisites missing"),
     429: errorResponse(

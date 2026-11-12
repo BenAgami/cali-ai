@@ -159,21 +159,44 @@ describe("CaptureService", () => {
     });
 
     it.each([SessionStatus.PROCESSING, SessionStatus.COMPLETED])(
-      "rejects a %s session with 409",
+      "answers a resend to a %s session with its current run",
       async (status) => {
-        vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
-          snapshot(status),
-        );
+        vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue({
+          ...snapshot(status),
+          bullmqJobId: "analysis-existing",
+        });
+        prisma.poseCapture.findFirst.mockResolvedValue({ id: 11 });
 
-        await expect(
-          service.submitCapture(USER, SESSION_ID, payload),
-        ).rejects.toThrow(
-          new ConflictError("Analysis already started for this session"),
-        );
+        const result = await service.submitCapture(USER, SESSION_ID, payload);
+
+        expect(result).toEqual({
+          sessionId: SESSION_ID,
+          captureId: 11,
+          jobId: "analysis-existing",
+          status: "QUEUED",
+        });
+        expect(prisma.poseCapture.findFirst).toHaveBeenCalledWith({
+          where: { sessionId: SESSION_ID },
+          select: { id: true },
+        });
         expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
         expect(formAnalysisQueue.add).not.toHaveBeenCalled();
       },
     );
+
+    it("rejects a started session with no stored capture with 409", async () => {
+      vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue({
+        ...snapshot(SessionStatus.PROCESSING),
+        bullmqJobId: "analysis-existing",
+      });
+      prisma.poseCapture.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.submitCapture(USER, SESSION_ID, payload),
+      ).rejects.toThrow(
+        new ConflictError("Analysis already started for this session"),
+      );
+    });
 
     it("rejects a FAILED session with 409 and a retry hint", async () => {
       vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
@@ -182,9 +205,10 @@ describe("CaptureService", () => {
 
       await expect(
         service.submitCapture(USER, SESSION_ID, payload),
-      ).rejects.toThrow(
-        new ConflictError("Analysis failed; retry the analysis"),
-      );
+      ).rejects.toMatchObject({
+        message: "Analysis failed; retry the analysis",
+        code: "ANALYSIS_FAILED",
+      });
       expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
     });
   });

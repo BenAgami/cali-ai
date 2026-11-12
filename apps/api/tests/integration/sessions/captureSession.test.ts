@@ -258,14 +258,15 @@ describe("POST /api/sessions/:id/capture", () => {
     expect(response.status).toBe(StatusCodes.REQUEST_TOO_LONG);
   });
 
-  it("returns 409 on a second capture and keeps one stored capture", async () => {
+  it("answers a resent capture with the first run and keeps one stored capture", async () => {
     const sessionId = await newSession();
     const payload = new PoseCaptureBuilder().setFrames(30).build();
-    await submitCapture(app, token, sessionId, payload);
+    const first = await submitCapture(app, token, sessionId, payload);
 
     const response = await submitCapture(app, token, sessionId, payload);
 
-    expect(response.status).toBe(StatusCodes.CONFLICT);
+    expect(response.status).toBe(StatusCodes.ACCEPTED);
+    expect(response.body.data).toEqual(first.body.data);
     expect(await prisma.poseCapture.count({ where: { sessionId } })).toBe(1);
   });
 
@@ -285,6 +286,7 @@ describe("POST /api/sessions/:id/capture", () => {
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
     expect(response.body.message).toContain("retry");
+    expect(response.body.code).toBe("ANALYSIS_FAILED");
   });
 
   describe("consent and caps", () => {

@@ -75,6 +75,7 @@ const HTTP_CONFLICT = 409;
 const HTTP_PRECONDITION_REQUIRED = 428;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const DAILY_LIMIT_CODE = "DAILY_ANALYSIS_LIMIT_REACHED";
+const ANALYSIS_FAILED_CODE = "ANALYSIS_FAILED";
 const KEEP_AWAKE_TAG = "recorded-set";
 
 /**
@@ -105,7 +106,8 @@ const toUploadErrorCode = (error: unknown): UploadErrorCode => {
 };
 
 // A failed queue add leaves the stored capture on a FAILED session, which the
-// capture route refuses with 409; only the retry route can restart it.
+// capture route refuses with ANALYSIS_FAILED; only the retry route can restart
+// it. A capture that already started a run is answered with that run.
 const submitOrRestart = async (
   sessionId: number,
   payload: PoseCapturePayload,
@@ -113,7 +115,11 @@ const submitOrRestart = async (
   try {
     return await sessionsApi.submitCapture(sessionId, payload);
   } catch (error) {
-    if (error instanceof ApiError && error.status === HTTP_CONFLICT) {
+    if (
+      error instanceof ApiError &&
+      error.status === HTTP_CONFLICT &&
+      error.code === ANALYSIS_FAILED_CODE
+    ) {
       return sessionsApi.retryAnalysis(sessionId);
     }
     throw error;

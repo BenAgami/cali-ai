@@ -50,10 +50,13 @@ export class CaptureService {
     );
 
     if (session.processingStatus === SessionStatus.FAILED) {
-      throw new ConflictError("Analysis failed; retry the analysis");
+      throw new ConflictError(
+        "Analysis failed; retry the analysis",
+        "ANALYSIS_FAILED",
+      );
     }
     if (session.processingStatus !== SessionStatus.PENDING) {
-      throw new ConflictError("Analysis already started for this session");
+      return this.acceptedRun(sessionId, session.bullmqJobId);
     }
 
     const userId = await getUserIdByUuid(this.prisma, userUuid);
@@ -106,6 +109,25 @@ export class CaptureService {
 
     await this.enqueue(sessionId, captureId, jobId);
     return { sessionId, captureId, jobId, status: "QUEUED" };
+  }
+
+  /**
+   * A client whose capture response was lost resends the same capture; answer
+   * with the run that capture started instead of refusing it, so the client
+   * can follow that run. The resent body is not stored or counted again.
+   */
+  private async acceptedRun(
+    sessionId: number,
+    jobId: string | null,
+  ): Promise<CaptureAcceptedData> {
+    const stored = await this.prisma.poseCapture.findFirst({
+      where: { sessionId },
+      select: { id: true },
+    });
+    if (!stored || jobId === null) {
+      throw new ConflictError("Analysis already started for this session");
+    }
+    return { sessionId, captureId: stored.id, jobId, status: "QUEUED" };
   }
 
   private async assertUnderDailyCap(userId: number): Promise<void> {
