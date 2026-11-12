@@ -14,7 +14,28 @@ const context: FormFeedbackContext = {
 
 describe("buildFormFeedbackPrompt", () => {
   it("exposes the prompt version", () => {
-    expect(FORM_FEEDBACK_PROMPT_VERSION).toMatch(/^form-feedback-vd+$/);
+    expect(FORM_FEEDBACK_PROMPT_VERSION).toMatch(/^form-feedback-v[0-9]+$/);
+  });
+
+  it("sends no degree features to the model", () => {
+    const base = makeScoredMetrics();
+    const metrics = makeScoredMetrics({
+      reps: base.reps.map((rep) => ({
+        ...rep,
+        features: { ...rep.features, minElbowDeg: 87.65, maxKneeDeg: 171.2 },
+      })),
+    });
+    const { user } = buildFormFeedbackPrompt({ metrics, context });
+    const payload = JSON.parse(user.slice(0, user.lastIndexOf("}") + 1)) as {
+      reps: { features: Record<string, number> }[];
+    };
+
+    for (const { features } of payload.reps) {
+      expect(Object.keys(features).filter((n) => n.endsWith("Deg"))).toEqual(
+        [],
+      );
+      expect(features).toHaveProperty("hipSag");
+    }
   });
 
   it("includes profile context in the user prompt (PROF-07)", () => {

@@ -7,7 +7,7 @@ import {
 
 import type { ScoredFormMetrics } from "../metrics/types";
 
-export const FORM_FEEDBACK_PROMPT_VERSION = "form-feedback-v1";
+export const FORM_FEEDBACK_PROMPT_VERSION = "form-feedback-v2";
 
 export type FormFeedbackContext = {
   exerciseDisplayName: string;
@@ -21,6 +21,8 @@ export type FormFeedbackPromptInput = {
   context: FormFeedbackContext;
   previousIssues?: string[];
 };
+
+const DEGREE_FEATURE_SUFFIX = "Deg";
 
 const round = (value: number, decimals: number): number => {
   const factor = 10 ** decimals;
@@ -62,11 +64,13 @@ const buildUserPrompt = (input: FormFeedbackPromptInput): string => {
     reps: metrics.reps.map((rep) => ({
       repNumber: rep.repNumber,
       durationSec: round(rep.durationSec, 1),
+      // Angles in degrees are left out: the model must not quote them (see
+      // BANNED_PATTERNS), and it phrases the server-selected findings, not raw
+      // numbers.
       features: Object.fromEntries(
-        Object.entries(rep.features).map(([name, value]) => [
-          name,
-          round(value, 2),
-        ]),
+        Object.entries(rep.features)
+          .filter(([name]) => !name.endsWith(DEGREE_FEATURE_SUFFIX))
+          .map(([name, value]) => [name, round(value, 2)]),
       ),
       tags: rep.tags.map((t) => t.tag),
     })),
