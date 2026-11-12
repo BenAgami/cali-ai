@@ -323,6 +323,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     bufferRef.current = [];
     recordingStartedAtRef.current = Date.now();
     setElapsedSec(0);
+    setSetupResult(NOT_READY);
     setStage("recording");
   }, [phase, countdownSecondsLeft]);
 
