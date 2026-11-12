@@ -120,7 +120,7 @@ describe("FormAnalysisResultService.saveScored", () => {
     expect(
       storedRawFeedbackSchema.parse(args.create.rawFeedback),
     ).toMatchObject({
-      metricsVersion: "metrics-v1",
+      metricsVersion: "metrics-v2",
       rubricVersion: "rubric-v0",
       promptVersion: "form-feedback-v1",
       repCount: 5,
@@ -185,7 +185,7 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
     outcome: "UNTRACKABLE" as const,
     exerciseCode: "push_up" as const,
     reasons: ["NO_REPS_DETECTED" as const],
-    metricsVersion: "metrics-v1",
+    metricsVersion: "metrics-v2",
     rubricVersion: "rubric-v0",
   };
 
@@ -216,7 +216,7 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
       summaryFeedback: null,
     });
     expect(storedRawFeedbackSchema.parse(args.create.rawFeedback)).toEqual({
-      metricsVersion: "metrics-v1",
+      metricsVersion: "metrics-v2",
       rubricVersion: "rubric-v0",
       promptVersion: null,
       repCount: 0,

@@ -54,7 +54,7 @@ export const makeScoredMetrics = (
     },
   ],
   forbiddenTopics: ["shoulder impingement", "wrist pain"],
-  metricsVersion: "metrics-v1",
+  metricsVersion: "metrics-v2",
   rubricVersion: "rubric-v0",
   ...overrides,
 });

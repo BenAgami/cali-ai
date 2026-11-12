@@ -5,7 +5,7 @@ import type {
   UntrackableReason,
 } from "@repo/common";
 
-export const METRICS_VERSION = "metrics-v1";
+export const METRICS_VERSION = "metrics-v2";
 
 export type Point = readonly [x: number, y: number];
 export type Side = "left" | "right";

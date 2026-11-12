@@ -84,7 +84,7 @@ const untrackable = {
   outcome: "UNTRACKABLE" as const,
   exerciseCode: "push_up" as const,
   reasons: ["NO_REPS_DETECTED" as const],
-  metricsVersion: "metrics-v1",
+  metricsVersion: "metrics-v2",
   rubricVersion: "rubric-v0",
 };
 

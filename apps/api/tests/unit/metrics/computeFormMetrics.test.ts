@@ -34,7 +34,7 @@ describe("computeFormMetrics (synthetic)", () => {
     expect(result.positives[result.positives.length - 1].kind).toBe(
       "COMPLETED_REPS",
     );
-    expect(result.metricsVersion).toBe("metrics-v1");
+    expect(result.metricsVersion).toBe("metrics-v2");
     expect(result.rubricVersion).toBe(RUBRIC_VERSION);
   });
 
