@@ -11,6 +11,9 @@ model WorkoutSession {
   workoutId Int?     @map("workout_id")
   setNumber Int?     @map("set_number") @db.SmallInt
 
+  workoutLog   WorkoutLog? @relation(fields: [workoutLogId], references: [id], onDelete: SetNull)
+  workoutLogId Int?        @map("workout_log_id")
+
   processingStatus SessionStatus @default(PENDING) @map("processing_status")
   notes            String?
   performedAt      DateTime      @default(now()) @map("performed_at")
@@ -32,6 +35,7 @@ model WorkoutSession {
   @@index([userId, performedAt(sort: Desc)], map: "idx_sessions_user_performed_at_desc")
   @@index([userId, exerciseId, performedAt(sort: Desc)], map: "idx_sessions_user_exercise_performed_at_desc")
   @@index([workoutId, performedAt(sort: Desc)], map: "idx_sessions_workout_performed_at_desc")
+  @@index([workoutLogId], map: "idx_sessions_workout_log_id")
   @@index([processingStatus], map: "idx_sessions_processing_status")
   @@map("workout_sessions")
 }
