@@ -1,6 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
+import { API_ERROR_CODES } from "@repo/common";
 import { ExerciseType, type getPrismaClient, SessionStatus } from "@repo/db";
 
 import {
@@ -230,6 +231,7 @@ describe("POST /api/workout-sessions", () => {
       });
 
       expect(response.status).toBe(StatusCodes.CONFLICT);
+      expect(response.body.code).toBe(API_ERROR_CODES.WORKOUT_LOG_COMPLETED);
     });
   });
 

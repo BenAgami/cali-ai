@@ -1,8 +1,9 @@
 import { getPrismaClient } from "@repo/db";
-import type {
-  CreateWorkoutValues,
-  UpdateWorkoutValues,
-  WorkoutExerciseInput,
+import {
+  API_ERROR_CODES,
+  type CreateWorkoutValues,
+  type UpdateWorkoutValues,
+  type WorkoutExerciseInput,
 } from "@repo/common";
 
 import { NotFoundError, BadRequestError, ConflictError } from "../errors";
@@ -17,6 +18,7 @@ import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 const SECOND_MS = 1000;
 /** A Start within this long of an unfinished run resumes it. */
 const RUN_RESUME_WINDOW_MS = 3 * 60 * 60 * SECOND_MS;
+const WORKOUT_LOG_COMPLETED_MESSAGE = "Workout log is already completed";
 
 type ListWorkoutsInput = {
   userUuid: string;
@@ -247,7 +249,10 @@ export class WorkoutService {
     });
     if (!log) throw new NotFoundError("Workout log not found");
     if (log.completedAt !== null) {
-      throw new ConflictError("Workout log is already completed");
+      throw new ConflictError(
+        WORKOUT_LOG_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+      );
     }
     return { startedAt: log.startedAt };
   }
@@ -272,8 +277,12 @@ export class WorkoutService {
       where: { id: logId, completedAt: null },
       data: { completedAt, durationSecs },
     });
-    if (count === 0)
-      throw new ConflictError("Workout log is already completed");
+    if (count === 0) {
+      throw new ConflictError(
+        WORKOUT_LOG_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+      );
+    }
 
     return this.prisma.workoutLog.findUniqueOrThrow({ where: { id: logId } });
   }

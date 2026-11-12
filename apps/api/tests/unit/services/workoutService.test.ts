@@ -1,4 +1,5 @@
 import { getPrismaClient } from "@repo/db";
+import { API_ERROR_CODES } from "@repo/common";
 
 import {
   NotFoundError,
@@ -523,7 +524,29 @@ describe("WorkoutService.completeWorkoutLog", () => {
 
     await expect(
       workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID),
-    ).rejects.toThrow(new ConflictError("Workout log is already completed"));
+    ).rejects.toMatchObject({
+      message: "Workout log is already completed",
+      code: API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+    });
     expect(prisma.workoutLog.findUniqueOrThrow).not.toHaveBeenCalled();
+  });
+
+  it("rejects an already completed log with the completed-run code", async () => {
+    prisma.workoutLog.findFirst.mockResolvedValue({
+      startedAt: STARTED_AT,
+      completedAt: new Date("2026-11-12T09:45:00.000Z"),
+    });
+
+    const result = workoutService.completeWorkoutLog(
+      USER_UUID,
+      WORKOUT_ID,
+      LOG_ID,
+    );
+
+    await expect(result).rejects.toBeInstanceOf(ConflictError);
+    await expect(result).rejects.toMatchObject({
+      code: API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+    });
+    expect(prisma.workoutLog.updateMany).not.toHaveBeenCalled();
   });
 });

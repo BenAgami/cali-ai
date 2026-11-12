@@ -12,3 +12,4 @@ export * from "./validations/workoutGeneration";
 export * from "./validations/formAnalysis";
 export * from "./validations/formSetEnd";
 export * from "./validations/formSetup";
+export * from "./validations/apiErrors";

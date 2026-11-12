@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 
-import type {
-  captureAcceptedResponseSchema,
-  PoseCapturePayload,
+import {
+  ANALYSIS_LIMIT_MESSAGES,
+  API_ERROR_CODES,
+  type captureAcceptedResponseSchema,
+  type PoseCapturePayload,
 } from "@repo/common";
 import { getPrismaClient, SessionStatus } from "@repo/db";
 
@@ -52,7 +54,7 @@ export class CaptureService {
     if (session.processingStatus === SessionStatus.FAILED) {
       throw new ConflictError(
         "Analysis failed; retry the analysis",
-        "ANALYSIS_FAILED",
+        API_ERROR_CODES.ANALYSIS_FAILED,
       );
     }
     if (session.processingStatus !== SessionStatus.PENDING) {
@@ -139,8 +141,8 @@ export class CaptureService {
     });
     if (acceptedLast24hCount >= env.formAnalysis.dailyCap) {
       throw new TooManyRequestsError(
-        "You've reached today's limit for form analysis. Try again tomorrow.",
-        "DAILY_ANALYSIS_LIMIT_REACHED",
+        ANALYSIS_LIMIT_MESSAGES.dailyAnalysis,
+        API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
       );
     }
   }
