@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-21)
 ## Current Position
 
 Phase: 05 (ai-form-analysis-camera-post-set) — COMPLETE
-Plan: 18 of 18 (next: Phase 5.1, Training Data & Labeling)
+Plan: 18 of 18 (next: Phase 5.2, Fix PR review findings; then Phase 5.1, Training Data & Labeling)
 
 ## Performance Metrics
 
@@ -125,6 +125,7 @@ Recent decisions affecting current work:
 ### Roadmap Evolution
 
 - Phase 8 added: Designing the user UI and UX
+- Phase 5.2 inserted after Phase 5: Fix PR review findings for phase 5 (URGENT). Runs before Phase 5.1; numbered 5.2 because 5.1 (Training Data & Labeling) already existed. Requirements: `.planning/phases/05-ai-form-analysis-camera-post-set/05-REVIEW-FINDINGS.md`
 
 ### Pending Todos
 

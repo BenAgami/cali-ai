@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Manual Workout Builder** - Browse exercises, create and edit named workouts, start workout sessions (completed 2026-06-19)
 - [x] **Phase 4: AI Workout Generation** - Goal-to-workout via Claude Sonnet, catalog-validated structured output (completed 2026-11-04)
 - [x] **Phase 5: AI Form Analysis** - Camera open during set; on-device keypoints auto-submitted when set ends; form band + coaching feedback (completed 2026-11-12)
+- [ ] **Phase 5.2: Fix PR review findings** (INSERTED, runs before 5.1) - Verify and fix the 28 Phase 5 PR review findings; repair the PR-fix commits
 - [ ] **Phase 5.1: Training Data & Labeling** (INSERTED) - Consent, retention, form labels, spot-check tool; foundation for training an own model
 - [ ] **Phase 6: Real-Time Form Cues** (DEFERRED — future milestone, not in v1) - Live audio/visual coaching cues from on-device pose estimation
 - [ ] **Phase 7: Progress Tracking** - Session history, per-exercise form score trends, overall form arc over time
@@ -163,6 +164,18 @@ Plans:
 6. A consented capture stores a context snapshot (body, exercise variation, set, capture quality, outcome signals) that does not change when the profile later does
    **Plans**: TBD
 
+### Phase 5.2: Fix PR review findings for phase 5 (INSERTED)
+
+**Goal:** Every verified PR review finding for Phase 5 is fixed, and the PR-fix commits `e93ef19^..abae071` meet CLAUDE.md, before Phase 5.1 starts
+**Requirements**: R-01, R-02, R-03, R-04, R-05, R-06, R-07, R-08, R-09, R-10, R-11, R-12, R-13, R-14, R-15, R-16, R-17, R-18, R-19, R-20, R-21, R-22, R-23, R-24, R-25, R-26, R-27, R-28, X-01
+**Requirements source:** `.planning/phases/05-ai-form-analysis-camera-post-set/05-REVIEW-FINDINGS.md`
+**Depends on:** Phase 5
+**Executes before:** Phase 5.1 (numbered 5.2 because 5.1 was already taken)
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 5.2 to break down)
+
 ### Phase 6: Real-Time Form Cues (DEFERRED)
 
 **Status**: Deferred to a future milestone. Kept here for reference; skipped in execution order and not counted in v1.
@@ -194,7 +207,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is deferred)
+Phases execute in numeric order, except 5.2 (urgent PR fixes) runs before 5.1: 1 -> 2 -> 3 -> 4 -> 5 -> 5.2 -> 5.1 -> 7 (Phase 6 is deferred)
 
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
@@ -203,6 +216,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 5.1 -> 7 (Phase 6 is d
 | 3. Manual Workout Builder    | 9/9            | Complete    | 2026-06-19 |
 | 4. AI Workout Generation     | 11/11          | Complete    | 2026-11-04 |
 | 5. Post-Set AI Form Analysis | 18/18          | Complete    | 2026-11-12 |
+| 5.2 Fix PR review findings   | 0/TBD          | Not started | -          |
 | 5.1 Training Data & Labeling | 0/TBD          | Not started | -          |
 | 6. Real-Time Form Cues       | 0/TBD          | Deferred    | -          |
 | 7. Progress Tracking         | 0/TBD          | Not started | -          |
