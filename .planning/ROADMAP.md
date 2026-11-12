@@ -178,7 +178,7 @@ Plans:
 - [x] 05.2-02-PLAN.md — Unclamped landmarks for OUT_OF_FRAME (R-01) and metrics cleanups (R-21, R-22, R-25, R-27)
 - [x] 05.2-03-PLAN.md — Band-free positives (R-10), degree-free prompt v2 (R-11), version constants in tests (AU-2)
 - [x] 05.2-04-PLAN.md — Shared API error codes, coded completed-run 409 (R-03 API), PENDING-aware stale runs (R-07)
-- [ ] 05.2-05-PLAN.md — Paginated recorded sets with shared schemas (R-04 API, AU-7), unknown-reason fallback (R-09), no re-sort (R-20)
+- [x] 05.2-05-PLAN.md — Paginated recorded sets with shared schemas (R-04 API, AU-7), unknown-reason fallback (R-09), no re-sort (R-20)
 - [x] 05.2-06-PLAN.md — Native status constants (X-01), withQuery helper (R-23), naming (R-26), workout screen strings (AU-8)
 - [ ] 05.2-07-PLAN.md — Daily cap inside the capture transaction under a per-user lock (R-13), R-14, R-15, R-19, AU-1
 - [ ] 05.2-08-PLAN.md — Logged LLM refusals with accurate errors (R-12) and one LLM deadline owner (R-18)
