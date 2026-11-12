@@ -80,17 +80,25 @@ const hadMotion = (frames: readonly SetupFrame[]): boolean => {
   const first = frames[0];
   const last = frames[frames.length - 1];
   if (!first || !last) return false;
+  // Frames arrive in timestamp order, so both window edges only move forward.
+  let windowStart = 0;
+  let windowEnd = 0;
   for (
     let start = first.timestampSec;
     start + ACTIVE_WINDOW_SECS <= last.timestampSec;
     start += 1
   ) {
-    const window = frames.filter(
-      (frame) =>
-        frame.timestampSec >= start &&
-        frame.timestampSec < start + ACTIVE_WINDOW_SECS,
-    );
-    if (motionRange(window) >= ACTIVE_RANGE) return true;
+    while (frames[windowStart].timestampSec < start) windowStart += 1;
+    windowEnd = Math.max(windowEnd, windowStart);
+    while (
+      windowEnd < frames.length &&
+      frames[windowEnd].timestampSec < start + ACTIVE_WINDOW_SECS
+    ) {
+      windowEnd += 1;
+    }
+    if (motionRange(frames.slice(windowStart, windowEnd)) >= ACTIVE_RANGE) {
+      return true;
+    }
   }
   return false;
 };
