@@ -154,8 +154,8 @@ describe("recorded set analysis result flow (FORM-08)", () => {
 
     const recorded = await getRecordedSets(app, token, workout.id);
     expect(recorded.status).toBe(StatusCodes.OK);
-    expect(recorded.body.data).toHaveLength(1);
-    expect(recorded.body.data[0]).toMatchObject({
+    expect(recorded.body.data.items).toHaveLength(1);
+    expect(recorded.body.data.items[0]).toMatchObject({
       sessionId,
       setNumber: 1,
       outcome: "SCORED",
