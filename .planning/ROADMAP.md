@@ -174,7 +174,7 @@ Plans:
 **Plans:** 14 plans
 
 Plans:
-- [ ] 05.2-01-PLAN.md — Squash the workout_logs FK migrations (R-16) and add the AnalysisRetry model
+- [x] 05.2-01-PLAN.md — Squash the workout_logs FK migrations (R-16) and add the AnalysisRetry model
 - [x] 05.2-02-PLAN.md — Unclamped landmarks for OUT_OF_FRAME (R-01) and metrics cleanups (R-21, R-22, R-25, R-27)
 - [x] 05.2-03-PLAN.md — Band-free positives (R-10), degree-free prompt v2 (R-11), version constants in tests (AU-2)
 - [x] 05.2-04-PLAN.md — Shared API error codes, coded completed-run 409 (R-03 API), PENDING-aware stale runs (R-07)
