@@ -131,10 +131,10 @@ describe("evaluateSetup", () => {
     };
 
     it.each([
-      ["CLIPPED_LEFT", ([, y]: [number, number, number]) => [0, y, 0.1]],
-      ["CLIPPED_RIGHT", ([, y]: [number, number, number]) => [1, y, 0.1]],
-      ["CLIPPED_TOP", ([x]: [number, number, number]) => [x, 0, 0.1]],
-      ["CLIPPED_BOTTOM", ([x]: [number, number, number]) => [x, 1, 0.1]],
+      ["CLIPPED_LEFT", ([, y]: [number, number, number]) => [-0.1, y, 0.1]],
+      ["CLIPPED_RIGHT", ([, y]: [number, number, number]) => [1.1, y, 0.1]],
+      ["CLIPPED_TOP", ([x]: [number, number, number]) => [x, -0.1, 0.1]],
+      ["CLIPPED_BOTTOM", ([x]: [number, number, number]) => [x, 1.1, 0.1]],
     ] as const)(
       "names the edge when hidden joints sit at it: %s",
       (issue, update) => {

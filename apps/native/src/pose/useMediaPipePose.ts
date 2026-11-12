@@ -112,8 +112,8 @@ export const useMediaPipePose = (
       landmarks && landmarks.length === KEYPOINT_COUNT
         ? landmarks.map((landmark): PoseKeypoint => {
             const [x, y] = toUpright(
-              clamp01(landmark.x),
-              clamp01(landmark.y),
+              landmark.x,
+              landmark.y,
               isFront,
               isPortraitRef.current,
               isLandscapeFlipped,

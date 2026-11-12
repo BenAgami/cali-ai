@@ -104,7 +104,8 @@ const shoulderToTorsoRatio = (
 /**
  * Which frame edge cuts the body off. A joint outside the frame is no longer
  * confidently visible, so the visibility check fails first; but the pose model
- * still places it beyond the edge and the adapter clamps it to the boundary.
+ * still places it at or beyond the edge, and the adapter forwards those
+ * coordinates unclamped.
  * Counting hidden key joints at a boundary names the edge. Needs part of the
  * body to be detected, so an empty frame (all zeros) is never read as clipped.
  */
