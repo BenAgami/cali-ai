@@ -46,6 +46,7 @@ export class AnalysisResultQueryService {
         workoutId: true,
         setNumber: true,
         processingStatus: true,
+        workoutLog: { select: { id: true, completedAt: true } },
         exercise: { select: { code: true, displayName: true } },
         analysisResult: {
           select: {
@@ -90,6 +91,8 @@ export class AnalysisResultQueryService {
     const base = {
       sessionId: session.id,
       workoutId: session.workoutId,
+      openWorkoutLogId:
+        session.workoutLog?.completedAt === null ? session.workoutLog.id : null,
       setNumber: session.setNumber,
       exerciseCode,
       exerciseDisplayName: session.exercise.displayName,

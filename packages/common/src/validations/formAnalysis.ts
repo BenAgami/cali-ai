@@ -192,6 +192,7 @@ export const formDimensionResultSchema = z.object({
 const analysisBase = {
   sessionId: z.number().int(),
   workoutId: z.number().int().nullable(),
+  openWorkoutLogId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   exerciseCode: z.string(),
   exerciseDisplayName: z.string(),

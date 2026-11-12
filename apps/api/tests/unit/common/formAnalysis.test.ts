@@ -11,6 +11,7 @@ import {
 const base = {
   sessionId: 1,
   workoutId: 2,
+  openWorkoutLogId: null,
   setNumber: 1,
   exerciseCode: "push_up",
   exerciseDisplayName: "Push-up",

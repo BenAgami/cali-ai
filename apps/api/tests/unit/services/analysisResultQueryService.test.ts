@@ -82,6 +82,7 @@ const session = (overrides: Record<string, unknown> = {}) => ({
   workoutId: 9,
   setNumber: 2,
   processingStatus: SessionStatus.COMPLETED,
+  workoutLog: null,
   exercise: { code: "push_up", displayName: "Push-up" },
   analysisResult: scoredResult(),
   ...overrides,
@@ -202,6 +203,7 @@ describe("AnalysisResultQueryService", () => {
       expect(result).toEqual({
         sessionId: SESSION_ID,
         workoutId: 9,
+        openWorkoutLogId: null,
         setNumber: 2,
         exerciseCode: "push_up",
         exerciseDisplayName: "Push-up",
@@ -233,6 +235,22 @@ describe("AnalysisResultQueryService", () => {
       expect(formAnalysisResponseSchema.safeParse(result).success).toBe(true);
       expect(JSON.stringify(result)).not.toContain("formScore");
     });
+
+    it.each([
+      [null, 4],
+      [ANALYZED_AT, null],
+    ])(
+      "links the set's run only while it is open (completedAt %s)",
+      async (completedAt, expected) => {
+        prisma.workoutSession.findFirst.mockResolvedValue(
+          session({ workoutLog: { id: 4, completedAt } }),
+        );
+
+        const result = await service.getSessionAnalysis(USER, SESSION_ID);
+
+        expect(result.openWorkoutLogId).toBe(expected);
+      },
+    );
 
     it("returns reasons and advice for an UNTRACKABLE result", async () => {
       prisma.workoutSession.findFirst.mockResolvedValue(
