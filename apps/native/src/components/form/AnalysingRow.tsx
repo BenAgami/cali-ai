@@ -8,8 +8,10 @@ import {
   ANALYSING_PREFIX,
   QUEUED_LABEL,
   RETRY,
+  RETRY_ISSUE_MESSAGES,
   RETRYABLE_FAILURES,
   failureMessage,
+  type RetryIssue,
 } from "@src/constants/formMessages";
 
 const PERCENT_MAX = 100;
@@ -22,6 +24,7 @@ interface AnalysingRowProps {
   failureReason: string | null;
   onRetry: () => void;
   isRetrying: boolean;
+  retryIssue: RetryIssue | null;
 }
 
 const AnalysingRow: React.FC<AnalysingRowProps> = ({
@@ -32,11 +35,14 @@ const AnalysingRow: React.FC<AnalysingRowProps> = ({
   failureReason,
   onRetry,
   isRetrying,
+  retryIssue,
 }) => {
   const { colors } = useTheme();
   const percent = event?.progress_percent ?? 0;
   const reason = failureReason ?? event?.failure_reason ?? null;
-  const canRetry = reason === null || RETRYABLE_FAILURES.has(reason);
+  const canRetry =
+    retryIssue !== "LIMIT" &&
+    (reason === null || RETRYABLE_FAILURES.has(reason));
 
   return (
     <View style={[styles.row, { backgroundColor: colors.surface }]}>
@@ -64,6 +70,11 @@ const AnalysingRow: React.FC<AnalysingRowProps> = ({
           <Text style={[styles.meta, { color: colors.text }]}>
             {failureMessage(reason)}
           </Text>
+          {retryIssue !== null && (
+            <Text style={[styles.meta, { color: colors.text }]}>
+              {RETRY_ISSUE_MESSAGES[retryIssue]}
+            </Text>
+          )}
           {canRetry && (
             <Pressable
               onPress={onRetry}

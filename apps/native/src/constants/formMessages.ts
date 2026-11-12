@@ -1,4 +1,7 @@
-import type { AnalysisFailureReason } from "@repo/common";
+import {
+  ANALYSIS_LIMIT_MESSAGES,
+  type AnalysisFailureReason,
+} from "@repo/common";
 
 export const WHAT_WENT_WELL = "What went well";
 export const FIX_THIS = "Fix this";
@@ -36,6 +39,12 @@ export const RETRYABLE_FAILURES: ReadonlySet<string> = new Set<string>([
   "ENQUEUE_FAILED",
   "ANALYSIS_ERROR",
 ]);
+
+export const RETRY_ISSUE_MESSAGES = {
+  LIMIT: ANALYSIS_LIMIT_MESSAGES.dailyRetry,
+  FAILED: "Couldn't retry. Check your connection and try again.",
+} as const;
+export type RetryIssue = keyof typeof RETRY_ISSUE_MESSAGES;
 
 export const failureMessage = (reason: string | null): string =>
   reason !== null && reason in ANALYSIS_FAILURE_MESSAGES

@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
-import type { AnalysisStatusEvent, RecordedSet } from "@repo/common";
+import { StatusCodes } from "http-status-codes";
+import {
+  API_ERROR_CODES,
+  type AnalysisStatusEvent,
+  type RecordedSet,
+} from "@repo/common";
+
+import { ApiError } from "@src/api";
 
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
 import { useRecordedSets } from "@src/hooks/queries/useRecordedSets";
+import type { RetryIssue } from "@src/constants/formMessages";
 
 type SessionStatus = RecordedSet["processingStatus"];
 
@@ -11,6 +19,7 @@ export type WorkoutRecordedSet = RecordedSet & {
   liveEvent?: AnalysisStatusEvent;
   effectiveStatus: SessionStatus;
   isUnseen: boolean;
+  retryIssue: RetryIssue | null;
 };
 
 const toEffectiveStatus = (
@@ -21,6 +30,16 @@ const toEffectiveStatus = (
   return event.status === "QUEUED" ? "PROCESSING" : event.status;
 };
 
+const toRetryIssue = (
+  status: SessionStatus,
+  isLimitReached: boolean,
+  hasRetryFailed: boolean,
+): RetryIssue | null => {
+  if (status !== "FAILED") return null;
+  if (isLimitReached) return "LIMIT";
+  return hasRetryFailed ? "FAILED" : null;
+};
+
 export const useWorkoutRecordedSets = (
   workoutId: number | undefined,
   runId?: number,
@@ -29,6 +48,10 @@ export const useWorkoutRecordedSets = (
   const { tracked, statusBySession, unseenSessionIds, track, retry } =
     useAnalysisTracker();
   const [retryingIds, setRetryingIds] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+  const [isRetryLimitReached, setIsRetryLimitReached] = useState(false);
+  const [retryFailedIds, setRetryFailedIds] = useState<ReadonlySet<number>>(
     () => new Set(),
   );
   const hasRequestedTrack = useRef<Set<number>>(new Set());
@@ -71,14 +94,26 @@ export const useWorkoutRecordedSets = (
     () =>
       (data ?? []).map((recorded) => {
         const liveEvent = statusBySession[recorded.sessionId];
+        const effectiveStatus = toEffectiveStatus(recorded, liveEvent);
         return {
           ...recorded,
           liveEvent,
-          effectiveStatus: toEffectiveStatus(recorded, liveEvent),
+          effectiveStatus,
           isUnseen: unseenSessionIds.has(recorded.sessionId),
+          retryIssue: toRetryIssue(
+            effectiveStatus,
+            isRetryLimitReached,
+            retryFailedIds.has(recorded.sessionId),
+          ),
         };
       }),
-    [data, statusBySession, unseenSessionIds],
+    [
+      data,
+      statusBySession,
+      unseenSessionIds,
+      isRetryLimitReached,
+      retryFailedIds,
+    ],
   );
 
   const retrySet = useCallback(
@@ -86,9 +121,23 @@ export const useWorkoutRecordedSets = (
       setRetryingIds((current) => new Set(current).add(sessionId));
       try {
         await retry(sessionId);
+        setRetryFailedIds((current) => {
+          const next = new Set(current);
+          next.delete(sessionId);
+          return next;
+        });
         await refetch();
-      } catch {
-        // The row stays FAILED, so the Retry button remains available.
+      } catch (error) {
+        if (
+          error instanceof ApiError &&
+          error.status === Number(StatusCodes.TOO_MANY_REQUESTS) &&
+          error.code === API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED
+        ) {
+          setIsRetryLimitReached(true);
+        } else {
+          // The row stays FAILED, so the Retry button remains available.
+          setRetryFailedIds((current) => new Set(current).add(sessionId));
+        }
       } finally {
         setRetryingIds((current) => {
           const next = new Set(current);

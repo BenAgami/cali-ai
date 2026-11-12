@@ -41,6 +41,7 @@ const RecordedSetCard: React.FC<RecordedSetCardProps> = ({
         failureReason={item.failureReason}
         onRetry={() => onRetry(item.sessionId)}
         isRetrying={isRetrying}
+        retryIssue={item.retryIssue}
       />
     );
   }
