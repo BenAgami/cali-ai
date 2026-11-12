@@ -30,7 +30,8 @@ registry.registerPath({
     201: successResponse(WorkoutSessionResponse, "Workout session created"),
     400: errorResponse("Validation error or unsupported exercise"),
     401: errorResponse("Unauthorized"),
-    404: errorResponse("Exercise or workout not found"),
+    404: errorResponse("Exercise, workout or workout log not found"),
+    409: errorResponse("Workout log is already completed"),
     428: errorResponse(
       "AI prerequisites missing (PROFILE_INCOMPLETE, BODY_METRICS_REQUIRED or AI_CONSENT_REQUIRED)",
     ),
