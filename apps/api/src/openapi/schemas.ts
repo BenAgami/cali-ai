@@ -11,7 +11,6 @@ import {
   upsertGoalSchema,
   createWorkoutSchema,
   updateWorkoutSchema,
-  completeWorkoutLogSchema,
   createWorkoutSessionSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
@@ -92,10 +91,6 @@ export const UpdateWorkoutBody = registry.register(
 export const GenerateWorkoutBody = registry.register(
   "GenerateWorkoutBody",
   generateWorkoutSchema,
-);
-export const CompleteWorkoutLogBody = registry.register(
-  "CompleteWorkoutLogBody",
-  completeWorkoutLogSchema,
 );
 export const CreateWorkoutSessionBody = registry.register(
   "CreateWorkoutSessionBody",

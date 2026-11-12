@@ -138,7 +138,7 @@ Note on route paths: the live mount is `/api/workout-sessions`. The JSDoc in `ap
 2. `workoutSessionService.createSession` looks up an active exercise by code (`NotFoundError` if missing), creates a `WorkoutSession` with `PENDING`.
 3. Nothing advances the status. There is no worker.
 
-**Workout execution (native, current):** `apps/native/app/(main)/workout-execute.tsx` runs the set/rest timer (`useWorkoutExecution`) and is opened with a `runId` created by `useStartWorkoutRun` on `workout-detail` (`POST /api/workouts/:id/logs`), and on completion `useCompleteWorkoutRun` patches the run (`PATCH /api/workouts/:id/logs/:logId`). No camera or keypoint code is involved.
+**Workout execution (native, current):** `apps/native/app/(main)/workout-execute.tsx` runs the set/rest timer (`useWorkoutExecution`) and is opened with a `runId` created by `useStartWorkoutRun` on `workout-detail` (`POST /api/workouts/:id/logs`, which resumes the plan's open run from the last 3 hours instead of opening another), and on completion `useCompleteWorkoutRun` patches the run (`PATCH /api/workouts/:id/logs/:logId`); the server derives `durationSecs` from the run's `startedAt`. For form-analysis exercises it pushes `/record-set` (camera + on-device pose capture) with the `runId`, so recorded sets attach to the run.
 
 **Avatar upload:**
 1. Native requests a presigned URL (`POST /api/users/me/avatar-upload-url`, from `USER_ROUTES.avatarUploadUrl`).

@@ -31,6 +31,7 @@ import { useTheme } from "@src/context/ThemeContext";
 import { useAiPrerequisiteSteps } from "@src/hooks/useAiPrerequisiteSteps";
 import { useRecordedSet } from "@src/hooks/useRecordedSet";
 import { baseColors } from "@src/theme/colors";
+import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 
 type RecordSetParams = {
   workoutId?: string;
@@ -50,12 +51,6 @@ const formatElapsed = (totalSec: number): string => {
   const minutes = Math.floor(totalSec / SECONDS_PER_MINUTE);
   const seconds = totalSec % SECONDS_PER_MINUTE;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-};
-
-const toPositiveIntOrNull = (value: string | undefined): number | null => {
-  if (value === undefined) return null;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 };
 
 /** Dev-only readout of the one rotation signal the preview follows. */
@@ -395,12 +390,12 @@ const RecordSetScreen: React.FC = () => {
     );
   }
 
-  const workoutId = toPositiveIntOrNull(params.workoutId);
+  const workoutId = parsePositiveIntParam(params.workoutId);
   // The API rejects a setNumber or run without a workoutId.
   const setNumber =
-    workoutId === null ? null : toPositiveIntOrNull(params.setNumber);
+    workoutId === null ? null : parsePositiveIntParam(params.setNumber);
   const workoutLogId =
-    workoutId === null ? null : toPositiveIntOrNull(params.runId);
+    workoutId === null ? null : parsePositiveIntParam(params.runId);
 
   return (
     <Recorder

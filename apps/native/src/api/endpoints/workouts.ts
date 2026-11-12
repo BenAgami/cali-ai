@@ -3,7 +3,6 @@ import type {
   GenerateWorkoutValues,
   WorkoutGenerationPreview,
   UpdateWorkoutValues,
-  CompleteWorkoutLogValues,
   WorkoutWithExercises,
   WorkoutListResponse,
   WorkoutLogResponse,
@@ -53,12 +52,8 @@ export const workoutApi = {
   startLog: (id: number): Promise<WorkoutLogResponse> =>
     apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), {}),
 
-  completeLog: (
-    id: number,
-    logId: number,
-    data: CompleteWorkoutLogValues,
-  ): Promise<WorkoutLogResponse> =>
-    apiClient.patch<WorkoutLogResponse>(WORKOUT_ROUTES.log(id, logId), data),
+  completeLog: (id: number, logId: number): Promise<WorkoutLogResponse> =>
+    apiClient.patch<WorkoutLogResponse>(WORKOUT_ROUTES.log(id, logId), {}),
 
   recordedSets: (
     workoutId: number,

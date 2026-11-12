@@ -6,7 +6,6 @@ import {
   GenerateWorkoutBody,
   WorkoutGenerationPreviewResponse,
   UpdateWorkoutBody,
-  CompleteWorkoutLogBody,
   WorkoutResponse,
   WorkoutLogResponse,
   RecordedSet,
@@ -198,7 +197,7 @@ registry.registerPath({
   tags: ["Workouts"],
   summary: "Start a workout run",
   description:
-    "Opens an in-progress run of the workout plan. Recorded sets attach to it through workoutLogId; complete it with PATCH.",
+    "Opens an in-progress run of the workout plan, or resumes this plan's open run started in the last 3 hours. Open runs older than that with no recorded sets are deleted. Recorded sets attach to the run through workoutLogId; complete it with PATCH.",
   security: [bearerAuth],
   request: { params: workoutIdParam },
   responses: {
@@ -215,19 +214,17 @@ registry.registerPath({
   path: "/workouts/{id}/logs/{logId}",
   tags: ["Workouts"],
   summary: "Complete a workout run",
+  description:
+    "Stamps completedAt; durationSecs is computed from the run's startedAt. Any request body is ignored.",
   security: [bearerAuth],
   request: {
     params: workoutIdParam.extend({
       logId: z.number().int().openapi({ example: 1 }),
     }),
-    body: {
-      required: true,
-      content: { "application/json": { schema: CompleteWorkoutLogBody } },
-    },
   },
   responses: {
     200: successResponse(WorkoutLogResponse, "Workout run completed"),
-    400: errorResponse("Validation error"),
+    400: errorResponse("Invalid workout or log ID"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout log not found"),
     409: errorResponse("Workout log is already completed"),

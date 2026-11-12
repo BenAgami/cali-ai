@@ -5,6 +5,7 @@ import type { AnalysisStatusEvent, FormAnalysisResponse } from "@repo/common";
 import { ApiError } from "@src/api";
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
 import { useSessionAnalysis } from "@src/hooks/queries/useSessionAnalysis";
+import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 
 const CONFLICT_STATUS = 409;
 
@@ -23,16 +24,10 @@ interface AnalysisResultScreen {
   recordAgain: (() => void) | undefined;
 }
 
-const parseSessionId = (param: string | undefined): number | undefined => {
-  if (param === undefined) return undefined;
-  const parsed = Number(param);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-};
-
 export const useAnalysisResultScreen = (
   sessionIdParam: string | undefined,
 ): AnalysisResultScreen => {
-  const sessionId = parseSessionId(sessionIdParam);
+  const sessionId = parsePositiveIntParam(sessionIdParam) ?? undefined;
   const { markSeen, statusBySession } = useAnalysisTracker();
   const { data, error, refetch } = useSessionAnalysis(sessionId);
 

@@ -5,7 +5,6 @@ import type {
   CreateWorkoutValues,
   GenerateWorkoutValues,
   UpdateWorkoutValues,
-  CompleteWorkoutLogValues,
 } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
@@ -190,7 +189,7 @@ export const startWorkout = async (
  * @route PATCH /api/workouts/:id/logs/:logId
  */
 export const completeWorkout = async (
-  req: Request<WorkoutLogIdParam, unknown, CompleteWorkoutLogValues>,
+  req: Request<WorkoutLogIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
@@ -200,7 +199,6 @@ export const completeWorkout = async (
     userUuid,
     Number(req.params.id),
     Number(req.params.logId),
-    req.body,
   );
 
   res.status(StatusCodes.OK).json({

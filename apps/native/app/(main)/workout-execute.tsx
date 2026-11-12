@@ -20,6 +20,7 @@ import RecordedSetCard from "@src/components/form/RecordedSetCard";
 import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
 import { consumeRecordedSetDone } from "@src/state/recordedSetStore";
 import { isFormAnalysisExercise } from "@repo/common";
+import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 
 type ExecuteParams = { id?: string; runId?: string };
 
@@ -54,9 +55,9 @@ const WorkoutExecuteScreen: React.FC = () => {
   const id = params.id ? Number(params.id) : undefined;
   const { data: workout, isLoading, error } = useWorkoutDetail(id);
   const execution = useWorkoutExecution(workout);
-  const runId = params.runId ? Number(params.runId) : undefined;
+  const runId = parsePositiveIntParam(params.runId);
   const completeMutation = useCompleteWorkoutRun();
-  const recorded = useWorkoutRecordedSets(id, runId);
+  const recorded = useWorkoutRecordedSets(id, runId ?? undefined);
   const { phase, currentSet, completeSet } = execution;
 
   // Returning from a submitted recording completes the set and starts rest.
@@ -77,13 +78,23 @@ const WorkoutExecuteScreen: React.FC = () => {
   };
 
   const handleDone = () => {
-    if (!id || !workout || runId === undefined) return;
+    if (!id || !workout) return;
+    if (runId === null) {
+      // Opened without a run (e.g. restored navigation): nothing to save.
+      Alert.alert(
+        "Could not save",
+        "This workout wasn't started from its plan, so it can't be saved.",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(main)/(tabs)/workouts"),
+          },
+        ],
+      );
+      return;
+    }
     completeMutation.mutate(
-      {
-        workoutId: id,
-        runId,
-        data: { durationSecs: execution.totalElapsedSecs },
-      },
+      { workoutId: id, runId },
       {
         onSuccess: () => {
           // Pop back to the workouts tab — the list will refetch via useFocusEffect.
@@ -255,7 +266,7 @@ const WorkoutExecuteScreen: React.FC = () => {
                     setNumber: String(execution.currentSet),
                     exerciseCode: ex.exercise.code,
                     exerciseDisplayName: ex.exercise.displayName,
-                    runId: String(runId),
+                    ...(runId !== null && { runId: String(runId) }),
                     source: "execute",
                   },
                 })

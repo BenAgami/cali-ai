@@ -2,7 +2,6 @@ import { Router } from "express";
 import z from "zod";
 
 import {
-  completeWorkoutLogSchema,
   createWorkoutSchema,
   generateWorkoutSchema,
   updateWorkoutSchema,
@@ -128,12 +127,7 @@ router.post(
 router.patch(
   "/:id/logs/:logId",
   authenticateToken,
-  validateSchema(
-    z.object({
-      params: workoutLogIdParamSchema,
-      body: completeWorkoutLogSchema,
-    }),
-  ),
+  validateSchema(z.object({ params: workoutLogIdParamSchema })),
   completeWorkout,
 );
 

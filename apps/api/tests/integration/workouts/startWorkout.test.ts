@@ -66,7 +66,7 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       expect(dbLog.completedAt).toBeNull();
     });
 
-    it("lets the same plan be started again as a new run", async () => {
+    it("resumes the open run when the plan is started again", async () => {
       const { userId, token } = await newUser();
       const workout = await newWorkout(userId);
 
@@ -74,7 +74,48 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       const second = await startWorkout(app, token, workout.id);
 
       expect(second.status).toBe(StatusCodes.CREATED);
+      expect(second.body.data.id).toBe(first.body.data.id);
+    });
+
+    it("opens a new run once the previous one is completed", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const first = await startWorkout(app, token, workout.id);
+      await completeWorkout(app, token, workout.id, first.body.data.id, {});
+
+      const second = await startWorkout(app, token, workout.id);
+
       expect(second.body.data.id).not.toBe(first.body.data.id);
+    });
+
+    it("drops a stale open run with no sets and keeps one with sets", async () => {
+      const { userId, token } = await newUser();
+      const workout = await newWorkout(userId);
+      const stale = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const empty = await prisma.workoutLog.create({
+        data: { userId, workoutId: workout.id, startedAt: stale },
+      });
+      const withSet = await prisma.workoutLog.create({
+        data: { userId, workoutId: workout.id, startedAt: stale },
+      });
+      await prisma.workoutSession.create({
+        data: {
+          userId,
+          exerciseId,
+          workoutId: workout.id,
+          workoutLogId: withSet.id,
+        },
+      });
+
+      const response = await startWorkout(app, token, workout.id);
+
+      expect(response.body.data.id).not.toBe(withSet.id);
+      expect(
+        await prisma.workoutLog.findUnique({ where: { id: empty.id } }),
+      ).toBeNull();
+      expect(
+        await prisma.workoutLog.findUnique({ where: { id: withSet.id } }),
+      ).not.toBeNull();
     });
 
     it("returns 404 for another user's workout", async () => {
@@ -103,21 +144,25 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
   });
 
   describe("PATCH (complete a run)", () => {
-    it("records the duration and completion time", async () => {
+    it("records the completion time and a duration from startedAt", async () => {
       const { userId, token } = await newUser();
       const workout = await newWorkout(userId);
-      const started = await startWorkout(app, token, workout.id);
+      const run = await prisma.workoutLog.create({
+        data: {
+          userId,
+          workoutId: workout.id,
+          startedAt: new Date(Date.now() - 30 * 60 * 1000),
+        },
+      });
 
-      const response = await completeWorkout(
-        app,
-        token,
-        workout.id,
-        started.body.data.id,
-        { durationSecs: 1800 },
-      );
+      // A client-sent duration is ignored.
+      const response = await completeWorkout(app, token, workout.id, run.id, {
+        durationSecs: 5,
+      });
 
       expect(response.status).toBe(StatusCodes.OK);
-      expect(response.body.data.durationSecs).toBe(1800);
+      expect(response.body.data.durationSecs).toBeGreaterThanOrEqual(1800);
+      expect(response.body.data.durationSecs).toBeLessThan(1860);
       expect(typeof response.body.data.completedAt).toBe("string");
     });
 
@@ -126,13 +171,9 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       const workout = await newWorkout(userId);
       const started = await startWorkout(app, token, workout.id);
       const logId = started.body.data.id;
-      await completeWorkout(app, token, workout.id, logId, {
-        durationSecs: 60,
-      });
+      await completeWorkout(app, token, workout.id, logId, {});
 
-      const response = await completeWorkout(app, token, workout.id, logId, {
-        durationSecs: 90,
-      });
+      const response = await completeWorkout(app, token, workout.id, logId, {});
 
       expect(response.status).toBe(StatusCodes.CONFLICT);
     });
@@ -144,8 +185,8 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       const logId = started.body.data.id;
 
       const responses = await Promise.all([
-        completeWorkout(app, token, workout.id, logId, { durationSecs: 60 }),
-        completeWorkout(app, token, workout.id, logId, { durationSecs: 90 }),
+        completeWorkout(app, token, workout.id, logId, {}),
+        completeWorkout(app, token, workout.id, logId, {}),
       ]);
 
       expect(responses.map((response) => response.status).sort()).toEqual([
@@ -170,7 +211,7 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
         other.token,
         workout.id,
         started.body.data.id,
-        { durationSecs: 60 },
+        {},
       );
 
       expect(response.status).toBe(StatusCodes.NOT_FOUND);
@@ -187,26 +228,10 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
         token,
         otherWorkout.id,
         started.body.data.id,
-        { durationSecs: 60 },
+        {},
       );
 
       expect(response.status).toBe(StatusCodes.NOT_FOUND);
-    });
-
-    it("returns 400 for a negative durationSecs", async () => {
-      const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
-      const started = await startWorkout(app, token, workout.id);
-
-      const response = await completeWorkout(
-        app,
-        token,
-        workout.id,
-        started.body.data.id,
-        { durationSecs: -5 },
-      );
-
-      expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     });
   });
 });

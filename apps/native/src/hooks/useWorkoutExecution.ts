@@ -15,8 +15,6 @@ export interface UseWorkoutExecutionResult {
   currentExercise: WorkoutExerciseHydrated | null;
   isLastSet: boolean;
   isLastExercise: boolean;
-  /** Epoch ms when this run began; recorded sets before it belong to earlier runs. */
-  startedAtMs: number;
   totalElapsedSecs: number;
   restSecondsLeft: number;
   restTotalSecs: number;
@@ -118,7 +116,6 @@ export const useWorkoutExecution = (
     currentExercise,
     isLastSet,
     isLastExercise,
-    startedAtMs,
     totalElapsedSecs: totalElapsed,
     restSecondsLeft: countdown.secondsLeft,
     restTotalSecs: restTotal,
