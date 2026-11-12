@@ -71,6 +71,7 @@ const SECOND_MS = 1000;
 /** Keep 90% of the capture interval so ~33 ms frames thin cleanly to 15 fps. */
 const MIN_FRAME_GAP_SEC = (1 / RECORDING_TARGET_FPS) * 0.9;
 const DEFAULT_ASPECT_RATIO = 9 / 16;
+const HTTP_CONFLICT = 409;
 const HTTP_PRECONDITION_REQUIRED = 428;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const DAILY_LIMIT_CODE = "DAILY_ANALYSIS_LIMIT_REACHED";
@@ -101,6 +102,22 @@ const toUploadErrorCode = (error: unknown): UploadErrorCode => {
     return "DAILY_LIMIT";
   }
   return "UPLOAD_FAILED";
+};
+
+// A failed queue add leaves the stored capture on a FAILED session, which the
+// capture route refuses with 409; only the retry route can restart it.
+const submitOrRestart = async (
+  sessionId: number,
+  payload: PoseCapturePayload,
+) => {
+  try {
+    return await sessionsApi.submitCapture(sessionId, payload);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === HTTP_CONFLICT) {
+      return sessionsApi.retryAnalysis(sessionId);
+    }
+    throw error;
+  }
 };
 
 interface UseRecordedSetParams {
@@ -342,7 +359,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         })
       ).id;
       const sessionId = sessionIdRef.current;
-      const accepted = await sessionsApi.submitCapture(sessionId, payload);
+      const accepted = await submitOrRestart(sessionId, payload);
       track({
         sessionId,
         jobId: accepted.jobId,
