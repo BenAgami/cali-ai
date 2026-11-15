@@ -149,7 +149,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+- Remove MoveNet dev tooling (native): unused since BlazePose; needs an EAS rebuild. See `todos/pending/2026-11-15-remove-movenet-dev-tooling.md`.
 
 ### Blockers/Concerns
 
