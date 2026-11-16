@@ -1,8 +1,10 @@
-import { FORM_KEY_JOINTS, type FormAnalysisExercise } from "./formAnalysis";
+import {
+  FORM_KEY_JOINTS,
+  type FormAnalysisExercise,
+  VISIBILITY_MIN,
+} from "./formAnalysis";
 import type { SetupFrame } from "./formSetup";
 
-/** A body joint counts as seen at or above this pose-model confidence. */
-const VISIBLE_MIN = 0.5;
 /** Seconds without a tracked body before the set counts as over. */
 const LOST_SECS = 5;
 /** Seconds of near-zero movement before the set counts as over. */
@@ -41,7 +43,7 @@ const endsIn = (remainingSecs: number): SetEndVerdict => ({
 });
 
 const isSeen = (frame: SetupFrame, joint: number): boolean =>
-  (frame.keypoints[joint]?.[2] ?? 0) >= VISIBLE_MIN;
+  (frame.keypoints[joint]?.[2] ?? 0) >= VISIBILITY_MIN;
 
 const isTracked = (
   frame: SetupFrame,

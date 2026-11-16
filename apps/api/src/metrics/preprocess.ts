@@ -4,12 +4,12 @@ import {
   FORM_KEY_JOINTS,
   type FormAnalysisExercise,
   type PoseCapturePayload,
+  VISIBILITY_MIN,
 } from "@repo/common";
 
 import { mean, median } from "./geometry";
 import type { Point, PoseSeries, Side } from "./types";
 
-const MIN_VISIBILITY = 0.5;
 const MAX_FILL_GAP_FRAMES = 3;
 const MEDIAN_RADIUS = 1;
 const AVERAGE_RADIUS = 2;
@@ -98,7 +98,7 @@ export const toPoseSeries = (
     frame.keypoints.map(([, , v]) => v),
   );
   const isRawValid = visibility.map((row) =>
-    row.map((v) => v >= MIN_VISIBILITY),
+    row.map((v) => v >= VISIBILITY_MIN),
   );
 
   const points: (Point | null)[][] = payload.frames.map(() =>

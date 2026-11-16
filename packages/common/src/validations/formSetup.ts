@@ -1,6 +1,7 @@
 import {
   BLAZEPOSE,
   FORM_KEY_JOINTS,
+  VISIBILITY_MIN,
   type FormAnalysisExercise,
   type FormCameraView,
 } from "./formAnalysis";
@@ -29,9 +30,9 @@ export type SetupFrame = {
 
 export type SetupCheckResult = { isReady: boolean; issue: SetupIssue | null };
 
+/** About 1 s at the 15 fps capture rate: long enough to smooth pose jitter. */
 export const SETUP_WINDOW_FRAMES = 15;
 
-const VISIBLE_MIN = 0.5;
 const VISIBLE_FRAME_SHARE_MIN = 0.8;
 const DARK_LUMA = 0.16;
 const EDGE_MIN = 0.02;
@@ -115,12 +116,12 @@ const clippedEdgeOf = (
 ): SetupIssue | null => {
   const points = keyJoints.map((joint) => last.keypoints[joint]);
   const visibleCount = points.filter(
-    (point) => (point?.[2] ?? 0) >= VISIBLE_MIN,
+    (point) => (point?.[2] ?? 0) >= VISIBILITY_MIN,
   ).length;
   if (visibleCount === 0) return null;
   const hidden = points.filter(
     (point): point is [number, number, number] =>
-      point !== undefined && point[2] < VISIBLE_MIN,
+      point !== undefined && point[2] < VISIBILITY_MIN,
   );
   const edges: [SetupIssue, number][] = [
     ["CLIPPED_LEFT", hidden.filter(([x]) => x <= EDGE_MIN).length],
@@ -143,7 +144,7 @@ const EXIT_EDGE_MAX_DISTANCE = 0.3;
  * detected position was closest to; null when that was mid-frame.
  */
 export const exitEdgeOf = (last: SetupFrame): SetupIssue | null => {
-  const visible = last.keypoints.filter(([, , v]) => v >= VISIBLE_MIN);
+  const visible = last.keypoints.filter(([, , v]) => v >= VISIBILITY_MIN);
   if (visible.length === 0) return null;
   const xs = visible.map(([x]) => x);
   const ys = visible.map(([, y]) => y);
@@ -176,7 +177,7 @@ export const evaluateSetup = (input: {
   const keyJoints = keyJointsFor(exerciseCode, window);
   const visibleFrames = window.filter((frame) =>
     keyJoints.every(
-      (joint) => (frame.keypoints[joint]?.[2] ?? 0) >= VISIBLE_MIN,
+      (joint) => (frame.keypoints[joint]?.[2] ?? 0) >= VISIBILITY_MIN,
     ),
   ).length;
   if (visibleFrames / window.length < VISIBLE_FRAME_SHARE_MIN) {
@@ -184,7 +185,7 @@ export const evaluateSetup = (input: {
     return notReady(clippedEdgeOf(last, keyJoints) ?? "NOT_DETECTED");
   }
 
-  const visible = last.keypoints.filter(([, , v]) => v >= VISIBLE_MIN);
+  const visible = last.keypoints.filter(([, , v]) => v >= VISIBILITY_MIN);
   const xs = visible.map(([x]) => x);
   const ys = visible.map(([, y]) => y);
   const minX = Math.min(...xs);

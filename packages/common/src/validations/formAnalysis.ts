@@ -32,6 +32,9 @@ export const FORM_CAPTURE_SETUP: Record<
 
 export const BLAZEPOSE_KEYPOINT_COUNT = 33;
 
+/** Pose-model confidence at or above which a keypoint counts as seen. */
+export const VISIBILITY_MIN = 0.5;
+
 export const BLAZEPOSE = {
   NOSE: 0,
   MOUTH_LEFT: 9,
