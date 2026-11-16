@@ -10,17 +10,20 @@ const workoutExerciseInputSchema = z.object({
   durationSecs: z.number().int().min(1).max(3600).nullable().optional(),
   restSecs: z.number().int().min(0).max(600),
 });
+export type WorkoutExerciseInput = z.infer<typeof workoutExerciseInputSchema>;
 
 export const createWorkoutSchema = z.object({
   name: z.string().trim().min(1).max(100),
   exercises: z.array(workoutExerciseInputSchema).min(1).max(50),
   generationId: z.number().int().positive().optional(),
 });
+export type CreateWorkoutValues = z.infer<typeof createWorkoutSchema>;
 
 export const updateWorkoutSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   exercises: z.array(workoutExerciseInputSchema).min(1).max(50).optional(),
 });
+export type UpdateWorkoutValues = z.infer<typeof updateWorkoutSchema>;
 
 const DEFAULT_RECORDED_SETS_LIMIT = 50;
 const MAX_RECORDED_SETS_LIMIT = 100;
@@ -43,12 +46,7 @@ export const recordedSetsQuerySchema = z.object({
     .default(DEFAULT_RECORDED_SETS_LIMIT),
   offset: z.coerce.number().int().min(0).default(0),
 });
-
 export type RecordedSetsQuery = z.infer<typeof recordedSetsQuerySchema>;
-
-export type CreateWorkoutValues = z.infer<typeof createWorkoutSchema>;
-export type UpdateWorkoutValues = z.infer<typeof updateWorkoutSchema>;
-export type WorkoutExerciseInput = z.infer<typeof workoutExerciseInputSchema>;
 
 // ── Responses ──────────────────────────────────────────────────────────────
 
@@ -79,13 +77,11 @@ export const workoutWithExercisesSchema = z.object({
   generationId: z.number().int().nullable(),
   exercises: z.array(workoutExerciseHydratedSchema),
 });
-
 export type WorkoutWithExercises = z.infer<typeof workoutWithExercisesSchema>;
 
 export const workoutListResponseSchema = paginatedSchema(
   workoutWithExercisesSchema,
 );
-
 export type WorkoutListResponse = z.infer<typeof workoutListResponseSchema>;
 
 export const workoutLogResponseSchema = z.object({
@@ -97,5 +93,4 @@ export const workoutLogResponseSchema = z.object({
   durationSecs: z.number().int().nullable(),
   createdAt: z.string(),
 });
-
 export type WorkoutLogResponse = z.infer<typeof workoutLogResponseSchema>;

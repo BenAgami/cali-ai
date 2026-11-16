@@ -84,7 +84,6 @@ export const poseCapturePayloadSchema = z
       });
     }
   });
-
 export type PoseCapturePayload = z.infer<typeof poseCapturePayloadSchema>;
 
 const round = (value: number, decimals: number): number =>
@@ -109,5 +108,4 @@ export const captureAcceptedResponseSchema = z.object({
   jobId: z.string(),
   status: analysisStatusEventSchema.shape.status,
 });
-
 export type CaptureAccepted = z.infer<typeof captureAcceptedResponseSchema>;

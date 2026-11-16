@@ -19,7 +19,6 @@ export const SETUP_ISSUES = [
   "TOO_FAR",
   "WRONG_ANGLE",
 ] as const;
-
 export type SetupIssue = (typeof SETUP_ISSUES)[number];
 
 export type SetupFrame = {

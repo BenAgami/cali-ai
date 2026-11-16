@@ -7,7 +7,6 @@ export const AI_CONSENT_VERSION = "2026-11-08";
 export const aiConsentSchema = z.object({
   version: z.literal(AI_CONSENT_VERSION),
 });
-
 export type AiConsentValues = z.infer<typeof aiConsentSchema>;
 
 export const AI_PREREQUISITE_CODES = [
@@ -15,7 +14,6 @@ export const AI_PREREQUISITE_CODES = [
   "BODY_METRICS_REQUIRED",
   "AI_CONSENT_REQUIRED",
 ] as const;
-
 export type AiPrerequisiteCode = (typeof AI_PREREQUISITE_CODES)[number];
 
 export type AiPrerequisiteInput = {

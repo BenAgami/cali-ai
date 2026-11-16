@@ -9,7 +9,6 @@ export const FORM_ANALYSIS_EXERCISES = [
   "dip",
   "squat",
 ] as const;
-
 export type FormAnalysisExercise = (typeof FORM_ANALYSIS_EXERCISES)[number];
 
 export const isFormAnalysisExercise = (
@@ -72,7 +71,6 @@ export const FORM_BANDS = [
   "NEEDS_WORK",
   "POOR",
 ] as const;
-
 export type FormBand = (typeof FORM_BANDS)[number];
 
 export const FORM_BAND_LABELS: Record<FormBand, string> = {
@@ -120,7 +118,6 @@ export const UNTRACKABLE_REASONS = [
   "WRONG_VIEW",
   "NO_REPS_DETECTED",
 ] as const;
-
 export type UntrackableReason = (typeof UNTRACKABLE_REASONS)[number];
 
 export const UNTRACKABLE_ADVICE: Record<UntrackableReason, string> = {
@@ -228,7 +225,6 @@ export const formAnalysisResponseSchema = z.discriminatedUnion("outcome", [
     advice: z.array(z.string()).min(1),
   }),
 ]);
-
 export type FormAnalysisResponse = z.infer<typeof formAnalysisResponseSchema>;
 
 export const recordedSetSchema = z.object({
@@ -247,9 +243,7 @@ export const recordedSetSchema = z.object({
   outcome: z.enum(ANALYSIS_OUTCOMES).nullable(),
   band: z.enum(FORM_BANDS).nullable(),
 });
-
 export type RecordedSet = z.infer<typeof recordedSetSchema>;
 
 export const recordedSetPageSchema = paginatedSchema(recordedSetSchema);
-
 export type RecordedSetPage = z.infer<typeof recordedSetPageSchema>;

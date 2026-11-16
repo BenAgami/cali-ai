@@ -24,7 +24,6 @@ export const UPLOAD_ERROR_MESSAGES = {
   DAILY_LIMIT: ANALYSIS_LIMIT_MESSAGES.dailyAnalysis,
   DAILY_RETRY_LIMIT: ANALYSIS_LIMIT_MESSAGES.dailyRetry,
 } as const;
-
 export type UploadErrorCode = keyof typeof UPLOAD_ERROR_MESSAGES;
 
 export const RETRY_UPLOAD = "Retry upload";
