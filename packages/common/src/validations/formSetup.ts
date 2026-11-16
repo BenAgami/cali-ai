@@ -2,6 +2,7 @@ import {
   BLAZEPOSE,
   FORM_KEY_JOINTS,
   type FormAnalysisExercise,
+  type FormCameraView,
 } from "./formAnalysis";
 import {
   CAPTURE_LIMITS,
@@ -224,7 +225,7 @@ export const buildPoseCapturePayload = (
     poseModelName: string;
     poseModelVersion: string;
     aspectRatio: number;
-    cameraView: "side" | "front" | "back";
+    cameraView: FormCameraView;
     deviceModel?: string;
     appVersion?: string;
   },

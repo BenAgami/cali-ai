@@ -21,8 +21,6 @@ export class UnsupportedCaptureError extends Error {
   }
 }
 
-const CAMERA_VIEWS = ["side", "front", "back"] as const;
-
 const fillGaps = (track: (Point | null)[]): (Point | null)[] => {
   const out = [...track];
   let i = 0;
@@ -91,9 +89,7 @@ export const toPoseSeries = (
   const aspectRatio =
     payload.aspectRatio ??
     (setup.orientation === "landscape" ? 16 / 9 : 9 / 16);
-  const cameraView =
-    CAMERA_VIEWS.find((view) => view === payload.cameraView) ??
-    setup.cameraView;
+  const cameraView = payload.cameraView ?? setup.cameraView;
 
   const rawPoints: Point[][] = payload.frames.map((frame) =>
     frame.keypoints.map(([x, y]): Point => [x * aspectRatio, y]),

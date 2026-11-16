@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { analysisStatusEventSchema } from "./analysis";
+import { FORM_CAMERA_VIEWS } from "./formAnalysis";
 
 export const CAPTURE_LIMITS = {
   maxCompressedBytes: 1_048_576,
@@ -37,8 +38,7 @@ export const poseCapturePayloadSchema = z
     fps: z.number().min(CAPTURE_LIMITS.minFps).max(CAPTURE_LIMITS.maxFps),
     frameCount: z.number().int().min(1).max(CAPTURE_LIMITS.maxFrames),
     durationSec: z.number().positive().max(CAPTURE_LIMITS.maxDurationSec),
-    // "side" | "front" | "back"
-    cameraView: z.string().trim().max(20).optional(),
+    cameraView: z.enum(FORM_CAMERA_VIEWS).optional(),
     // width / height of the oriented image the landmarks are normalised to
     aspectRatio: z.number().min(0.2).max(5).optional(),
     deviceModel: z.string().trim().max(80).optional(),

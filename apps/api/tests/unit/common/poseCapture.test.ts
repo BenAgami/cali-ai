@@ -59,6 +59,21 @@ describe("poseCapturePayloadSchema aspectRatio", () => {
   });
 });
 
+describe("poseCapturePayloadSchema cameraView", () => {
+  const payload = makePayload(2, makeRandom(1));
+
+  it("accepts a known view and rejects anything else", () => {
+    expect(
+      poseCapturePayloadSchema.safeParse({ ...payload, cameraView: "back" })
+        .success,
+    ).toBe(true);
+    expect(
+      poseCapturePayloadSchema.safeParse({ ...payload, cameraView: "weird" })
+        .success,
+    ).toBe(false);
+  });
+});
+
 describe("quantizeCapture", () => {
   it("rounds coordinates, visibility and timestamps and stays valid", () => {
     const payload = makePayload(2, makeRandom(2));

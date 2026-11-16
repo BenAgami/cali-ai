@@ -1,6 +1,7 @@
 import type {
   FormAnalysisExercise,
   FormBand,
+  FormCameraView,
   FormDimension,
   UntrackableReason,
 } from "@repo/common";
@@ -13,7 +14,7 @@ export type FindingSeverity = "LOW" | "MEDIUM" | "HIGH";
 
 export type PoseSeries = {
   exerciseCode: FormAnalysisExercise;
-  cameraView: "side" | "front" | "back";
+  cameraView: FormCameraView;
   fps: number;
   aspectRatio: number;
   timestampsSec: number[];
@@ -101,7 +102,7 @@ export type DimensionScore = {
 export type ScoredFormMetrics = {
   outcome: "SCORED";
   exerciseCode: FormAnalysisExercise;
-  cameraView: "side" | "front" | "back";
+  cameraView: FormCameraView;
   side: Side | null;
   repCount: number;
   droppedRepCount: number;

@@ -16,7 +16,8 @@ export const isFormAnalysisExercise = (
 ): code is FormAnalysisExercise =>
   (FORM_ANALYSIS_EXERCISES as readonly string[]).indexOf(code) !== -1;
 
-export type FormCameraView = "side" | "front" | "back";
+export const FORM_CAMERA_VIEWS = ["side", "front", "back"] as const;
+export type FormCameraView = (typeof FORM_CAMERA_VIEWS)[number];
 export type FormCaptureOrientation = "portrait" | "landscape";
 
 export const FORM_CAPTURE_SETUP: Record<

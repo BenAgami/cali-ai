@@ -3,6 +3,7 @@ import {
   BLAZEPOSE_KEYPOINT_COUNT,
   FORM_CAPTURE_SETUP,
   type FormAnalysisExercise,
+  type FormCameraView,
   type Keypoint,
   type PoseCapturePayload,
 } from "@repo/common";
@@ -21,7 +22,7 @@ export type SyntheticOptions = {
   aspectRatio?: number;
   /** near side for side-on views, default "left" */
   side?: "left" | "right";
-  view?: "side" | "front" | "back";
+  view?: FormCameraView;
   /** elbow angle (push_up, dip) or knee angle (squat) at the bottom */
   depthDeg?: number;
   /** elbow angle (push_up, dip) or knee angle (squat) at the top */

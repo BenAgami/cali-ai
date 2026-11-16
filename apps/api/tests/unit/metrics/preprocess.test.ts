@@ -51,12 +51,9 @@ describe("toPoseSeries", () => {
     );
   });
 
-  it("falls back to the exercise camera view for unknown values", () => {
+  it("falls back to the exercise camera view when none is sent", () => {
     const frames = [blankFrame(33)];
-    expect(
-      toPoseSeries(payloadOf(frames, { cameraView: "weird" }), "pull_up")
-        .cameraView,
-    ).toBe("front");
+    expect(toPoseSeries(payloadOf(frames), "pull_up").cameraView).toBe("front");
     expect(
       toPoseSeries(payloadOf(frames, { cameraView: "back" }), "pull_up")
         .cameraView,
