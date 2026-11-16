@@ -58,24 +58,14 @@ export const envSchema = z
     LLM_PRIMARY_TIMEOUT_MS: z.coerce.number().int().min(1000).default(15000),
     LLM_FALLBACK_TIMEOUT_MS: z.coerce.number().int().min(1000).default(25000),
     LLM_MAX_TOKENS: z.coerce.number().int().min(256).max(8192).default(2000),
-    AI_GENERATION_DAILY_CAP: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(1000)
-      .default(10),
+    AI_GENERATION_DAILY_CAP: z.coerce.number().int().min(1).max(20).default(10),
     AI_GENERATION_DEADLINE_MS: z.coerce.number().int().min(5000).default(60000),
-    FORM_ANALYSIS_DAILY_CAP: z.coerce
-      .number()
-      .int()
-      .min(1)
-      .max(1000)
-      .default(15),
+    FORM_ANALYSIS_DAILY_CAP: z.coerce.number().int().min(1).max(30).default(15),
     FORM_ANALYSIS_DAILY_RETRY_CAP: z.coerce
       .number()
       .int()
       .min(1)
-      .max(1000)
+      .max(10)
       .default(5),
   })
   .superRefine((v, ctx) => {

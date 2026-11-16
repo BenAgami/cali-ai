@@ -190,3 +190,4 @@ Untrackable sets get no band, no LLM call, and the session still completes.
 - 2026-11-12 / 8: DIMENSION_GOOD positive wording no longer names the band (the system prompt forbids it). Selection unchanged, so `RUBRIC_VERSION` is unchanged.
 - 2026-11-12 / 11: new retry cap `FORM_ANALYSIS_DAILY_RETRY_CAP` (default 5 per user per rolling 24 h, 429 `DAILY_RETRY_LIMIT_REACHED`); both caps now checked under a per-user lock. No scoring value changed, so `RUBRIC_VERSION` is unchanged.
 - 2026-11-12 / front matter: `metrics_version` aligned with the code (`metrics-v2`); no metric changed in Phase 5.2.
+- 2026-11-16 / 11: the env schema's upper bound on each cap is lowered from 1000 so a misconfigured deploy cannot lift the cost guard: `FORM_ANALYSIS_DAILY_CAP` max 30, `FORM_ANALYSIS_DAILY_RETRY_CAP` max 10. Defaults (15, 5) unchanged; no scoring value changed, so `RUBRIC_VERSION` is unchanged.

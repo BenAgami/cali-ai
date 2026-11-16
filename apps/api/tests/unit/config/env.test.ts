@@ -176,9 +176,24 @@ describe("LLM and generation env", () => {
     expect(parsed.FORM_ANALYSIS_DAILY_RETRY_CAP).toBe(5);
   });
 
-  it.for(["0", "1001"])("rejects a retry cap of %s", (value) => {
-    expectIssueOn("FORM_ANALYSIS_DAILY_RETRY_CAP", {
-      FORM_ANALYSIS_DAILY_RETRY_CAP: value,
+  describe("daily caps", () => {
+    const caps = [
+      { key: "AI_GENERATION_DAILY_CAP", max: 20 },
+      { key: "FORM_ANALYSIS_DAILY_CAP", max: 30 },
+      { key: "FORM_ANALYSIS_DAILY_RETRY_CAP", max: 10 },
+    ] as const;
+
+    it.for(caps)("accepts $key at its max of $max", ({ key, max }) => {
+      expect(parse({ [key]: String(max) })[key]).toBe(max);
+    });
+
+    it.for(
+      caps.flatMap(({ key, max }) => [
+        { key, value: "0" },
+        { key, value: String(max + 1) },
+      ]),
+    )("rejects $key of $value", ({ key, value }) => {
+      expectIssueOn(key, { [key]: value });
     });
   });
 
