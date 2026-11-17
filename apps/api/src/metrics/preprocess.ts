@@ -72,6 +72,10 @@ const windowed = (
     return [reducer(xs), reducer(ys)] as const;
   });
 
+/**
+ * Cleans one joint's track so metrics measure real movement, not model noise:
+ * a median pass drops one-frame spikes, then a mean pass evens out jitter.
+ */
 const smooth = (track: (Point | null)[]): (Point | null)[] =>
   windowed(windowed(track, MEDIAN_RADIUS, median), AVERAGE_RADIUS, mean);
 

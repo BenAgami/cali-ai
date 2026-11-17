@@ -105,14 +105,19 @@ describe("toPoseSeries", () => {
 
 describe("chooseNearSide", () => {
   it("returns the chain with higher mean key-joint visibility", () => {
-    const frame = blankFrame(33, 0.3);
-    for (const i of [12, 14, 16, 24, 28]) frame[i][2] = 0.95;
-    const series = toPoseSeries(payloadOf([frame, frame]), "push_up");
+    const rightFacing = blankFrame(33, 0.3);
+    for (const i of [12, 14, 16, 24, 28]) rightFacing[i][2] = 0.95;
+    const series = toPoseSeries(
+      payloadOf([rightFacing, rightFacing]),
+      "push_up",
+    );
     expect(chooseNearSide(series)).toBe("right");
-    const left = blankFrame(33, 0.3);
-    for (const i of [11, 13, 15, 23, 27]) left[i][2] = 0.95;
+    const leftFacing = blankFrame(33, 0.3);
+    for (const i of [11, 13, 15, 23, 27]) leftFacing[i][2] = 0.95;
     expect(
-      chooseNearSide(toPoseSeries(payloadOf([left, left]), "push_up")),
+      chooseNearSide(
+        toPoseSeries(payloadOf([leftFacing, leftFacing]), "push_up"),
+      ),
     ).toBe("left");
   });
 
