@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { z } from "zod";
 import ms, { type StringValue } from "ms";
 
