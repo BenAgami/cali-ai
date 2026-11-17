@@ -10,7 +10,7 @@ import {
   UpdateWorkoutBody,
   WorkoutResponse,
   WorkoutRunResponse,
-  RecordedSet,
+  RecordedSetSummary,
   paginatedData,
   successResponse,
   errorResponse,
@@ -147,7 +147,7 @@ registry.registerPath({
     }),
   },
   responses: {
-    200: successResponse(paginatedData(RecordedSet), "Recorded sets"),
+    200: successResponse(paginatedData(RecordedSetSummary), "Recorded sets"),
     400: errorResponse("Invalid workout ID or paging parameters"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout not found"),

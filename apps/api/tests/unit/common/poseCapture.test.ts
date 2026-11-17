@@ -100,7 +100,7 @@ describe("quantizeCapture", () => {
 });
 
 describe("captureAcceptedResponseSchema", () => {
-  const accepted = { sessionId: 1, captureId: 2, jobId: "analysis-x" };
+  const accepted = { recordedSetId: 1, captureId: 2, jobId: "analysis-x" };
 
   it.each(["QUEUED", "PROCESSING", "COMPLETED"])(
     "accepts status %s",

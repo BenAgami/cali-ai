@@ -1,7 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { ExerciseType, SessionStatus, type getPrismaClient } from "@repo/db";
+import { ExerciseType, ProcessingStatus, type getPrismaClient } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -9,16 +9,16 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import {
-  listWorkoutSessions,
-  createWorkoutSession,
-} from "../helpers/requestSender/workoutSessionsRequests";
+  listRecordedSets,
+  createRecordedSet,
+} from "../helpers/requestSender/recordedSetsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
-import { WorkoutSessionBuilder } from "../builders/workoutSessionBuilder";
+import { RecordedSetBuilder } from "../builders/recordedSetBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("GET /api/workout-sessions", () => {
+describe("GET /api/recorded-sets", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -51,38 +51,38 @@ describe("GET /api/workout-sessions", () => {
     await teardownIntegrationTest(prisma);
   });
 
-  it("should list workout sessions with pagination", async () => {
+  it("should list recorded sets with pagination", async () => {
     const { token } = await registerReadyUser();
 
     const exercise = { code: "push_up" };
     const now = new Date();
 
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder()
+      new RecordedSetBuilder()
         .setExerciseCode(exercise.code)
         .setPerformedAt(new Date(now.getTime() - 1000 * 60).toISOString())
         .build(),
     );
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder()
+      new RecordedSetBuilder()
         .setExerciseCode(exercise.code)
         .setPerformedAt(new Date(now.getTime() - 1000 * 60 * 2).toISOString())
         .build(),
     );
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder()
+      new RecordedSetBuilder()
         .setExerciseCode(exercise.code)
         .setPerformedAt(new Date(now.getTime() - 1000 * 60 * 3).toISOString())
         .build(),
     );
 
-    const response = await listWorkoutSessions(app, token, {
+    const response = await listRecordedSets(app, token, {
       limit: 2,
       offset: 0,
     });
@@ -100,38 +100,38 @@ describe("GET /api/workout-sessions", () => {
     );
   });
 
-  it("should return remaining sessions when using offset", async () => {
+  it("should return remaining recorded sets when using offset", async () => {
     const { token } = await registerReadyUser();
 
     const exercise = { code: "push_up" };
     const now = new Date();
 
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder()
+      new RecordedSetBuilder()
         .setExerciseCode(exercise.code)
         .setPerformedAt(new Date(now.getTime() - 1000 * 60).toISOString())
         .build(),
     );
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder()
+      new RecordedSetBuilder()
         .setExerciseCode(exercise.code)
         .setPerformedAt(new Date(now.getTime() - 1000 * 60 * 2).toISOString())
         .build(),
     );
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder()
+      new RecordedSetBuilder()
         .setExerciseCode(exercise.code)
         .setPerformedAt(new Date(now.getTime() - 1000 * 60 * 3).toISOString())
         .build(),
     );
 
-    const response = await listWorkoutSessions(app, token, {
+    const response = await listRecordedSets(app, token, {
       limit: 2,
       offset: 2,
     });
@@ -142,7 +142,7 @@ describe("GET /api/workout-sessions", () => {
     expect(response.body.data.page.nextOffset).toBeNull();
   });
 
-  it("should filter sessions by exerciseCode", async () => {
+  it("should filter recorded sets by exerciseCode", async () => {
     const { token } = await registerReadyUser();
 
     const exerciseCodeA = "push_up";
@@ -150,18 +150,18 @@ describe("GET /api/workout-sessions", () => {
     const exerciseA = { code: exerciseCodeA };
     const exerciseB = { code: exerciseCodeB };
 
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder().setExerciseCode(exerciseA.code).build(),
+      new RecordedSetBuilder().setExerciseCode(exerciseA.code).build(),
     );
-    await createWorkoutSession(
+    await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder().setExerciseCode(exerciseB.code).build(),
+      new RecordedSetBuilder().setExerciseCode(exerciseB.code).build(),
     );
 
-    const response = await listWorkoutSessions(app, token, {
+    const response = await listRecordedSets(app, token, {
       exerciseCode: exerciseCodeA,
     });
 
@@ -180,40 +180,40 @@ describe("GET /api/workout-sessions", () => {
       data: { userId, name: "W" },
     });
 
-    const processing = await prisma.workoutSession.create({
+    const processing = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId: exercise.id,
         workoutId: workout.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         bullmqJobId: "analysis-1",
       },
     });
-    const completed = await prisma.workoutSession.create({
+    const completed = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId: exercise.id,
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
       },
     });
-    await prisma.workoutSession.create({
+    await prisma.recordedSet.create({
       data: {
         userId: other.userId,
         exerciseId: exercise.id,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
     });
     await prisma.analysisResult.create({
       data: {
-        sessionId: completed.id,
+        recordedSetId: completed.id,
         outcome: "SCORED",
         formScore: 88,
         summaryFeedback: "Nice",
       },
     });
 
-    const filtered = await listWorkoutSessions(app, token, {
+    const filtered = await listRecordedSets(app, token, {
       processingStatus: "PROCESSING",
     });
 
@@ -227,7 +227,7 @@ describe("GET /api/workout-sessions", () => {
       analysisResult: null,
     });
 
-    const all = await listWorkoutSessions(app, token);
+    const all = await listRecordedSets(app, token);
     const completedItem = all.body.data.items.find(
       (item: { id: number }) => item.id === completed.id,
     );
@@ -241,7 +241,7 @@ describe("GET /api/workout-sessions", () => {
   it("should return 400 for an invalid processingStatus", async () => {
     const { token } = await registerReadyUser();
 
-    const response = await listWorkoutSessions(app, token, {
+    const response = await listRecordedSets(app, token, {
       processingStatus: "BOGUS",
     });
 
@@ -249,7 +249,7 @@ describe("GET /api/workout-sessions", () => {
   });
 
   it("should return 401 if no token is provided", async () => {
-    const response = await listWorkoutSessions(app, undefined);
+    const response = await listRecordedSets(app, undefined);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
     expect(response.body.message).toBe(
@@ -260,7 +260,7 @@ describe("GET /api/workout-sessions", () => {
   it("should return 400 for invalid limit query", async () => {
     const { token } = await registerReadyUser();
 
-    const response = await listWorkoutSessions(app, token, {
+    const response = await listRecordedSets(app, token, {
       limit: 0,
     });
 

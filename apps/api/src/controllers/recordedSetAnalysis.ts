@@ -11,7 +11,7 @@ import { openSseStream } from "../lib/sse";
 
 /**
  * Accept an on-device pose capture and queue it for analysis
- * @route POST /api/sessions/:id/capture
+ * @route POST /api/recorded-sets/:id/capture
  */
 export const submitCapture = async (req: Request, res: Response) => {
   const userUuid = requireUserUuid(req, res);
@@ -32,7 +32,7 @@ export const submitCapture = async (req: Request, res: Response) => {
 
 /**
  * Re-queue a FAILED analysis from its stored capture
- * @route POST /api/sessions/:id/analysis/retry
+ * @route POST /api/recorded-sets/:id/analysis/retry
  */
 export const retryAnalysis = async (req: Request, res: Response) => {
   const userUuid = requireUserUuid(req, res);
@@ -51,14 +51,14 @@ export const retryAnalysis = async (req: Request, res: Response) => {
 };
 
 /**
- * Get the analysis result for a completed session (no raw score)
- * @route GET /api/sessions/:id/analysis
+ * Get the analysis result for a completed recorded set (no raw score)
+ * @route GET /api/recorded-sets/:id/analysis
  */
-export const getSessionAnalysis = async (req: Request, res: Response) => {
+export const getRecordedSetAnalysis = async (req: Request, res: Response) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const data = await analysisResultQueryService.getSessionAnalysis(
+  const data = await analysisResultQueryService.getRecordedSetAnalysis(
     userUuid,
     Number(req.params.id),
   );
@@ -71,19 +71,19 @@ export const getSessionAnalysis = async (req: Request, res: Response) => {
 };
 
 /**
- * Stream analysis status events (SSE) for a session
- * @route GET /api/sessions/:id/status
+ * Stream analysis status events (SSE) for a recorded set
+ * @route GET /api/recorded-sets/:id/status
  */
 export const streamAnalysisStatus = async (req: Request, res: Response) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const sessionId = Number(req.params.id);
+  const recordedSetId = Number(req.params.id);
 
-  await analysisStreamService.assertStreamable(userUuid, sessionId);
+  await analysisStreamService.assertStreamable(userUuid, recordedSetId);
 
   const stream = openSseStream(req, res);
-  await analysisStreamService.streamProgressToSink(sessionId, {
+  await analysisStreamService.streamProgressToSink(recordedSetId, {
     send: (event) => stream.send("status", event),
     close: stream.close,
     onClose: stream.onClose,

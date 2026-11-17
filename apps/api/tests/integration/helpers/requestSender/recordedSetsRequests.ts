@@ -1,14 +1,14 @@
 import type { Application } from "express";
 import supertest from "supertest";
 
-export const createWorkoutSession = async (
+export const createRecordedSet = async (
   app: Application,
   token: string | undefined,
   data: object,
 ) => {
   const request = supertest
     .agent(app)
-    .post("/api/workout-sessions")
+    .post("/api/recorded-sets")
     .set("Content-Type", "application/json");
 
   if (token) {
@@ -18,12 +18,12 @@ export const createWorkoutSession = async (
   return request.send(data);
 };
 
-export const listWorkoutSessions = async (
+export const listRecordedSets = async (
   app: Application,
   token: string | undefined,
   query?: Record<string, string | number | undefined>,
 ) => {
-  const request = supertest.agent(app).get("/api/workout-sessions");
+  const request = supertest.agent(app).get("/api/recorded-sets");
 
   if (token) {
     request.set("Authorization", `Bearer ${token}`);

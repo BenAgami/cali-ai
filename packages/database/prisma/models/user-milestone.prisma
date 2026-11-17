@@ -7,8 +7,8 @@ model UserMilestone {
   milestoneDefinition   MilestoneDefinition @relation(fields: [milestoneDefinitionId], references: [id])
   milestoneDefinitionId Int                 @map("milestone_definition_id")
 
-  session   WorkoutSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
-  sessionId Int?            @map("session_id")
+  recordedSet   RecordedSet? @relation(fields: [recordedSetId], references: [id], onDelete: SetNull)
+  recordedSetId Int?         @map("recorded_set_id")
 
   unlockedAt DateTime @default(now()) @map("unlocked_at")
 

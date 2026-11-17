@@ -76,10 +76,10 @@ const WorkoutExecuteScreen: React.FC = () => {
     }, [id, phase, currentSet, completeSet]),
   );
 
-  const handleOpenResult = (sessionId: number) => {
+  const handleOpenResult = (recordedSetId: number) => {
     router.push({
       pathname: "/analysis-result",
-      params: { sessionId: String(sessionId) },
+      params: { recordedSetId: String(recordedSetId) },
     });
   };
 
@@ -285,11 +285,11 @@ const WorkoutExecuteScreen: React.FC = () => {
         <ScrollView style={styles.recordedRows}>
           {recorded.items.map((item) => (
             <RecordedSetCard
-              key={item.sessionId}
+              key={item.recordedSetId}
               item={item}
               onOpen={handleOpenResult}
-              onRetry={(sessionId) => void recorded.retrySet(sessionId)}
-              isRetrying={recorded.retryingIds.has(item.sessionId)}
+              onRetry={(recordedSetId) => void recorded.retrySet(recordedSetId)}
+              isRetrying={recorded.retryingIds.has(item.recordedSetId)}
             />
           ))}
           {recorded.hasMore && (

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ANALYSIS_STAGES, SESSION_STATUSES } from "./analysis";
+import { ANALYSIS_STAGES, PROCESSING_STATUSES } from "./analysis";
 import { paginatedSchema } from "./pagination";
 
 export const FORM_ANALYSIS_EXERCISES = [
@@ -202,7 +202,7 @@ export const formDimensionResultSchema = z.object({
 });
 
 const analysisBase = {
-  sessionId: z.number().int(),
+  recordedSetId: z.number().int(),
   workoutId: z.number().int().nullable(),
   openWorkoutRunId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
@@ -231,15 +231,15 @@ export const formAnalysisResponseSchema = z.discriminatedUnion("outcome", [
 ]);
 export type FormAnalysisResponse = z.infer<typeof formAnalysisResponseSchema>;
 
-export const recordedSetSchema = z.object({
-  sessionId: z.number().int(),
+export const recordedSetSummarySchema = z.object({
+  recordedSetId: z.number().int(),
   workoutId: z.number().int(),
   workoutRunId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   exerciseCode: z.string(),
   exerciseDisplayName: z.string(),
   performedAt: z.string(),
-  processingStatus: z.enum(SESSION_STATUSES),
+  processingStatus: z.enum(PROCESSING_STATUSES),
   analysisStage: z.enum(ANALYSIS_STAGES).nullable(),
   analysisStageProgress: z.number().nullable(),
   failureReason: z.string().nullable(),
@@ -247,7 +247,7 @@ export const recordedSetSchema = z.object({
   outcome: z.enum(ANALYSIS_OUTCOMES).nullable(),
   band: z.enum(FORM_BANDS).nullable(),
 });
-export type RecordedSet = z.infer<typeof recordedSetSchema>;
+export type RecordedSetSummary = z.infer<typeof recordedSetSummarySchema>;
 
-export const recordedSetPageSchema = paginatedSchema(recordedSetSchema);
+export const recordedSetPageSchema = paginatedSchema(recordedSetSummarySchema);
 export type RecordedSetPage = z.infer<typeof recordedSetPageSchema>;

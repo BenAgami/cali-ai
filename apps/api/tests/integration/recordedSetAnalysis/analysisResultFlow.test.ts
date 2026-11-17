@@ -16,11 +16,11 @@ import {
 import { closeQueueConnections, resetAnalysisQueue } from "../helpers/queue";
 import { openSse, type SseConnection } from "../helpers/sseClient";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { createWorkoutSession } from "../helpers/requestSender/workoutSessionsRequests";
+import { createRecordedSet } from "../helpers/requestSender/recordedSetsRequests";
 import {
-  getSessionAnalysis,
+  getRecordedSetAnalysis,
   submitCapture,
-} from "../helpers/requestSender/sessionsRequests";
+} from "../helpers/requestSender/recordedSetAnalysisRequests";
 import { getRecordedSets } from "../helpers/requestSender/workoutsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
@@ -103,25 +103,25 @@ describe("recorded set analysis result flow (FORM-08)", () => {
       exercises: [{ exerciseId, position: 1 }],
     });
 
-    const created = await createWorkoutSession(app, token, {
+    const created = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
       workoutId: workout.id,
       setNumber: 1,
     });
     expect(created.status).toBe(StatusCodes.CREATED);
-    const sessionId = created.body.data.id as number;
+    const recordedSetId = created.body.data.id as number;
 
     const accepted = await submitCapture(
       app,
       token,
-      sessionId,
+      recordedSetId,
       buildSyntheticCapture({ exercise: "push_up", reps: 5 }),
     );
     expect(accepted.status).toBe(StatusCodes.ACCEPTED);
 
     const connection = await openSse(
       baseUrl,
-      `/api/sessions/${sessionId}/status`,
+      `/api/recorded-sets/${recordedSetId}/status`,
       token,
     );
     connections.push(connection);
@@ -135,10 +135,10 @@ describe("recorded set analysis result flow (FORM-08)", () => {
       { timeout: 20_000, interval: 100 },
     );
 
-    const analysis = await getSessionAnalysis(app, token, sessionId);
+    const analysis = await getRecordedSetAnalysis(app, token, recordedSetId);
     expect(analysis.status).toBe(StatusCodes.OK);
     expect(analysis.body.data).toMatchObject({
-      sessionId,
+      recordedSetId,
       outcome: "SCORED",
       repCount: 5,
     });
@@ -156,7 +156,7 @@ describe("recorded set analysis result flow (FORM-08)", () => {
     expect(recorded.status).toBe(StatusCodes.OK);
     expect(recorded.body.data.items).toHaveLength(1);
     expect(recorded.body.data.items[0]).toMatchObject({
-      sessionId,
+      recordedSetId,
       setNumber: 1,
       outcome: "SCORED",
       band: analysis.body.data.band,

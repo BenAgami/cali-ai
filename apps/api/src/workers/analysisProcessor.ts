@@ -52,12 +52,12 @@ const toProcessingError = (error: unknown): unknown => {
 export const processAnalysisJob = async (
   job: Job<AnalysisJobData>,
 ): Promise<void> => {
-  const { sessionId, captureId } = job.data;
+  const { recordedSetId, captureId } = job.data;
   const jobId = job.id ?? "";
-  const log = logger.child({ jobId, sessionId });
+  const log = logger.child({ jobId, recordedSetId });
 
   const capture = await analysisStateService.getCaptureForJob(
-    sessionId,
+    recordedSetId,
     captureId,
   );
   if (!capture?.keypoints) {
@@ -65,14 +65,14 @@ export const processAnalysisJob = async (
   }
 
   const jobContext =
-    await analysisStateService.getAnalysisJobContext(sessionId);
+    await analysisStateService.getAnalysisJobContext(recordedSetId);
   if (!jobContext || !isFormAnalysisExercise(jobContext.exerciseCode)) {
     throw new UnrecoverableError("ANALYSIS_ERROR");
   }
   const { exerciseCode } = jobContext;
 
   await analysisStateService.advanceStage(
-    sessionId,
+    recordedSetId,
     jobId,
     "ANALYZING_REPS",
     0,
@@ -100,7 +100,7 @@ export const processAnalysisJob = async (
   }
 
   await analysisStateService.advanceStage(
-    sessionId,
+    recordedSetId,
     jobId,
     "ANALYZING_REPS",
     1,
@@ -114,9 +114,10 @@ export const processAnalysisJob = async (
     );
 
     const isCompleted = await analysisStateService.completeRunWithResult(
-      sessionId,
+      recordedSetId,
       jobId,
-      (tx) => formAnalysisResultService.saveUntrackable(tx, sessionId, metrics),
+      (tx) =>
+        formAnalysisResultService.saveUntrackable(tx, recordedSetId, metrics),
       log,
     );
     if (!isCompleted) {
@@ -134,10 +135,10 @@ export const processAnalysisJob = async (
     "Form metrics computed",
   );
 
-  // advanceStage is guarded on this job owning a PROCESSING session, so false
+  // advanceStage is guarded on this job owning a PROCESSING recorded set, so false
   // means a newer run replaced it; skip the LLM call it would pay for.
   const isRunActive = await analysisStateService.advanceStage(
-    sessionId,
+    recordedSetId,
     jobId,
     "WRITING_FEEDBACK",
     0,
@@ -183,10 +184,10 @@ export const processAnalysisJob = async (
   }
 
   const isCompleted = await analysisStateService.completeRunWithResult(
-    sessionId,
+    recordedSetId,
     jobId,
     (tx) =>
-      formAnalysisResultService.saveScored(tx, sessionId, metrics, outcome),
+      formAnalysisResultService.saveScored(tx, recordedSetId, metrics, outcome),
     log,
   );
   if (!isCompleted) {
@@ -201,7 +202,7 @@ export const onAnalysisJobFailed = async (
   if (!job) return;
 
   const jobId = job.id ?? "";
-  const log = logger.child({ jobId, sessionId: job.data.sessionId });
+  const log = logger.child({ jobId, recordedSetId: job.data.recordedSetId });
 
   const isFinal =
     error instanceof UnrecoverableError ||
@@ -217,7 +218,7 @@ export const onAnalysisJobFailed = async (
 
   log.error({ err: error }, "Analysis job failed permanently");
   await analysisStateService.failRun(
-    job.data.sessionId,
+    job.data.recordedSetId,
     jobId,
     toFailureReason(error),
     log,

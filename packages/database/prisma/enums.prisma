@@ -29,7 +29,7 @@ enum ExerciseType {
   STATIC_HOLD
 }
 
-enum SessionStatus {
+enum ProcessingStatus {
   PENDING
   PROCESSING
   COMPLETED

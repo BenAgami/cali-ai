@@ -7,12 +7,12 @@ import type { PoseCapturePayload } from "@repo/common";
 export const submitCapture = async (
   app: Application,
   token: string | undefined,
-  sessionId: number | string,
+  recordedSetId: number | string,
   payload: PoseCapturePayload | Record<string, unknown>,
 ) => {
   const request = supertest
     .agent(app)
-    .post(`/api/sessions/${sessionId}/capture`);
+    .post(`/api/recorded-sets/${recordedSetId}/capture`);
 
   if (token) {
     request.set("Authorization", `Bearer ${token}`);
@@ -27,13 +27,13 @@ export const submitCapture = async (
 export const submitRawCapture = async (
   app: Application,
   token: string,
-  sessionId: number | string,
+  recordedSetId: number | string,
   bytes: Buffer,
   contentType = "application/gzip",
 ) =>
   supertest
     .agent(app)
-    .post(`/api/sessions/${sessionId}/capture`)
+    .post(`/api/recorded-sets/${recordedSetId}/capture`)
     .set("Authorization", `Bearer ${token}`)
     .set("Content-Type", contentType)
     .serialize(((body: Buffer) => body) as unknown as (obj: unknown) => string)
@@ -42,11 +42,11 @@ export const submitRawCapture = async (
 export const retryAnalysis = async (
   app: Application,
   token: string | undefined,
-  sessionId: number | string,
+  recordedSetId: number | string,
 ) => {
   const request = supertest
     .agent(app)
-    .post(`/api/sessions/${sessionId}/analysis/retry`);
+    .post(`/api/recorded-sets/${recordedSetId}/analysis/retry`);
 
   if (token) {
     request.set("Authorization", `Bearer ${token}`);
@@ -58,9 +58,11 @@ export const retryAnalysis = async (
 export const getAnalysisStatus = async (
   app: Application,
   token: string | undefined,
-  sessionId: number | string,
+  recordedSetId: number | string,
 ) => {
-  const request = supertest.agent(app).get(`/api/sessions/${sessionId}/status`);
+  const request = supertest
+    .agent(app)
+    .get(`/api/recorded-sets/${recordedSetId}/status`);
 
   if (token) {
     request.set("Authorization", `Bearer ${token}`);
@@ -69,14 +71,14 @@ export const getAnalysisStatus = async (
   return request;
 };
 
-export const getSessionAnalysis = async (
+export const getRecordedSetAnalysis = async (
   app: Application,
   token: string | undefined,
-  sessionId: number | string,
+  recordedSetId: number | string,
 ) => {
   const request = supertest
     .agent(app)
-    .get(`/api/sessions/${sessionId}/analysis`);
+    .get(`/api/recorded-sets/${recordedSetId}/analysis`);
 
   if (token) {
     request.set("Authorization", `Bearer ${token}`);

@@ -11,7 +11,7 @@ import {
   type RecordedSetsQuery,
   type UntrackableReason,
 } from "@repo/common";
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import { ConflictError, InternalError, NotFoundError } from "../errors";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
@@ -33,14 +33,14 @@ export class AnalysisResultQueryService {
     return getPrismaClient();
   }
 
-  async getSessionAnalysis(
+  async getRecordedSetAnalysis(
     userUuid: string,
-    sessionId: number,
+    recordedSetId: number,
   ): Promise<FormAnalysisResponse> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
-    const session = await this.prisma.workoutSession.findFirst({
-      where: { id: sessionId, userId },
+    const recordedSet = await this.prisma.recordedSet.findFirst({
+      where: { id: recordedSetId, userId },
       select: {
         id: true,
         workoutId: true,
@@ -74,27 +74,32 @@ export class AnalysisResultQueryService {
       },
     });
 
-    if (!session) {
-      throw new NotFoundError("Workout session not found");
+    if (!recordedSet) {
+      throw new NotFoundError("Recorded set not found");
     }
 
-    const result = session.analysisResult;
-    if (session.processingStatus !== SessionStatus.COMPLETED || !result) {
+    const result = recordedSet.analysisResult;
+    if (
+      recordedSet.processingStatus !== ProcessingStatus.COMPLETED ||
+      !result
+    ) {
       throw new ConflictError(
         "Analysis is not ready yet",
         "ANALYSIS_NOT_READY",
       );
     }
 
-    const exerciseCode = session.exercise.code;
+    const exerciseCode = recordedSet.exercise.code;
     const base = {
-      sessionId: session.id,
-      workoutId: session.workoutId,
+      recordedSetId: recordedSet.id,
+      workoutId: recordedSet.workoutId,
       openWorkoutRunId:
-        session.workoutRun?.completedAt === null ? session.workoutRun.id : null,
-      setNumber: session.setNumber,
+        recordedSet.workoutRun?.completedAt === null
+          ? recordedSet.workoutRun.id
+          : null,
+      setNumber: recordedSet.setNumber,
       exerciseCode,
-      exerciseDisplayName: session.exercise.displayName,
+      exerciseDisplayName: recordedSet.exercise.displayName,
       analyzedAt: result.analyzedAt.toISOString(),
     };
 
@@ -175,13 +180,13 @@ export class AnalysisResultQueryService {
       throw new NotFoundError("Workout not found");
     }
 
-    const sessions = await this.prisma.workoutSession.findMany({
+    const recordedSets = await this.prisma.recordedSet.findMany({
       // PENDING means no capture was accepted, so there is nothing to show.
       where: {
         workoutId,
         userId,
         workoutRunId: query.workoutRunId,
-        processingStatus: { not: SessionStatus.PENDING },
+        processingStatus: { not: ProcessingStatus.PENDING },
       },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
       skip: query.offset,
@@ -202,21 +207,21 @@ export class AnalysisResultQueryService {
       },
     });
 
-    const mapped = sessions.map((session) => {
-      const result = session.analysisResult;
+    const mapped = recordedSets.map((recordedSet) => {
+      const result = recordedSet.analysisResult;
       return {
-        sessionId: session.id,
-        workoutId: session.workoutId,
-        workoutRunId: session.workoutRunId,
-        setNumber: session.setNumber,
-        exerciseCode: session.exercise.code,
-        exerciseDisplayName: session.exercise.displayName,
-        performedAt: session.performedAt.toISOString(),
-        processingStatus: session.processingStatus,
-        analysisStage: session.analysisStage,
-        analysisStageProgress: session.analysisStageProgress,
-        failureReason: session.failureReason,
-        bullmqJobId: session.bullmqJobId,
+        recordedSetId: recordedSet.id,
+        workoutId: recordedSet.workoutId,
+        workoutRunId: recordedSet.workoutRunId,
+        setNumber: recordedSet.setNumber,
+        exerciseCode: recordedSet.exercise.code,
+        exerciseDisplayName: recordedSet.exercise.displayName,
+        performedAt: recordedSet.performedAt.toISOString(),
+        processingStatus: recordedSet.processingStatus,
+        analysisStage: recordedSet.analysisStage,
+        analysisStageProgress: recordedSet.analysisStageProgress,
+        failureReason: recordedSet.failureReason,
+        bullmqJobId: recordedSet.bullmqJobId,
         outcome: result?.outcome ?? null,
         band:
           result?.outcome === "SCORED" && result.formScore !== null

@@ -11,7 +11,7 @@ import {
   upsertGoalSchema,
   createWorkoutSchema,
   updateWorkoutSchema,
-  createWorkoutSessionSchema,
+  createRecordedSetSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
   exerciseDetailSchema,
@@ -22,9 +22,9 @@ import {
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
   formAnalysisResponseSchema,
-  recordedSetSchema,
-  workoutSessionResponseSchema,
-  workoutSessionListItemSchema,
+  recordedSetSummarySchema,
+  recordedSetResponseSchema,
+  recordedSetListItemSchema,
   bodyMetricInputSchema,
   aiConsentSchema,
   saveBodyMetricResponseSchema,
@@ -92,9 +92,9 @@ export const GenerateWorkoutBody = registry.register(
   "GenerateWorkoutBody",
   generateWorkoutSchema,
 );
-export const CreateWorkoutSessionBody = registry.register(
-  "CreateWorkoutSessionBody",
-  createWorkoutSessionSchema,
+export const CreateRecordedSetBody = registry.register(
+  "CreateRecordedSetBody",
+  createRecordedSetSchema,
 );
 registry.register("PoseCaptureBody", poseCapturePayloadSchema);
 
@@ -313,16 +313,16 @@ export const WorkoutRunResponse = registry.register(
   workoutRunResponseSchema,
 );
 
-// ── Workout session responses ─────────────────────────────────────────────────
+// ── Recorded set responses ─────────────────────────────────────────────────
 
-export const WorkoutSessionResponse = registry.register(
-  "WorkoutSession",
-  workoutSessionResponseSchema,
+export const RecordedSetResponse = registry.register(
+  "RecordedSet",
+  recordedSetResponseSchema,
 );
 
-export const WorkoutSessionListItem = registry.register(
-  "WorkoutSessionListItem",
-  workoutSessionListItemSchema,
+export const RecordedSetListItem = registry.register(
+  "RecordedSetListItem",
+  recordedSetListItemSchema,
 );
 
 export const CaptureAccepted = registry.register(
@@ -337,4 +337,7 @@ export const FormAnalysisResponse = registry.register(
   formAnalysisResponseSchema,
 );
 
-export const RecordedSet = registry.register("RecordedSet", recordedSetSchema);
+export const RecordedSetSummary = registry.register(
+  "RecordedSetSummary",
+  recordedSetSummarySchema,
+);

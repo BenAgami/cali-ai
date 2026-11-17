@@ -1,4 +1,4 @@
-import { SessionStatus } from "@repo/db";
+import { ProcessingStatus } from "@repo/db";
 import type { AnalysisStatusEvent } from "@repo/common";
 
 import { ConflictError } from "../errors";
@@ -14,14 +14,19 @@ export type AnalysisStreamSink = {
 };
 
 class AnalysisStreamService {
-  async assertStreamable(userUuid: string, sessionId: number): Promise<void> {
-    const session = await analysisStateService.findOwnedSession(
+  async assertStreamable(
+    userUuid: string,
+    recordedSetId: number,
+  ): Promise<void> {
+    const recordedSet = await analysisStateService.findOwnedRecordedSet(
       userUuid,
-      sessionId,
+      recordedSetId,
     );
 
-    if (session.processingStatus === SessionStatus.PENDING) {
-      throw new ConflictError("No analysis has been started for this session");
+    if (recordedSet.processingStatus === ProcessingStatus.PENDING) {
+      throw new ConflictError(
+        "No analysis has been started for this recorded set",
+      );
     }
   }
 
@@ -31,7 +36,7 @@ class AnalysisStreamService {
    * error handler can't change it. Failures are logged and the sink is closed.
    */
   async streamProgressToSink(
-    sessionId: number,
+    recordedSetId: number,
     sink: AnalysisStreamSink,
   ): Promise<void> {
     let lastPercent = -1;
@@ -47,21 +52,21 @@ class AnalysisStreamService {
     };
 
     try {
-      const unsubscribe = await subscribeToAnalysisEvents(sessionId, emit);
+      const unsubscribe = await subscribeToAnalysisEvents(recordedSetId, emit);
       sink.onClose(() => {
         unsubscribe().catch((error: unknown) => {
           logger.warn(
-            { err: toError(error), sessionId },
+            { err: toError(error), recordedSetId },
             "Failed to unsubscribe analysis stream",
           );
         });
       });
 
-      const current = await analysisStateService.getStatusEvent(sessionId);
+      const current = await analysisStateService.getStatusEvent(recordedSetId);
       if (current) emit(current);
     } catch (error) {
       logger.error(
-        { err: toError(error), sessionId },
+        { err: toError(error), recordedSetId },
         "Failed to stream analysis progress",
       );
       sink.close();

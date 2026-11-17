@@ -10,7 +10,7 @@ model Exercise {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  workoutSessions  WorkoutSession[]
+  recordedSets     RecordedSet[]
   workoutExercises WorkoutExercise[]
 
   @@map("exercises")

@@ -15,19 +15,19 @@ import {
 import { closeQueueConnections, resetAnalysisQueue } from "../helpers/queue";
 import { openSse, type SseConnection } from "../helpers/sseClient";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { createWorkoutSession } from "../helpers/requestSender/workoutSessionsRequests";
+import { createRecordedSet } from "../helpers/requestSender/recordedSetsRequests";
 import {
   getAnalysisStatus,
   submitCapture,
-} from "../helpers/requestSender/sessionsRequests";
+} from "../helpers/requestSender/recordedSetAnalysisRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
-import { WorkoutSessionBuilder } from "../builders/workoutSessionBuilder";
+import { RecordedSetBuilder } from "../builders/recordedSetBuilder";
 
-describe("GET /api/sessions/:id/status", () => {
+describe("GET /api/recorded-sets/:id/status", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let server: Server;
@@ -47,34 +47,34 @@ describe("GET /api/sessions/:id/status", () => {
     return res.body.data.token as string;
   };
 
-  const pendingSession = async (): Promise<number> => {
-    const res = await createWorkoutSession(
+  const pendingRecordedSet = async (): Promise<number> => {
+    const res = await createRecordedSet(
       app,
       token,
-      new WorkoutSessionBuilder().setExerciseCode(exerciseCode).build(),
+      new RecordedSetBuilder().setExerciseCode(exerciseCode).build(),
     );
     return res.body.data.id as number;
   };
 
-  const queuedSession = async () => {
-    const sessionId = await pendingSession();
+  const queuedRecordedSet = async () => {
+    const recordedSetId = await pendingRecordedSet();
     const accepted = await submitCapture(
       app,
       token,
-      sessionId,
+      recordedSetId,
       new PoseCaptureBuilder().setFrames(30).build(),
     );
     expect(accepted.status).toBe(StatusCodes.ACCEPTED);
-    return { sessionId, jobId: accepted.body.data.jobId as string };
+    return { recordedSetId, jobId: accepted.body.data.jobId as string };
   };
 
   const connect = async (
-    sessionId: number,
+    recordedSetId: number,
     bearer: string | undefined = token,
   ) => {
     const connection = await openSse(
       baseUrl,
-      `/api/sessions/${sessionId}/status`,
+      `/api/recorded-sets/${recordedSetId}/status`,
       bearer,
     );
     connections.push(connection);
@@ -108,35 +108,35 @@ describe("GET /api/sessions/:id/status", () => {
   });
 
   it("responds 200 with an event-stream content type", async () => {
-    const { sessionId } = await queuedSession();
+    const { recordedSetId } = await queuedRecordedSet();
 
-    const connection = await connect(sessionId);
+    const connection = await connect(recordedSetId);
 
     expect(connection.statusCode).toBe(StatusCodes.OK);
     expect(connection.headers["content-type"]).toMatch(/^text\/event-stream/);
   });
 
   it("streams the live transitions in order and closes on COMPLETED", async () => {
-    const { sessionId, jobId } = await queuedSession();
-    const connection = await connect(sessionId);
+    const { recordedSetId, jobId } = await queuedRecordedSet();
+    const connection = await connect(recordedSetId);
     await connection.waitForEvents(1);
 
     await analysisStateService.advanceStage(
-      sessionId,
+      recordedSetId,
       jobId,
       "ANALYZING_REPS",
       0,
     );
     await connection.waitForEvents(2);
     await analysisStateService.advanceStage(
-      sessionId,
+      recordedSetId,
       jobId,
       "WRITING_FEEDBACK",
       0,
     );
     await connection.waitForEvents(3);
     await analysisStateService.completeRunWithResult(
-      sessionId,
+      recordedSetId,
       jobId,
       async () => {},
     );
@@ -165,15 +165,15 @@ describe("GET /api/sessions/:id/status", () => {
   });
 
   it("gives a reconnecting client the current state first", async () => {
-    const { sessionId, jobId } = await queuedSession();
+    const { recordedSetId, jobId } = await queuedRecordedSet();
     await analysisStateService.advanceStage(
-      sessionId,
+      recordedSetId,
       jobId,
       "WRITING_FEEDBACK",
       0,
     );
 
-    const connection = await connect(sessionId);
+    const connection = await connect(recordedSetId);
     const [first] = await connection.waitForEvents(1);
 
     expect(analysisStatusEventSchema.parse(first.data).stage).toBe(
@@ -181,15 +181,15 @@ describe("GET /api/sessions/:id/status", () => {
     );
   });
 
-  it("sends one COMPLETED event and ends for a completed session", async () => {
-    const { sessionId, jobId } = await queuedSession();
+  it("sends one COMPLETED event and ends for a completed recorded set", async () => {
+    const { recordedSetId, jobId } = await queuedRecordedSet();
     await analysisStateService.completeRunWithResult(
-      sessionId,
+      recordedSetId,
       jobId,
       async () => {},
     );
 
-    const connection = await connect(sessionId);
+    const connection = await connect(recordedSetId);
     await connection.ended;
 
     expect(connection.events).toHaveLength(1);
@@ -198,11 +198,11 @@ describe("GET /api/sessions/:id/status", () => {
     expect(event.progress_percent).toBe(100);
   });
 
-  it("sends one FAILED event with the reason and ends for a failed session", async () => {
-    const { sessionId, jobId } = await queuedSession();
-    await analysisStateService.failRun(sessionId, jobId, "TIMEOUT");
+  it("sends one FAILED event with the reason and ends for a failed recorded set", async () => {
+    const { recordedSetId, jobId } = await queuedRecordedSet();
+    await analysisStateService.failRun(recordedSetId, jobId, "TIMEOUT");
 
-    const connection = await connect(sessionId);
+    const connection = await connect(recordedSetId);
     await connection.ended;
 
     expect(connection.events).toHaveLength(1);
@@ -212,29 +212,29 @@ describe("GET /api/sessions/:id/status", () => {
   });
 
   it("returns 401 without a token", async () => {
-    const { sessionId } = await queuedSession();
+    const { recordedSetId } = await queuedRecordedSet();
 
-    const response = await getAnalysisStatus(app, undefined, sessionId);
+    const response = await getAnalysisStatus(app, undefined, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
-  it("returns 404 for another user's session", async () => {
-    const { sessionId } = await queuedSession();
+  it("returns 404 for another user's recorded set", async () => {
+    const { recordedSetId } = await queuedRecordedSet();
 
     const response = await getAnalysisStatus(
       app,
       await registerToken(),
-      sessionId,
+      recordedSetId,
     );
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
 
-  it("returns 409 for a PENDING session", async () => {
-    const sessionId = await pendingSession();
+  it("returns 409 for a PENDING recorded set", async () => {
+    const recordedSetId = await pendingRecordedSet();
 
-    const response = await getAnalysisStatus(app, token, sessionId);
+    const response = await getAnalysisStatus(app, token, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
   });

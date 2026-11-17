@@ -1,19 +1,19 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { getSessionAnalysis } from "../helpers/requestSender/sessionsRequests";
+import { getRecordedSetAnalysis } from "../helpers/requestSender/recordedSetAnalysisRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("GET /api/sessions/:id/analysis", () => {
+describe("GET /api/recorded-sets/:id/analysis", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let exerciseId: number;
@@ -29,12 +29,12 @@ describe("GET /api/sessions/:id/analysis", () => {
   };
 
   const seedScored = async (userId: number) => {
-    const session = await prisma.workoutSession.create({
+    const recordedSet = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         setNumber: 1,
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
         analysisResult: {
           create: {
             outcome: "SCORED",
@@ -80,7 +80,7 @@ describe("GET /api/sessions/:id/analysis", () => {
       },
       select: { id: true },
     });
-    return session.id;
+    return recordedSet.id;
   };
 
   beforeAll(async () => {
@@ -94,13 +94,13 @@ describe("GET /api/sessions/:id/analysis", () => {
 
   it("returns the scored result without exposing formScore", async () => {
     const { userId, token } = await newUser();
-    const sessionId = await seedScored(userId);
+    const recordedSetId = await seedScored(userId);
 
-    const response = await getSessionAnalysis(app, token, sessionId);
+    const response = await getRecordedSetAnalysis(app, token, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data).toMatchObject({
-      sessionId,
+      recordedSetId,
       outcome: "SCORED",
       band: "GOOD",
       repCount: 8,
@@ -117,11 +117,11 @@ describe("GET /api/sessions/:id/analysis", () => {
 
   it("returns reasons and advice for an untrackable set", async () => {
     const { userId, token } = await newUser();
-    const session = await prisma.workoutSession.create({
+    const recordedSet = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
         analysisResult: {
           create: {
             outcome: "UNTRACKABLE",
@@ -132,7 +132,7 @@ describe("GET /api/sessions/:id/analysis", () => {
       select: { id: true },
     });
 
-    const response = await getSessionAnalysis(app, token, session.id);
+    const response = await getRecordedSetAnalysis(app, token, recordedSet.id);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.outcome).toBe("UNTRACKABLE");
@@ -143,33 +143,37 @@ describe("GET /api/sessions/:id/analysis", () => {
 
   it("returns 409 ANALYSIS_NOT_READY while PROCESSING", async () => {
     const { userId, token } = await newUser();
-    const session = await prisma.workoutSession.create({
+    const recordedSet = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
       select: { id: true },
     });
 
-    const response = await getSessionAnalysis(app, token, session.id);
+    const response = await getRecordedSetAnalysis(app, token, recordedSet.id);
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
     expect(response.body.code).toBe("ANALYSIS_NOT_READY");
   });
 
-  it("returns 404 for another user's session", async () => {
+  it("returns 404 for another user's recorded set", async () => {
     const owner = await newUser();
     const other = await newUser();
-    const sessionId = await seedScored(owner.userId);
+    const recordedSetId = await seedScored(owner.userId);
 
-    const response = await getSessionAnalysis(app, other.token, sessionId);
+    const response = await getRecordedSetAnalysis(
+      app,
+      other.token,
+      recordedSetId,
+    );
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
 
   it("returns 401 without a token", async () => {
-    const response = await getSessionAnalysis(app, undefined, 1);
+    const response = await getRecordedSetAnalysis(app, undefined, 1);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });

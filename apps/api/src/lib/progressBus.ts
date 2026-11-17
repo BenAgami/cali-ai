@@ -10,8 +10,8 @@ import { toError } from "../utils/toError";
 
 type Listener = (event: AnalysisStatusEvent) => void;
 
-const channelFor = (sessionId: number): string =>
-  `analysis:session:${sessionId}`;
+const channelFor = (recordedSetId: number): string =>
+  `analysis:recorded-set:${recordedSetId}`;
 
 let subscriber: IORedis | null = null;
 const listeners = new Map<string, Set<Listener>>();
@@ -61,16 +61,16 @@ export const publishAnalysisEvent = async (
   event: AnalysisStatusEvent,
 ): Promise<void> => {
   await redisConnection.publish(
-    channelFor(event.sessionId),
+    channelFor(event.recordedSetId),
     JSON.stringify(event),
   );
 };
 
 export const subscribeToAnalysisEvents = async (
-  sessionId: number,
+  recordedSetId: number,
   listener: Listener,
 ): Promise<() => Promise<void>> => {
-  const channel = channelFor(sessionId);
+  const channel = channelFor(recordedSetId);
   const sub = getSubscriber();
 
   let set = listeners.get(channel);

@@ -7,7 +7,7 @@ This model is designed for the MVP while staying compatible with near-term growt
 - Never persist video or frames; the phone sends keypoints only.
 - Keep raw keypoints only for users who consented to training use.
 - Persist structured outputs and labels, each with the versions that produced them.
-- Support session history and progress analytics.
+- Support recorded set history and progress analytics.
 - Keep tables query-friendly for mobile timelines and comparisons.
 
 ## 2. Core Relationships
@@ -16,11 +16,11 @@ This model is designed for the MVP while staying compatible with near-term growt
 erDiagram
     User ||--o{ BodyMetric : records
     User ||--o{ UserGoal : sets
-    User ||--o{ WorkoutSession : performs
-    Exercise ||--o{ WorkoutSession : selected_in
-    Workout ||--o{ WorkoutSession : recorded_in
-    WorkoutSession ||--o| PoseCapture : captures
-    WorkoutSession ||--o| AnalysisResult : produces
+    User ||--o{ RecordedSet : performs
+    Exercise ||--o{ RecordedSet : selected_in
+    Workout ||--o{ RecordedSet : recorded_in
+    RecordedSet ||--o| PoseCapture : captures
+    RecordedSet ||--o| AnalysisResult : produces
     AnalysisResult ||--o{ AnalysisFinding : contains
     PoseCapture ||--o{ FormLabel : labeled_by
     User ||--o{ TrainingConsent : grants
@@ -51,7 +51,7 @@ erDiagram
         timestamp updated_at
     }
 
-    WorkoutSession {
+    RecordedSet {
         int id PK
         int user_id FK
         int exercise_id FK
@@ -72,7 +72,7 @@ erDiagram
 
     AnalysisResult {
         int id PK
-        int session_id FK
+        int recorded_set_id FK
         string outcome
         int form_score
         text[] untrackable_reasons
@@ -98,7 +98,7 @@ erDiagram
 
     PoseCapture {
         int id PK
-        int session_id FK
+        int recorded_set_id FK
         bytes keypoints
         string keypoints_format
         string pose_model_name
@@ -136,7 +136,7 @@ erDiagram
 
 ### Phase 5 notes
 
-- `WorkoutSession.workoutId` is a nullable FK to `Workout` (SET NULL on delete, so the session survives workout deletion). `setNumber` is the 1-based set within the workout run. Several sessions may share one `(workoutId, setNumber)`: "Record again" creates a new session and the latest is shown.
+- `RecordedSet.workoutId` is a nullable FK to `Workout` (SET NULL on delete, so the recorded set survives workout deletion). `setNumber` is the 1-based set within the workout run. Several recorded sets may share one `(workoutId, setNumber)`: "Record again" creates a new recorded set and the latest is shown.
 - `AnalysisResult.outcome` is `SCORED` or `UNTRACKABLE`. `formScore` is null when `UNTRACKABLE`, and `untrackableReasons` lists why. Phase 7 trend queries must filter `outcome = SCORED`. `formScore` is stored but never returned to the app (FORM-04).
 - `AnalysisFinding.repNumbers` holds 1-based rep references (FORM-06).
 
@@ -178,7 +178,7 @@ erDiagram
 - `DYNAMIC`
 - `STATIC_HOLD`
 
-`SessionStatus`
+`ProcessingStatus`
 
 - `PENDING`
 - `PROCESSING`
@@ -239,7 +239,7 @@ Fields:
 - `goal_type` `GoalType`.
 - `title` VARCHAR(120).
 - `target_value` NUMERIC(10,2) NULL.
-- `target_unit` VARCHAR(30) NULL (example: `reps`, `seconds`, `sessions_week`).
+- `target_unit` VARCHAR(30) NULL (example: `reps`, `seconds`, `recordedSets_week`).
 - `target_date` DATE NULL.
 - `status` `GoalStatus` DEFAULT `ACTIVE`.
 - `completed_at` TIMESTAMPTZ NULL.
@@ -290,7 +290,7 @@ Indexes:
 
 - unique on `code`.
 
-### 4.5 `workout_sessions`
+### 4.5 `recorded_sets`
 
 Purpose: one user attempt (a captured set) for a selected exercise.
 
@@ -299,7 +299,7 @@ Fields:
 - `id` INT PK.
 - `user_id` INT FK -> `users(id)` ON DELETE CASCADE.
 - `exercise_id` INT FK -> `exercises(id)`.
-- `processing_status` `SessionStatus` DEFAULT `PENDING`.
+- `processing_status` `ProcessingStatus` DEFAULT `PENDING`.
 - `notes` TEXT NULL.
 - `performed_at` TIMESTAMPTZ DEFAULT `now()`.
 - `processing_started_at` TIMESTAMPTZ NULL.
@@ -313,23 +313,23 @@ Fields:
 
 Indexes:
 
-- `idx_sessions_user_performed_at_desc` on (`user_id`, `performed_at` DESC).
-- `idx_sessions_user_exercise_performed_at_desc` on (`user_id`, `exercise_id`, `performed_at` DESC).
-- `idx_sessions_processing_status` on (`processing_status`).
+- `idx_recorded_sets_user_performed_at_desc` on (`user_id`, `performed_at` DESC).
+- `idx_recorded_sets_user_exercise_performed_at_desc` on (`user_id`, `exercise_id`, `performed_at` DESC).
+- `idx_recorded_sets_processing_status` on (`processing_status`).
 
 Notes:
 
 - No video or frames are persisted. Capture metadata lives on `pose_captures`.
-- The keypoints live in `pose_captures`, not here, so session lists stay light.
+- The keypoints live in `pose_captures`, not here, so recorded set lists stay light.
 
 ### 4.6 `analysis_results`
 
-Purpose: structured AI output for a workout session.
+Purpose: structured AI output for a recorded set.
 
 Fields:
 
 - `id` INT PK.
-- `session_id` INT UNIQUE FK -> `workout_sessions(id)` ON DELETE CASCADE.
+- `recorded_set_id` INT UNIQUE FK -> `recorded_sets(id)` ON DELETE CASCADE.
 - `form_score` SMALLINT CHECK (`form_score BETWEEN 0 AND 100`).
 - `score_breakdown` JSONB NOT NULL DEFAULT `'{}'::jsonb`
   (example keys: `posture`, `range_of_motion`, `stability`, `symmetry`).
@@ -346,18 +346,18 @@ Fields:
 
 Indexes:
 
-- unique on `session_id`.
+- unique on `recorded_set_id`.
 - `idx_analysis_results_analyzed_at` on (`analyzed_at` DESC).
 
 ### 4.6a `pose_captures`
 
-Purpose: the keypoints a phone sent for one session. Separate from
-`workout_sessions` so session lists never load them.
+Purpose: the keypoints a phone sent for one recorded set. Separate from
+`recorded_sets` so recorded set lists never load them.
 
 Fields:
 
 - `id` INT PK.
-- `session_id` INT UNIQUE FK -> `workout_sessions(id)` ON DELETE CASCADE.
+- `recorded_set_id` INT UNIQUE FK -> `recorded_sets(id)` ON DELETE CASCADE.
 - `keypoints` BYTEA NULL (gzipped series; NULL after deletion).
 - `keypoints_format` VARCHAR(40) (payload format version).
 - `pose_model_name` VARCHAR(80), `pose_model_version` VARCHAR(40).
@@ -465,7 +465,7 @@ Purpose: system milestone catalog (seeded/static data).
 Fields:
 
 - `id` INT PK.
-- `code` VARCHAR(60) UNIQUE (example: `first_session`, `avg_score_80_push_up`).
+- `code` VARCHAR(60) UNIQUE (example: `first_recordedSet`, `avg_score_80_push_up`).
 - `name` VARCHAR(120).
 - `description` TEXT.
 - `is_active` BOOLEAN DEFAULT `true`.
@@ -480,7 +480,7 @@ Fields:
 - `id` INT PK.
 - `user_id` INT FK -> `users(id)` ON DELETE CASCADE.
 - `milestone_definition_id` INT FK -> `milestone_definitions(id)`.
-- `session_id` INT NULL FK -> `workout_sessions(id)` (optional trigger source).
+- `recorded_set_id` INT NULL FK -> `recorded_sets(id)` (optional trigger source).
 - `unlocked_at` TIMESTAMPTZ DEFAULT `now()`.
 
 Indexes:
@@ -490,16 +490,16 @@ Indexes:
 
 ## 6. Query Patterns This Supports
 
-- My session history: `workout_sessions` filtered by `user_id`, ordered by `performed_at DESC`.
-- My progress per exercise: join `workout_sessions` `analysis_results` by `exercise_id`.
-- Last N scores trend: `analysis_results` through session join, ordered by `analyzed_at`.
+- My recorded set history: `recorded_sets` filtered by `user_id`, ordered by `performed_at DESC`.
+- My progress per exercise: join `recorded_sets` `analysis_results` by `exercise_id`.
+- Last N scores trend: `analysis_results` through recorded set join, ordered by `analyzed_at`.
 - Most common mistakes: aggregate `analysis_findings.code` per user and exercise.
 - Goal and milestone dashboard: `user_goals` `user_milestones`.
 
 ## 7. Implementation Notes
 
 - Keep UUIDs for public APIs; keep integer IDs for relational performance.
-- Keep one `analysis_results` row per session in MVP (`session_id` unique).
+- Keep one `analysis_results` row per recorded set in MVP (`recorded_set_id` unique).
 - Persist structured AI output (`raw_feedback`/`score_breakdown`) and findings, not media files.
 - Seed `exercises` with MVP set: `push_up`, `pull_up`, `dip`, `squat`. Static holds (for example `plank`, `front_lever`) use `STATIC_HOLD` and are added with their research-based definitions.
 - Training exports select only captures where `training_consent` is true and `keypoints` is not NULL, and split by user.

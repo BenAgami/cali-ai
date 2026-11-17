@@ -58,7 +58,7 @@ import {
 
 const fakeTx = { marker: "tx" };
 
-type JobData = { sessionId: number; captureId: number };
+type JobData = { recordedSetId: number; captureId: number };
 
 const payload = (): PoseCapturePayload => ({
   version: 1,
@@ -95,7 +95,7 @@ const untrackable = {
 const makeJob = (extra: { attemptsMade?: number; attempts?: number } = {}) =>
   createFakeJob<JobData>({
     id: "job-1",
-    data: { sessionId: 7, captureId: 9 },
+    data: { recordedSetId: 7, captureId: 9 },
     ...extra,
   });
 
@@ -105,7 +105,7 @@ beforeEach(() => {
   mockState.advanceStage.mockResolvedValue(true);
   mockState.completeRunWithResult.mockImplementation(
     async (
-      _sessionId: number,
+      _recordedSetId: number,
       _jobId: string,
       write: (tx: unknown) => Promise<void>,
     ) => {
@@ -150,7 +150,7 @@ describe("processAnalysisJob", () => {
     expect(mockLogger.child).toHaveBeenCalledTimes(1);
     expect(mockLogger.child).toHaveBeenCalledWith({
       jobId: "job-1",
-      sessionId: 7,
+      recordedSetId: 7,
     });
     expect(mockState.getCaptureForJob).toHaveBeenCalledWith(7, 9);
     expect(mockCompute.computeFormMetrics).toHaveBeenCalledWith(
@@ -215,7 +215,7 @@ describe("processAnalysisJob", () => {
   it("skips the LLM call and save when a newer run replaced this job", async () => {
     await withCapture();
     mockState.advanceStage.mockImplementation(
-      (_sessionId: number, _jobId: string, stage: string) =>
+      (_recordedSetId: number, _jobId: string, stage: string) =>
         Promise.resolve(stage !== "WRITING_FEEDBACK"),
     );
 

@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import type { PoseCapturePayload } from "@repo/common";
 
-import { ApiError, sessionsApi } from "@src/api";
+import { ApiError, recordedSetsApi } from "@src/api";
 import { useAnalysisStatus } from "./useAnalysisStatus";
 
 type PipelinePhase = "idle" | "creating" | "uploading" | "watching" | "error";
@@ -35,25 +35,27 @@ const toMessage = (err: unknown): string =>
 
 export const usePipelineCheck = () => {
   const [phase, setPhase] = useState<PipelinePhase>("idle");
-  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [recordedSetId, setRecordedSetId] = useState<number | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const { event, error: streamError } = useAnalysisStatus(sessionId, jobId);
+  const { event, error: streamError } = useAnalysisStatus(recordedSetId, jobId);
 
   const run = useCallback(async () => {
     setErrorMessage(null);
     setJobId(null);
-    setSessionId(null);
+    setRecordedSetId(null);
     try {
       setPhase("creating");
-      const session = await sessionsApi.create({ exerciseCode: EXERCISE_CODE });
+      const recordedSet = await recordedSetsApi.create({
+        exerciseCode: EXERCISE_CODE,
+      });
       setPhase("uploading");
-      const accepted = await sessionsApi.submitCapture(
-        session.id,
+      const accepted = await recordedSetsApi.submitCapture(
+        recordedSet.id,
         buildSyntheticCapture(),
       );
-      setSessionId(session.id);
+      setRecordedSetId(recordedSet.id);
       setJobId(accepted.jobId);
       setPhase("watching");
     } catch (err) {
@@ -63,17 +65,17 @@ export const usePipelineCheck = () => {
   }, []);
 
   const retry = useCallback(async () => {
-    if (sessionId === null) return;
+    if (recordedSetId === null) return;
     setErrorMessage(null);
     try {
-      const accepted = await sessionsApi.retryAnalysis(sessionId);
+      const accepted = await recordedSetsApi.retryAnalysis(recordedSetId);
       setJobId(accepted.jobId);
       setPhase("watching");
     } catch (err) {
       setErrorMessage(toMessage(err));
       setPhase("error");
     }
-  }, [sessionId]);
+  }, [recordedSetId]);
 
   const isTerminal =
     event?.status === "COMPLETED" || event?.status === "FAILED";
@@ -84,7 +86,7 @@ export const usePipelineCheck = () => {
 
   return {
     phase,
-    sessionId,
+    recordedSetId,
     jobId,
     event,
     streamError,

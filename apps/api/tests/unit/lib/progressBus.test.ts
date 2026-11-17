@@ -23,8 +23,8 @@ class FakeSubscriber extends EventEmitter {
   quit = vi.fn().mockResolvedValue("OK");
 }
 
-const event = (sessionId: number): AnalysisStatusEvent => ({
-  sessionId,
+const event = (recordedSetId: number): AnalysisStatusEvent => ({
+  recordedSetId,
   status: "PROCESSING",
   stage: "ANALYZING_REPS",
   stage_label: "analyzing reps",
@@ -45,13 +45,13 @@ beforeEach(() => {
 });
 
 describe("progress bus", () => {
-  it("publishes JSON on the per-session channel", async () => {
+  it("publishes JSON on the per-recorded set channel", async () => {
     const { publishAnalysisEvent } = await loadBus();
 
     await publishAnalysisEvent(event(5));
 
     expect(mocks.publish).toHaveBeenCalledWith(
-      "analysis:session:5",
+      "analysis:recorded-set:5",
       JSON.stringify(event(5)),
     );
   });
@@ -88,7 +88,7 @@ describe("progress bus", () => {
     expect(isResolved).toBe(true);
   });
 
-  it("fans out to two listeners with one Redis SUBSCRIBE and ignores other sessions", async () => {
+  it("fans out to two listeners with one Redis SUBSCRIBE and ignores other recorded sets", async () => {
     const { subscribeToAnalysisEvents } = await loadBus();
     const first = vi.fn();
     const second = vi.fn();
@@ -97,7 +97,11 @@ describe("progress bus", () => {
     await subscribeToAnalysisEvents(1, first);
     await subscribeToAnalysisEvents(1, second);
     await subscribeToAnalysisEvents(2, other);
-    subscriber.emit("message", "analysis:session:1", JSON.stringify(event(1)));
+    subscriber.emit(
+      "message",
+      "analysis:recorded-set:1",
+      JSON.stringify(event(1)),
+    );
 
     expect(subscriber.subscribe).toHaveBeenCalledTimes(2);
     expect(first).toHaveBeenCalledWith(event(1));
@@ -114,23 +118,29 @@ describe("progress bus", () => {
 
     await offFirst();
     expect(subscriber.unsubscribe).not.toHaveBeenCalled();
-    subscriber.emit("message", "analysis:session:1", JSON.stringify(event(1)));
+    subscriber.emit(
+      "message",
+      "analysis:recorded-set:1",
+      JSON.stringify(event(1)),
+    );
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
 
     await offSecond();
-    expect(subscriber.unsubscribe).toHaveBeenCalledWith("analysis:session:1");
+    expect(subscriber.unsubscribe).toHaveBeenCalledWith(
+      "analysis:recorded-set:1",
+    );
   });
 
   it.for([
     ["invalid JSON", "{not json"],
-    ["a schema mismatch", JSON.stringify({ sessionId: "x" })],
+    ["a schema mismatch", JSON.stringify({ recordedSetId: "x" })],
   ])("drops %s and logs a warning", async ([_label, payload]) => {
     const { subscribeToAnalysisEvents } = await loadBus();
     const listener = vi.fn();
     await subscribeToAnalysisEvents(1, listener);
 
-    subscriber.emit("message", "analysis:session:1", payload);
+    subscriber.emit("message", "analysis:recorded-set:1", payload);
 
     expect(listener).not.toHaveBeenCalled();
     expect(mocks.warn).toHaveBeenCalledTimes(1);
@@ -144,7 +154,11 @@ describe("progress bus", () => {
     });
     await subscribeToAnalysisEvents(1, good);
 
-    subscriber.emit("message", "analysis:session:1", JSON.stringify(event(1)));
+    subscriber.emit(
+      "message",
+      "analysis:recorded-set:1",
+      JSON.stringify(event(1)),
+    );
 
     expect(good).toHaveBeenCalledTimes(1);
     expect(mocks.error).toHaveBeenCalledTimes(1);
@@ -156,7 +170,11 @@ describe("progress bus", () => {
     await subscribeToAnalysisEvents(1, listener);
 
     await closeProgressBus();
-    subscriber.emit("message", "analysis:session:1", JSON.stringify(event(1)));
+    subscriber.emit(
+      "message",
+      "analysis:recorded-set:1",
+      JSON.stringify(event(1)),
+    );
 
     expect(subscriber.quit).toHaveBeenCalledTimes(1);
     expect(listener).not.toHaveBeenCalled();

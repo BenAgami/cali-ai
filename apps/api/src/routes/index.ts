@@ -5,8 +5,8 @@ import { env } from "../config/env";
 import healthRoutes from "./health";
 import authRoutes from "./auth";
 import userRoutes from "./user";
-import workoutSessionRoutes from "./workoutSession";
-import sessionRoutes from "./session";
+import recordedSetRoutes from "./recordedSet";
+import recordedSetAnalysisRoutes from "./recordedSetAnalysis";
 import exerciseRoutes from "./exercise";
 import workoutRoutes from "./workout";
 import openapiRoutes from "./openapi";
@@ -16,8 +16,8 @@ const registerPublicRoutes = (router: Router): void => {
   router.use("/users", userRoutes);
   router.use("/exercises", exerciseRoutes);
   router.use("/workouts", workoutRoutes);
-  router.use("/workout-sessions", workoutSessionRoutes);
-  router.use("/sessions", sessionRoutes);
+  router.use("/recorded-sets", recordedSetRoutes);
+  router.use("/recorded-sets", recordedSetAnalysisRoutes);
 };
 
 const registerInternalRoutes = (router: Router): void => {

@@ -8,7 +8,7 @@ import {
 
 import { buildApiUrl } from "@src/api/client";
 import { tokenStore } from "@src/api/tokenStore";
-import { SESSION_ROUTES } from "@src/constants/routes";
+import { RECORDED_SET_ROUTES } from "@src/constants/routes";
 
 const RECONNECT_INTERVAL_MS = 3_000;
 const SESSION_EXPIRED_MESSAGE = "Session expired. Please log in again.";
@@ -29,14 +29,14 @@ const isTerminalStatus = (event: AnalysisStatusEvent): boolean =>
   event.status === "COMPLETED" || event.status === "FAILED";
 
 export const useAnalysisStatus = (
-  sessionId: number | null,
+  recordedSetId: number | null,
   runKey: string | null,
 ) => {
   const [event, setEvent] = useState<AnalysisStatusEvent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (sessionId === null || runKey === null) return;
+    if (recordedSetId === null || runKey === null) return;
 
     let source: EventSource<"status"> | null = null;
     let isCancelled = false;
@@ -48,7 +48,7 @@ export const useAnalysisStatus = (
       if (isCancelled) return;
 
       source = new EventSource<"status">(
-        buildApiUrl(SESSION_ROUTES.status(sessionId)),
+        buildApiUrl(RECORDED_SET_ROUTES.status(recordedSetId)),
         {
           headers: { Authorization: `Bearer ${token ?? ""}` },
           pollingInterval: RECONNECT_INTERVAL_MS,
@@ -87,7 +87,7 @@ export const useAnalysisStatus = (
       isCancelled = true;
       source?.close();
     };
-  }, [sessionId, runKey]);
+  }, [recordedSetId, runKey]);
 
   return { event, error };
 };

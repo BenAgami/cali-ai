@@ -1,6 +1,6 @@
 import type { Application } from "express";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import { ConflictError } from "../../../src/errors";
 import { redisConnection } from "../../../src/lib/redis";
@@ -31,23 +31,23 @@ const captureFixture = (): CaptureInsert => ({
   appVersion: null,
 });
 
-describe("session processing status transitions", () => {
+describe("recorded set processing status transitions", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let service: AnalysisStateService;
   let userId: number;
   let exerciseId: number;
 
-  const createSession = async () =>
-    prisma.workoutSession.create({
-      data: { userId, exerciseId, processingStatus: SessionStatus.PENDING },
+  const createRecordedSet = async () =>
+    prisma.recordedSet.create({
+      data: { userId, exerciseId, processingStatus: ProcessingStatus.PENDING },
     });
 
   const reload = async (id: number) =>
-    prisma.workoutSession.findUniqueOrThrow({ where: { id } });
+    prisma.recordedSet.findUniqueOrThrow({ where: { id } });
 
-  const captureCount = async (sessionId: number) =>
-    prisma.poseCapture.count({ where: { sessionId } });
+  const captureCount = async (recordedSetId: number) =>
+    prisma.poseCapture.count({ where: { recordedSetId } });
 
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
@@ -69,28 +69,28 @@ describe("session processing status transitions", () => {
   });
 
   it("moves PENDING -> PROCESSING with a QUEUED stage and one capture", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
 
     const { captureId } = await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
 
-    const row = await reload(session.id);
+    const row = await reload(recordedSet.id);
     expect(captureId).toBeGreaterThan(0);
-    expect(row.processingStatus).toBe(SessionStatus.PROCESSING);
+    expect(row.processingStatus).toBe(ProcessingStatus.PROCESSING);
     expect(row.analysisStage).toBe("QUEUED");
     expect(row.processingStartedAt).not.toBeNull();
     expect(row.bullmqJobId).toBe("job-a");
-    expect(await captureCount(session.id)).toBe(1);
+    expect(await captureCount(recordedSet.id)).toBe(1);
   });
 
   it("rejects a second start with ConflictError and keeps one capture", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
@@ -98,28 +98,28 @@ describe("session processing status transitions", () => {
 
     await expect(
       service.startRunWithCapture(
-        session.id,
+        recordedSet.id,
         captureFixture(),
         "job-b",
         userId,
       ),
     ).rejects.toBeInstanceOf(ConflictError);
-    expect(await captureCount(session.id)).toBe(1);
-    expect((await reload(session.id)).bullmqJobId).toBe("job-a");
+    expect(await captureCount(recordedSet.id)).toBe(1);
+    expect((await reload(recordedSet.id)).bullmqJobId).toBe("job-a");
   });
 
   it("lets exactly one of two concurrent starts win", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
 
     const results = await Promise.allSettled([
       service.startRunWithCapture(
-        session.id,
+        recordedSet.id,
         captureFixture(),
         "job-1",
         userId,
       ),
       service.startRunWithCapture(
-        session.id,
+        recordedSet.id,
         captureFixture(),
         "job-2",
         userId,
@@ -131,74 +131,76 @@ describe("session processing status transitions", () => {
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
     expect(rejected[0].reason).toBeInstanceOf(ConflictError);
-    expect(await captureCount(session.id)).toBe(1);
+    expect(await captureCount(recordedSet.id)).toBe(1);
   });
 
   it("discards advanceStage for a different job id", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
 
     await expect(
-      service.advanceStage(session.id, "other-job", "ANALYZING_REPS", 0.5),
+      service.advanceStage(recordedSet.id, "other-job", "ANALYZING_REPS", 0.5),
     ).resolves.toBe(false);
 
-    const row = await reload(session.id);
+    const row = await reload(recordedSet.id);
     expect(row.analysisStage).toBe("QUEUED");
     expect(row.analysisStageProgress).toBeNull();
   });
 
   it("never moves the stage backwards", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
 
     await expect(
-      service.advanceStage(session.id, "job-a", "WRITING_FEEDBACK"),
+      service.advanceStage(recordedSet.id, "job-a", "WRITING_FEEDBACK"),
     ).resolves.toBe(true);
     await expect(
-      service.advanceStage(session.id, "job-a", "ANALYZING_REPS", 0.9),
+      service.advanceStage(recordedSet.id, "job-a", "ANALYZING_REPS", 0.9),
     ).resolves.toBe(false);
 
-    expect((await reload(session.id)).analysisStage).toBe("WRITING_FEEDBACK");
+    expect((await reload(recordedSet.id)).analysisStage).toBe(
+      "WRITING_FEEDBACK",
+    );
   });
 
   it("discards a failRun after completeRun", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
 
     await expect(
-      service.completeRunWithResult(session.id, "job-a", async () => {}),
+      service.completeRunWithResult(recordedSet.id, "job-a", async () => {}),
     ).resolves.toBe(true);
-    const completed = await reload(session.id);
-    expect(completed.processingStatus).toBe(SessionStatus.COMPLETED);
+    const completed = await reload(recordedSet.id);
+    expect(completed.processingStatus).toBe(ProcessingStatus.COMPLETED);
     expect(completed.processingFinishedAt).not.toBeNull();
 
     await expect(
-      service.failRun(session.id, "job-a", "ANALYSIS_ERROR"),
+      service.failRun(recordedSet.id, "job-a", "ANALYSIS_ERROR"),
     ).resolves.toBe(false);
-    expect((await reload(session.id)).processingStatus).toBe(
-      SessionStatus.COMPLETED,
+    expect((await reload(recordedSet.id)).processingStatus).toBe(
+      ProcessingStatus.COMPLETED,
     );
   });
 
   it("rolls back the result and the COMPLETED flip when the result write fails", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
@@ -206,26 +208,28 @@ describe("session processing status transitions", () => {
 
     // Before completeRunWithResult the result was saved in its own transaction
     // and COMPLETED flipped afterwards, so a crash in between left a stored
-    // result on a PROCESSING session. Both now commit or neither does.
+    // result on a PROCESSING recorded set. Both now commit or neither does.
     await expect(
-      service.completeRunWithResult(session.id, "job-a", async (tx) => {
-        await tx.analysisResult.create({ data: { sessionId: session.id } });
+      service.completeRunWithResult(recordedSet.id, "job-a", async (tx) => {
+        await tx.analysisResult.create({
+          data: { recordedSetId: recordedSet.id },
+        });
         throw new Error("write failed");
       }),
     ).rejects.toThrow("write failed");
 
-    expect((await reload(session.id)).processingStatus).toBe(
-      SessionStatus.PROCESSING,
+    expect((await reload(recordedSet.id)).processingStatus).toBe(
+      ProcessingStatus.PROCESSING,
     );
     await expect(
-      prisma.analysisResult.count({ where: { sessionId: session.id } }),
+      prisma.analysisResult.count({ where: { recordedSetId: recordedSet.id } }),
     ).resolves.toBe(0);
   });
 
   it("writes nothing when the job no longer owns the run", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
@@ -233,38 +237,40 @@ describe("session processing status transitions", () => {
     const write = vi.fn();
 
     await expect(
-      service.completeRunWithResult(session.id, "job-stale", write),
+      service.completeRunWithResult(recordedSet.id, "job-stale", write),
     ).resolves.toBe(false);
     expect(write).not.toHaveBeenCalled();
   });
 
   it("keeps the last reached stage when a run fails", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
-    await service.advanceStage(session.id, "job-a", "WRITING_FEEDBACK");
+    await service.advanceStage(recordedSet.id, "job-a", "WRITING_FEEDBACK");
 
     await expect(
-      service.failRun(session.id, "job-a", "LLM_TIMEOUT"),
+      service.failRun(recordedSet.id, "job-a", "LLM_TIMEOUT"),
     ).resolves.toBe(true);
 
-    const row = await reload(session.id);
-    expect(row.processingStatus).toBe(SessionStatus.FAILED);
+    const row = await reload(recordedSet.id);
+    expect(row.processingStatus).toBe(ProcessingStatus.FAILED);
     expect(row.analysisStage).toBe("WRITING_FEEDBACK");
-    await expect(service.getStatusEvent(session.id)).resolves.toMatchObject({
-      status: "FAILED",
-      progress_percent: 60,
-      failure_reason: "LLM_TIMEOUT",
-    });
+    await expect(service.getStatusEvent(recordedSet.id)).resolves.toMatchObject(
+      {
+        status: "FAILED",
+        progress_percent: 60,
+        failure_reason: "LLM_TIMEOUT",
+      },
+    );
   });
 
   it("reaps only runs older than the stuck timeout", async () => {
-    const stuck = await createSession();
-    const fresh = await createSession();
+    const stuck = await createRecordedSet();
+    const fresh = await createRecordedSet();
     await service.startRunWithCapture(
       stuck.id,
       captureFixture(),
@@ -279,11 +285,11 @@ describe("session processing status transitions", () => {
     );
 
     const now = Date.now();
-    await prisma.workoutSession.update({
+    await prisma.recordedSet.update({
       where: { id: stuck.id },
       data: { processingStartedAt: new Date(now - 4 * 60_000) },
     });
-    await prisma.workoutSession.update({
+    await prisma.recordedSet.update({
       where: { id: fresh.id },
       data: { processingStartedAt: new Date(now - 60_000) },
     });
@@ -293,56 +299,60 @@ describe("session processing status transitions", () => {
     expect(reaped).toContain(stuck.id);
     expect(reaped).not.toContain(fresh.id);
     const stuckRow = await reload(stuck.id);
-    expect(stuckRow.processingStatus).toBe(SessionStatus.FAILED);
+    expect(stuckRow.processingStatus).toBe(ProcessingStatus.FAILED);
     expect(stuckRow.failureReason).toBe("TIMEOUT");
     expect((await reload(fresh.id)).processingStatus).toBe(
-      SessionStatus.PROCESSING,
+      ProcessingStatus.PROCESSING,
     );
   });
 
   it("restarts a failed run that still has its capture", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
-    await service.failRun(session.id, "job-a", "ANALYSIS_ERROR");
+    await service.failRun(recordedSet.id, "job-a", "ANALYSIS_ERROR");
 
-    const { captureId } = await service.restartRun(session.id, "job-b", userId);
+    const { captureId } = await service.restartRun(
+      recordedSet.id,
+      "job-b",
+      userId,
+    );
 
-    const row = await reload(session.id);
+    const row = await reload(recordedSet.id);
     expect(captureId).toBeGreaterThan(0);
-    expect(row.processingStatus).toBe(SessionStatus.PROCESSING);
+    expect(row.processingStatus).toBe(ProcessingStatus.PROCESSING);
     expect(row.analysisStage).toBe("QUEUED");
     expect(row.failureReason).toBeNull();
     expect(row.bullmqJobId).toBe("job-b");
 
     await expect(
-      service.restartRun(session.id, "job-c", userId),
+      service.restartRun(recordedSet.id, "job-c", userId),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
   it("refuses to restart a failed run whose keypoints were purged", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     await service.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureFixture(),
       "job-a",
       userId,
     );
-    await service.failRun(session.id, "job-a", "ANALYSIS_ERROR");
+    await service.failRun(recordedSet.id, "job-a", "ANALYSIS_ERROR");
     await prisma.poseCapture.updateMany({
-      where: { sessionId: session.id },
+      where: { recordedSetId: recordedSet.id },
       data: { keypoints: null },
     });
 
     await expect(
-      service.restartRun(session.id, "job-b", userId),
+      service.restartRun(recordedSet.id, "job-b", userId),
     ).rejects.toBeInstanceOf(ConflictError);
-    expect((await reload(session.id)).processingStatus).toBe(
-      SessionStatus.FAILED,
+    expect((await reload(recordedSet.id)).processingStatus).toBe(
+      ProcessingStatus.FAILED,
     );
   });
 });

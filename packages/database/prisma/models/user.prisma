@@ -21,7 +21,7 @@ model User {
 
   bodyMetrics        BodyMetric[]
   goals              UserGoal[]
-  workoutSessions    WorkoutSession[]
+  recordedSets       RecordedSet[]
   userMilestones     UserMilestone[]
   workouts           Workout[]
   workoutRuns        WorkoutRun[]

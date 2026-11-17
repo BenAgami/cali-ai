@@ -90,7 +90,7 @@ After analysis, the user receives:
 
 - Register
 - Login
-- JWT-based session
+- JWT-based recorded set
 
 ## 2.2 Profile
 
@@ -101,9 +101,9 @@ After analysis, the user receives:
 
 ---
 
-# 3. Workout Sessions
+# 3. Recorded Sets
 
-## 3.1 Create Session
+## 3.1 Create Recorded Set
 
 User can:
 
@@ -111,11 +111,11 @@ User can:
 - Film the set for analysis
 - Add notes
 
-## 3.2 Session History
+## 3.2 Recorded Set History
 
 User can:
 
-- View past sessions
+- View past recorded sets
 - Compare performance
 - Track improvement trends
 

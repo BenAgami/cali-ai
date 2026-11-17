@@ -103,7 +103,7 @@ export const quantizeCapture = (
 });
 
 export const captureAcceptedResponseSchema = z.object({
-  sessionId: z.number().int(),
+  recordedSetId: z.number().int(),
   captureId: z.number().int(),
   jobId: z.string(),
   status: analysisStatusEventSchema.shape.status,

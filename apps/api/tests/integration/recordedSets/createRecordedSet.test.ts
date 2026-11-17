@@ -2,25 +2,25 @@ import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { API_ERROR_CODES } from "@repo/common";
-import { ExerciseType, type getPrismaClient, SessionStatus } from "@repo/db";
+import { ExerciseType, type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { createWorkoutSession } from "../helpers/requestSender/workoutSessionsRequests";
+import { createRecordedSet } from "../helpers/requestSender/recordedSetsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 import { createWorkoutFixture } from "../helpers/db/workoutHelper";
 
 import {
-  WorkoutSessionBuilder,
-  type WorkoutSessionDto,
-} from "../builders/workoutSessionBuilder";
+  RecordedSetBuilder,
+  type RecordedSetDto,
+} from "../builders/recordedSetBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("POST /api/workout-sessions", () => {
+describe("POST /api/recorded-sets", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -66,36 +66,36 @@ describe("POST /api/workout-sessions", () => {
     await teardownIntegrationTest(prisma);
   });
 
-  it("should create a workout session successfully", async () => {
+  it("should create a recorded set successfully", async () => {
     const { token } = await registerReadyUser();
 
     const exercise = pushUp;
-    const sessionDto: WorkoutSessionDto = new WorkoutSessionBuilder()
+    const recordedSetDto: RecordedSetDto = new RecordedSetBuilder()
       .setExerciseCode(exercise.code)
       .build();
 
-    const response = await createWorkoutSession(app, token, sessionDto);
+    const response = await createRecordedSet(app, token, recordedSetDto);
 
     expect(response.status).toBe(StatusCodes.CREATED);
     expect(response.body.success).toBe(true);
     expect(response.body.data).toHaveProperty("id");
-    expect(response.body.data.processingStatus).toBe(SessionStatus.PENDING);
+    expect(response.body.data.processingStatus).toBe(ProcessingStatus.PENDING);
     expect(response.body.data.exercise.code).toBe(exercise.code);
-    expect(response.body.data.notes).toBe(sessionDto.notes);
+    expect(response.body.data.notes).toBe(recordedSetDto.notes);
     expect(response.body.data.analysisStage).toBeNull();
 
-    const storedSession = await prisma.workoutSession.findUnique({
+    const storedRecordedSet = await prisma.recordedSet.findUnique({
       where: { id: response.body.data.id },
       include: { exercise: true },
     });
 
-    expect(storedSession).not.toBeNull();
-    expect(storedSession?.exercise.code).toBe(exercise.code);
-    expect(storedSession?.processingStatus).toBe(SessionStatus.PENDING);
+    expect(storedRecordedSet).not.toBeNull();
+    expect(storedRecordedSet?.exercise.code).toBe(exercise.code);
+    expect(storedRecordedSet?.processingStatus).toBe(ProcessingStatus.PENDING);
   });
 
   it("should return 401 if no token is provided", async () => {
-    const response = await createWorkoutSession(app, undefined, {
+    const response = await createRecordedSet(app, undefined, {
       exerciseCode: "push_up",
     });
 
@@ -108,7 +108,7 @@ describe("POST /api/workout-sessions", () => {
   it("should return 400 for missing exerciseCode", async () => {
     const { token } = await registerReadyUser();
 
-    const response = await createWorkoutSession(app, token, {});
+    const response = await createRecordedSet(app, token, {});
 
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     expect(response.body.details[0].message).toContain("body.exerciseCode");
@@ -117,7 +117,7 @@ describe("POST /api/workout-sessions", () => {
   it("should return 400 for an exercise outside the supported four", async () => {
     const { token } = await registerReadyUser();
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "plank",
     });
 
@@ -128,7 +128,7 @@ describe("POST /api/workout-sessions", () => {
   it("should return 404 when a supported exercise is not in the catalog", async () => {
     const { token } = await registerReadyUser();
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "dip",
     });
 
@@ -139,7 +139,7 @@ describe("POST /api/workout-sessions", () => {
   it("should return 428 when AI prerequisites are missing", async () => {
     const token = await registerPlainUser();
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
     });
 
@@ -147,14 +147,14 @@ describe("POST /api/workout-sessions", () => {
     expect(response.body.code).toBe("PROFILE_INCOMPLETE");
   });
 
-  it("should link the session to an owned workout and set number", async () => {
+  it("should link the recorded set to an owned workout and set number", async () => {
     const { token, userId } = await registerReadyUser();
     const workout = await createWorkoutFixture(prisma, {
       userId,
       exercises: [{ exerciseId: pushUp.id, position: 1 }],
     });
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
       workoutId: workout.id,
       setNumber: 2,
@@ -179,10 +179,10 @@ describe("POST /api/workout-sessions", () => {
       return { token, userId, workout, run };
     };
 
-    it("should link the session to an open run of that workout", async () => {
+    it("should link the recorded set to an open run of that workout", async () => {
       const { token, workout, run } = await setup();
 
-      const response = await createWorkoutSession(app, token, {
+      const response = await createRecordedSet(app, token, {
         exerciseCode: "push_up",
         workoutId: workout.id,
         workoutRunId: run.id,
@@ -196,7 +196,7 @@ describe("POST /api/workout-sessions", () => {
     it("should return 400 for workoutRunId without workoutId", async () => {
       const { token, run } = await setup();
 
-      const response = await createWorkoutSession(app, token, {
+      const response = await createRecordedSet(app, token, {
         exerciseCode: "push_up",
         workoutRunId: run.id,
       });
@@ -208,7 +208,7 @@ describe("POST /api/workout-sessions", () => {
       const { workout, run } = await setup();
       const other = await registerReadyUser();
 
-      const response = await createWorkoutSession(app, other.token, {
+      const response = await createRecordedSet(app, other.token, {
         exerciseCode: "push_up",
         workoutId: workout.id,
         workoutRunId: run.id,
@@ -224,7 +224,7 @@ describe("POST /api/workout-sessions", () => {
         data: { completedAt: new Date(), durationSecs: 60 },
       });
 
-      const response = await createWorkoutSession(app, token, {
+      const response = await createRecordedSet(app, token, {
         exerciseCode: "push_up",
         workoutId: workout.id,
         workoutRunId: run.id,
@@ -243,7 +243,7 @@ describe("POST /api/workout-sessions", () => {
       exercises: [{ exerciseId: pushUp.id, position: 1 }],
     });
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
       workoutId: workout.id,
     });
@@ -259,7 +259,7 @@ describe("POST /api/workout-sessions", () => {
       exercises: [{ exerciseId: squat.id, position: 1 }],
     });
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
       workoutId: workout.id,
     });
@@ -271,7 +271,7 @@ describe("POST /api/workout-sessions", () => {
   it("should return 400 for setNumber without workoutId", async () => {
     const { token } = await registerReadyUser();
 
-    const response = await createWorkoutSession(app, token, {
+    const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
       setNumber: 1,
     });
@@ -283,12 +283,12 @@ describe("POST /api/workout-sessions", () => {
     const { token } = await registerReadyUser();
 
     const exercise = pushUp;
-    const sessionDto: WorkoutSessionDto = new WorkoutSessionBuilder()
+    const recordedSetDto: RecordedSetDto = new RecordedSetBuilder()
       .setExerciseCode(exercise.code)
       .setPerformedAt("not-a-date")
       .build();
 
-    const response = await createWorkoutSession(app, token, sessionDto);
+    const response = await createRecordedSet(app, token, recordedSetDto);
 
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     expect(response.body.details[0].message).toContain("body.performedAt");

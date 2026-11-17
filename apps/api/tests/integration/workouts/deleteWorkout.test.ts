@@ -78,7 +78,7 @@ describe("DELETE /api/workouts/:id", () => {
     const run = await prisma.workoutRun.create({
       data: { userId: dbUser.id, workoutId: workout.id },
     });
-    const session = await prisma.workoutSession.create({
+    const recordedSet = await prisma.recordedSet.create({
       data: {
         userId: dbUser.id,
         exerciseId: exercise.id,
@@ -94,8 +94,8 @@ describe("DELETE /api/workouts/:id", () => {
       where: { id: run.id },
     });
     expect(keptRun.workoutId).toBeNull();
-    const kept = await prisma.workoutSession.findUniqueOrThrow({
-      where: { id: session.id },
+    const kept = await prisma.recordedSet.findUniqueOrThrow({
+      where: { id: recordedSet.id },
     });
     expect(kept.workoutId).toBeNull();
     expect(kept.workoutRunId).toBe(run.id);

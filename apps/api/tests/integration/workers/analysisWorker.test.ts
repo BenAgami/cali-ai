@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import type { Application } from "express";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 import type { PoseCapturePayload } from "@repo/common";
 
 import { env } from "../../../src/config/env";
@@ -84,15 +84,15 @@ describe("analysis worker (real Redis + Postgres)", () => {
 
   const newJobId = () => `analysis-${randomUUID()}`;
 
-  const createSession = async () =>
-    prisma.workoutSession.create({
-      data: { userId, exerciseId, processingStatus: SessionStatus.PENDING },
+  const createRecordedSet = async () =>
+    prisma.recordedSet.create({
+      data: { userId, exerciseId, processingStatus: ProcessingStatus.PENDING },
     });
 
   const reload = async (id: number) =>
-    prisma.workoutSession.findUniqueOrThrow({ where: { id } });
+    prisma.recordedSet.findUniqueOrThrow({ where: { id } });
 
-  const waitForStatus = async (id: number, status: SessionStatus) =>
+  const waitForStatus = async (id: number, status: ProcessingStatus) =>
     vi.waitFor(
       async () => {
         expect((await reload(id)).processingStatus).toBe(status);
@@ -101,19 +101,19 @@ describe("analysis worker (real Redis + Postgres)", () => {
     );
 
   const enqueue = async (
-    sessionId: number,
+    recordedSetId: number,
     payload: PoseCapturePayload,
     jobId = newJobId(),
   ) => {
     const { captureId } = await analysisStateService.startRunWithCapture(
-      sessionId,
+      recordedSetId,
       captureInsert(await encodeCapture(payload), payload),
       jobId,
       userId,
     );
     await formAnalysisQueue.add(
       ANALYSIS_JOB_NAME,
-      { sessionId, captureId },
+      { recordedSetId, captureId },
       { jobId },
     );
     return { captureId, jobId };
@@ -153,17 +153,17 @@ describe("analysis worker (real Redis + Postgres)", () => {
   });
 
   it("scores a synthetic 5-rep push-up and stores one SCORED result", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
 
-    await enqueue(session.id, buildPayload());
+    await enqueue(recordedSet.id, buildPayload());
 
-    await waitForStatus(session.id, SessionStatus.COMPLETED);
-    const row = await reload(session.id);
+    await waitForStatus(recordedSet.id, ProcessingStatus.COMPLETED);
+    const row = await reload(recordedSet.id);
     expect(row.analysisStage).toBe("COMPLETED");
     expect(row.processingFinishedAt).not.toBeNull();
 
     const results = await prisma.analysisResult.findMany({
-      where: { sessionId: session.id },
+      where: { recordedSetId: recordedSet.id },
       include: { findings: true },
     });
     expect(results).toHaveLength(1);
@@ -187,16 +187,16 @@ describe("analysis worker (real Redis + Postgres)", () => {
   });
 
   it("completes a 1-rep capture as UNTRACKABLE without calling the LLM", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
 
     await enqueue(
-      session.id,
+      recordedSet.id,
       buildSyntheticCapture({ exercise: "push_up", reps: 1 }),
     );
 
-    await waitForStatus(session.id, SessionStatus.COMPLETED);
+    await waitForStatus(recordedSet.id, ProcessingStatus.COMPLETED);
     const result = await prisma.analysisResult.findUniqueOrThrow({
-      where: { sessionId: session.id },
+      where: { recordedSetId: recordedSet.id },
     });
     expect(result.outcome).toBe("UNTRACKABLE");
     expect(result.formScore).toBeNull();
@@ -205,7 +205,7 @@ describe("analysis worker (real Redis + Postgres)", () => {
   });
 
   it("fails a 17-keypoint capture with CAPTURE_INVALID", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     const synthetic = buildPayload();
     const legacy: PoseCapturePayload = {
       ...synthetic,
@@ -217,47 +217,53 @@ describe("analysis worker (real Redis + Postgres)", () => {
       })),
     };
 
-    await enqueue(session.id, legacy);
+    await enqueue(recordedSet.id, legacy);
 
-    await waitForStatus(session.id, SessionStatus.FAILED);
-    expect((await reload(session.id)).failureReason).toBe("CAPTURE_INVALID");
+    await waitForStatus(recordedSet.id, ProcessingStatus.FAILED);
+    expect((await reload(recordedSet.id)).failureReason).toBe(
+      "CAPTURE_INVALID",
+    );
     expect(
-      await prisma.analysisResult.count({ where: { sessionId: session.id } }),
+      await prisma.analysisResult.count({
+        where: { recordedSetId: recordedSet.id },
+      }),
     ).toBe(0);
   });
 
   it("fails with ANALYSIS_ERROR on invalid drafts, then a retry yields exactly one result", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     generateFormFeedback.mockReset();
     generateFormFeedback
       .mockResolvedValueOnce(invalidDraft())
       .mockResolvedValueOnce(invalidDraft());
 
-    await enqueue(session.id, buildPayload());
+    await enqueue(recordedSet.id, buildPayload());
 
-    await waitForStatus(session.id, SessionStatus.FAILED);
-    expect((await reload(session.id)).failureReason).toBe("ANALYSIS_ERROR");
+    await waitForStatus(recordedSet.id, ProcessingStatus.FAILED);
+    expect((await reload(recordedSet.id)).failureReason).toBe("ANALYSIS_ERROR");
     expect(
-      await prisma.analysisResult.count({ where: { sessionId: session.id } }),
+      await prisma.analysisResult.count({
+        where: { recordedSetId: recordedSet.id },
+      }),
     ).toBe(0);
 
     generateFormFeedback.mockReset();
     generateFormFeedback.mockResolvedValue(validDraft());
     const retryJobId = newJobId();
     const { captureId } = await analysisStateService.restartRun(
-      session.id,
+      recordedSet.id,
       retryJobId,
       userId,
     );
     await formAnalysisQueue.add(
       ANALYSIS_JOB_NAME,
-      { sessionId: session.id, captureId },
+      { recordedSetId: recordedSet.id, captureId },
       { jobId: retryJobId },
     );
 
-    await waitForStatus(session.id, SessionStatus.COMPLETED);
+    await waitForStatus(recordedSet.id, ProcessingStatus.COMPLETED);
     const results = await prisma.analysisResult.findMany({
-      where: { sessionId: session.id },
+      where: { recordedSetId: recordedSet.id },
       include: { findings: true },
     });
     expect(results).toHaveLength(1);
@@ -267,10 +273,10 @@ describe("analysis worker (real Redis + Postgres)", () => {
   });
 
   it("fails a corrupt capture with CAPTURE_INVALID and no retries", async () => {
-    const session = await createSession();
+    const recordedSet = await createRecordedSet();
     const jobId = newJobId();
     const { captureId } = await analysisStateService.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureInsert(Buffer.from("not gzip"), buildPayload()),
       jobId,
       userId,
@@ -278,23 +284,23 @@ describe("analysis worker (real Redis + Postgres)", () => {
 
     await formAnalysisQueue.add(
       ANALYSIS_JOB_NAME,
-      { sessionId: session.id, captureId },
+      { recordedSetId: recordedSet.id, captureId },
       { jobId },
     );
 
-    await waitForStatus(session.id, SessionStatus.FAILED);
-    const row = await reload(session.id);
+    await waitForStatus(recordedSet.id, ProcessingStatus.FAILED);
+    const row = await reload(recordedSet.id);
     expect(row.failureReason).toBe("CAPTURE_INVALID");
     expect((await formAnalysisQueue.getJob(jobId))?.attemptsMade).toBe(1);
   });
 
-  it("discards every write from a stale job whose id is not the session's run", async () => {
-    const session = await createSession();
+  it("discards every write from a stale job whose id is not the recorded set's run", async () => {
+    const recordedSet = await createRecordedSet();
     const currentJobId = newJobId();
     const staleJobId = newJobId();
     const payload = buildPayload();
     const { captureId } = await analysisStateService.startRunWithCapture(
-      session.id,
+      recordedSet.id,
       captureInsert(await encodeCapture(payload), payload),
       currentJobId,
       userId,
@@ -302,7 +308,7 @@ describe("analysis worker (real Redis + Postgres)", () => {
 
     await formAnalysisQueue.add(
       ANALYSIS_JOB_NAME,
-      { sessionId: session.id, captureId },
+      { recordedSetId: recordedSet.id, captureId },
       { jobId: staleJobId },
     );
 
@@ -315,12 +321,14 @@ describe("analysis worker (real Redis + Postgres)", () => {
       { timeout: 20_000, interval: 100 },
     );
 
-    const row = await reload(session.id);
-    expect(row.processingStatus).toBe(SessionStatus.PROCESSING);
+    const row = await reload(recordedSet.id);
+    expect(row.processingStatus).toBe(ProcessingStatus.PROCESSING);
     expect(row.analysisStage).toBe("QUEUED");
     expect(row.bullmqJobId).toBe(currentJobId);
     expect(
-      await prisma.analysisResult.count({ where: { sessionId: session.id } }),
+      await prisma.analysisResult.count({
+        where: { recordedSetId: recordedSet.id },
+      }),
     ).toBe(0);
   });
 

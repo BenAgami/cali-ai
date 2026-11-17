@@ -9,21 +9,21 @@ import gunzipCaptureBody from "../middlewares/gunzipCaptureBody";
 import { authenticateToken } from "../middlewares/auth";
 
 import {
-  getSessionAnalysis,
+  getRecordedSetAnalysis,
   retryAnalysis,
   streamAnalysisStatus,
   submitCapture,
-} from "../controllers/session";
+} from "../controllers/recordedSetAnalysis";
 
 const router: Router = Router();
 
-const sessionIdParamsSchema = z.object({
+const recordedSetIdParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
 /**
  * POST /:id/capture
- * Submit pose keypoints for a session; returns 202 + job id.
+ * Submit pose keypoints for a recorded set; returns 202 + job id.
  * Sent only as a gzip file (`Content-Type: application/gzip`).
  */
 router.post(
@@ -36,7 +36,10 @@ router.post(
   }),
   gunzipCaptureBody(CAPTURE_LIMITS.maxInflatedBytes),
   validateSchema(
-    z.object({ params: sessionIdParamsSchema, body: poseCapturePayloadSchema }),
+    z.object({
+      params: recordedSetIdParamsSchema,
+      body: poseCapturePayloadSchema,
+    }),
   ),
   submitCapture,
 );
@@ -48,7 +51,7 @@ router.post(
 router.post(
   "/:id/analysis/retry",
   authenticateToken,
-  validateSchema(z.object({ params: sessionIdParamsSchema })),
+  validateSchema(z.object({ params: recordedSetIdParamsSchema })),
   retryAnalysis,
 );
 
@@ -59,18 +62,18 @@ router.post(
 router.get(
   "/:id/analysis",
   authenticateToken,
-  validateSchema(z.object({ params: sessionIdParamsSchema })),
-  getSessionAnalysis,
+  validateSchema(z.object({ params: recordedSetIdParamsSchema })),
+  getRecordedSetAnalysis,
 );
 
 /**
  * GET /:id/status
- * Server-Sent Events stream of analysis progress for a session
+ * Server-Sent Events stream of analysis progress for a recorded set
  */
 router.get(
   "/:id/status",
   authenticateToken,
-  validateSchema(z.object({ params: sessionIdParamsSchema })),
+  validateSchema(z.object({ params: recordedSetIdParamsSchema })),
   streamAnalysisStatus,
 );
 

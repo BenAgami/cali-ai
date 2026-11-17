@@ -1,5 +1,5 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
-import type { CreateWorkoutSessionValues } from "@repo/common";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
+import type { CreateRecordedSetValues } from "@repo/common";
 
 import { BadRequestError, NotFoundError } from "../errors";
 
@@ -11,15 +11,15 @@ import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 import aiPrerequisitesService from "./aiPrerequisitesService";
 import workoutService from "./workoutService";
 
-type ListWorkoutSessionsInput = {
+type ListRecordedSetsInput = {
   userUuid: string;
   limit: number;
   offset: number;
   exerciseCode?: string;
-  processingStatus?: SessionStatus;
+  processingStatus?: ProcessingStatus;
 };
 
-export class WorkoutSessionService {
+export class RecordedSetService {
   private get prisma() {
     return getPrismaClient();
   }
@@ -64,7 +64,7 @@ export class WorkoutSessionService {
     }
   }
 
-  async createSession(userUuid: string, data: CreateWorkoutSessionValues) {
+  async createRecordedSet(userUuid: string, data: CreateRecordedSetValues) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     await aiPrerequisitesService.assertAiPrerequisites(userId);
 
@@ -88,7 +88,7 @@ export class WorkoutSessionService {
 
     const performedAt = parseOptionalDate(data.performedAt, "performedAt");
 
-    const session = await this.prisma.workoutSession.create({
+    const recordedSet = await this.prisma.recordedSet.create({
       data: {
         userId,
         exerciseId: exercise.id,
@@ -97,7 +97,7 @@ export class WorkoutSessionService {
         setNumber: data.setNumber ?? null,
         notes: data.notes,
         performedAt,
-        processingStatus: SessionStatus.PENDING,
+        processingStatus: ProcessingStatus.PENDING,
       },
       include: {
         exercise: {
@@ -110,17 +110,17 @@ export class WorkoutSessionService {
       },
     });
 
-    return session;
+    return recordedSet;
   }
 
-  async listSessions(input: ListWorkoutSessionsInput) {
+  async listRecordedSets(input: ListRecordedSetsInput) {
     const { userUuid, limit, offset, exerciseCode, processingStatus } = input;
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     const normalizedExerciseCode = exerciseCode
       ? normalizeString(exerciseCode)
       : undefined;
 
-    const sessions = await this.prisma.workoutSession.findMany({
+    const recordedSets = await this.prisma.recordedSet.findMany({
       where: {
         userId,
         ...(normalizedExerciseCode
@@ -149,8 +149,8 @@ export class WorkoutSessionService {
       },
     });
 
-    return paginate(sessions, limit, offset);
+    return paginate(recordedSets, limit, offset);
   }
 }
 
-export default new WorkoutSessionService();
+export default new RecordedSetService();

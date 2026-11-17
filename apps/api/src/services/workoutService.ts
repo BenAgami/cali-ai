@@ -1,4 +1,4 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
 import {
   API_ERROR_CODES,
   type CreateWorkoutValues,
@@ -207,7 +207,7 @@ export class WorkoutService {
    * Starting a plan opens a run that stays in progress until completed. A run
    * left open within the resume window (the user backed out) is resumed rather
    * than duplicated; an older open run with no recorded sets holds nothing, so
-   * it is deleted instead of piling up. A PENDING session has no accepted
+   * it is deleted instead of piling up. A PENDING recorded set has no accepted
    * capture, so it does not count as a recorded set.
    */
   async startWorkoutRun(userUuid: string, workoutId: number) {
@@ -224,8 +224,8 @@ export class WorkoutService {
       where: {
         ...openRun,
         startedAt: { lt: resumeCutoff },
-        sessions: {
-          none: { processingStatus: { not: SessionStatus.PENDING } },
+        recordedSets: {
+          none: { processingStatus: { not: ProcessingStatus.PENDING } },
         },
       },
     });

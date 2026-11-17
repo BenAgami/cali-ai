@@ -8,7 +8,7 @@ export const ANALYSIS_STAGES = [
 ] as const;
 export type AnalysisStage = (typeof ANALYSIS_STAGES)[number];
 
-export const SESSION_STATUSES = [
+export const PROCESSING_STATUSES = [
   "PENDING",
   "PROCESSING",
   "COMPLETED",
@@ -23,7 +23,7 @@ const ANALYSIS_EVENT_STATUSES = [
 ] as const;
 
 export const analysisStatusEventSchema = z.object({
-  sessionId: z.number().int().positive(),
+  recordedSetId: z.number().int().positive(),
   status: z.enum(ANALYSIS_EVENT_STATUSES),
   stage: z.enum(ANALYSIS_STAGES),
   stage_label: z.string().min(1),

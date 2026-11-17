@@ -71,9 +71,9 @@ describe("FormAnalysisResultService.saveScored", () => {
       create: Record<string, unknown>;
       update: Record<string, unknown>;
     };
-    expect(args.where).toEqual({ sessionId: 5 });
+    expect(args.where).toEqual({ recordedSetId: 5 });
     expect(args.create).toMatchObject({
-      sessionId: 5,
+      recordedSetId: 5,
       outcome: "SCORED",
       formScore: 61,
       summaryFeedback: outcome.feedback.summary,
@@ -81,7 +81,7 @@ describe("FormAnalysisResultService.saveScored", () => {
       untrackableReasons: [],
     });
     expect(args.update).toMatchObject({ outcome: "SCORED", formScore: 61 });
-    expect(args.update).not.toHaveProperty("sessionId");
+    expect(args.update).not.toHaveProperty("recordedSetId");
     expect(
       storedScoreBreakdownSchema.parse(args.create.scoreBreakdown),
     ).toEqual({
@@ -180,7 +180,7 @@ describe("FormAnalysisResultService.saveUntrackable", () => {
       create: Record<string, unknown>;
     };
     expect(args.create).toMatchObject({
-      sessionId: 5,
+      recordedSetId: 5,
       outcome: "UNTRACKABLE",
       formScore: null,
       scoreBreakdown: {},

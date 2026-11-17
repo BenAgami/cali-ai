@@ -2,7 +2,7 @@ import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { API_ERROR_CODES } from "@repo/common";
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import { env } from "../../../src/config/env";
 import { formAnalysisQueue } from "../../../src/lib/queue";
@@ -13,19 +13,19 @@ import {
 } from "../helpers/testSetup";
 import { closeQueueConnections, resetAnalysisQueue } from "../helpers/queue";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { createWorkoutSession } from "../helpers/requestSender/workoutSessionsRequests";
+import { createRecordedSet } from "../helpers/requestSender/recordedSetsRequests";
 import {
   retryAnalysis,
   submitCapture,
-} from "../helpers/requestSender/sessionsRequests";
+} from "../helpers/requestSender/recordedSetAnalysisRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
-import { WorkoutSessionBuilder } from "../builders/workoutSessionBuilder";
+import { RecordedSetBuilder } from "../builders/recordedSetBuilder";
 
-describe("POST /api/sessions/:id/analysis/retry", () => {
+describe("POST /api/recorded-sets/:id/analysis/retry", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let token: string;
@@ -48,36 +48,36 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
   const registerToken = async (): Promise<string> =>
     (await registerUserWithToken()).token;
 
-  const failedSession = async (userToken = token) => {
-    const created = await createWorkoutSession(
+  const failedRecordedSet = async (userToken = token) => {
+    const created = await createRecordedSet(
       app,
       userToken,
-      new WorkoutSessionBuilder().setExerciseCode(exerciseCode).build(),
+      new RecordedSetBuilder().setExerciseCode(exerciseCode).build(),
     );
-    const sessionId = created.body.data.id as number;
+    const recordedSetId = created.body.data.id as number;
     const accepted = await submitCapture(
       app,
       userToken,
-      sessionId,
+      recordedSetId,
       new PoseCaptureBuilder().setFrames(30).build(),
     );
     expect(accepted.status).toBe(StatusCodes.ACCEPTED);
 
-    await prisma.workoutSession.update({
-      where: { id: sessionId },
+    await prisma.recordedSet.update({
+      where: { id: recordedSetId },
       data: {
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         failureReason: "TIMEOUT",
       },
     });
-    return { sessionId, firstJobId: accepted.body.data.jobId as string };
+    return { recordedSetId, firstJobId: accepted.body.data.jobId as string };
   };
 
-  const markFailed = (sessionId: number) =>
-    prisma.workoutSession.update({
-      where: { id: sessionId },
+  const markFailed = (recordedSetId: number) =>
+    prisma.recordedSet.update({
+      where: { id: recordedSetId },
       data: {
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         failureReason: "TIMEOUT",
       },
     });
@@ -97,10 +97,10 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
     await closeQueueConnections();
   });
 
-  it("re-queues a FAILED session from the stored capture", async () => {
-    const { sessionId, firstJobId } = await failedSession();
+  it("re-queues a FAILED recorded set from the stored capture", async () => {
+    const { recordedSetId, firstJobId } = await failedRecordedSet();
 
-    const response = await retryAnalysis(app, token, sessionId);
+    const response = await retryAnalysis(app, token, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.ACCEPTED);
     const { jobId, captureId } = response.body.data as {
@@ -110,132 +110,144 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
     expect(jobId).not.toBe(firstJobId);
     expect(response.body.data.status).toBe("QUEUED");
 
-    const session = await prisma.workoutSession.findUniqueOrThrow({
-      where: { id: sessionId },
+    const recordedSet = await prisma.recordedSet.findUniqueOrThrow({
+      where: { id: recordedSetId },
     });
-    expect(session.processingStatus).toBe(SessionStatus.PROCESSING);
-    expect(session.analysisStage).toBe("QUEUED");
-    expect(session.failureReason).toBeNull();
-    expect(session.bullmqJobId).toBe(jobId);
+    expect(recordedSet.processingStatus).toBe(ProcessingStatus.PROCESSING);
+    expect(recordedSet.analysisStage).toBe("QUEUED");
+    expect(recordedSet.failureReason).toBeNull();
+    expect(recordedSet.bullmqJobId).toBe(jobId);
 
     const job = await formAnalysisQueue.getJob(jobId);
-    expect(job?.data).toEqual({ sessionId, captureId });
+    expect(job?.data).toEqual({ recordedSetId, captureId });
   });
 
   it("returns 409 when retried again while PROCESSING", async () => {
-    const { sessionId } = await failedSession();
-    await retryAnalysis(app, token, sessionId);
+    const { recordedSetId } = await failedRecordedSet();
+    await retryAnalysis(app, token, recordedSetId);
 
-    const response = await retryAnalysis(app, token, sessionId);
+    const response = await retryAnalysis(app, token, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
   });
 
   it("returns 409 when the stored keypoints were removed", async () => {
-    const { sessionId } = await failedSession();
+    const { recordedSetId } = await failedRecordedSet();
     await prisma.poseCapture.update({
-      where: { sessionId },
+      where: { recordedSetId },
       data: { keypoints: null },
     });
 
-    const response = await retryAnalysis(app, token, sessionId);
+    const response = await retryAnalysis(app, token, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
   });
 
   it("returns 404 for another user", async () => {
-    const { sessionId } = await failedSession();
+    const { recordedSetId } = await failedRecordedSet();
 
-    const response = await retryAnalysis(app, await registerToken(), sessionId);
+    const response = await retryAnalysis(
+      app,
+      await registerToken(),
+      recordedSetId,
+    );
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
 
   it("returns 401 without a token", async () => {
-    const { sessionId } = await failedSession();
+    const { recordedSetId } = await failedRecordedSet();
 
-    const response = await retryAnalysis(app, undefined, sessionId);
+    const response = await retryAnalysis(app, undefined, recordedSetId);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
 
   describe("daily retry cap", () => {
-    it("refuses a retry over the cap and leaves the session FAILED", async () => {
+    it("refuses a retry over the cap and leaves the recorded set FAILED", async () => {
       const user = await registerUserWithToken();
-      const first = await failedSession(user.token);
-      const second = await failedSession(user.token);
+      const first = await failedRecordedSet(user.token);
+      const second = await failedRecordedSet(user.token);
 
       for (let i = 0; i < env.formAnalysis.dailyRetryCap; i++) {
         const target = i % 2 === 0 ? first : second;
-        const accepted = await retryAnalysis(app, user.token, target.sessionId);
+        const accepted = await retryAnalysis(
+          app,
+          user.token,
+          target.recordedSetId,
+        );
         expect(accepted.status).toBe(StatusCodes.ACCEPTED);
-        await markFailed(target.sessionId);
+        await markFailed(target.recordedSetId);
       }
 
-      const refused = await retryAnalysis(app, user.token, first.sessionId);
+      const refused = await retryAnalysis(app, user.token, first.recordedSetId);
 
       expect(refused.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
       expect(refused.body.code).toBe(API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED);
-      const session = await prisma.workoutSession.findUniqueOrThrow({
-        where: { id: first.sessionId },
+      const recordedSet = await prisma.recordedSet.findUniqueOrThrow({
+        where: { id: first.recordedSetId },
       });
-      expect(session.processingStatus).toBe(SessionStatus.FAILED);
+      expect(recordedSet.processingStatus).toBe(ProcessingStatus.FAILED);
       expect(
         await prisma.analysisRetry.count({
-          where: { session: { userId: user.userId } },
+          where: { recordedSet: { userId: user.userId } },
         }),
       ).toBe(env.formAnalysis.dailyRetryCap);
     });
 
     it("accepts a retry again once the recorded retries are older than 24 h", async () => {
       const user = await registerUserWithToken();
-      const target = await failedSession(user.token);
+      const target = await failedRecordedSet(user.token);
       for (let i = 0; i < env.formAnalysis.dailyRetryCap; i++) {
         await prisma.analysisRetry.create({
-          data: { sessionId: target.sessionId },
+          data: { recordedSetId: target.recordedSetId },
         });
       }
       expect(
-        (await retryAnalysis(app, user.token, target.sessionId)).status,
+        (await retryAnalysis(app, user.token, target.recordedSetId)).status,
       ).toBe(StatusCodes.TOO_MANY_REQUESTS);
 
       await prisma.analysisRetry.updateMany({
-        where: { session: { userId: user.userId } },
+        where: { recordedSet: { userId: user.userId } },
         data: { createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) },
       });
 
       expect(
-        (await retryAnalysis(app, user.token, target.sessionId)).status,
+        (await retryAnalysis(app, user.token, target.recordedSetId)).status,
       ).toBe(StatusCodes.ACCEPTED);
     });
 
     it("does not count a refused retry", async () => {
       const user = await registerUserWithToken();
-      const target = await failedSession(user.token);
-      await retryAnalysis(app, user.token, target.sessionId);
+      const target = await failedRecordedSet(user.token);
+      await retryAnalysis(app, user.token, target.recordedSetId);
 
-      const refused = await retryAnalysis(app, user.token, target.sessionId);
+      const refused = await retryAnalysis(
+        app,
+        user.token,
+        target.recordedSetId,
+      );
 
       expect(refused.status).toBe(StatusCodes.CONFLICT);
       expect(
         await prisma.analysisRetry.count({
-          where: { session: { userId: user.userId } },
+          where: { recordedSet: { userId: user.userId } },
         }),
       ).toBe(1);
     });
 
     it("does not consume the daily capture cap", async () => {
       const user = await registerUserWithToken();
-      const target = await failedSession(user.token);
+      const target = await failedRecordedSet(user.token);
       const capturesBefore = await prisma.poseCapture.count({
-        where: { session: { userId: user.userId } },
+        where: { recordedSet: { userId: user.userId } },
       });
 
-      await retryAnalysis(app, user.token, target.sessionId);
+      await retryAnalysis(app, user.token, target.recordedSetId);
 
       expect(
         await prisma.poseCapture.count({
-          where: { session: { userId: user.userId } },
+          where: { recordedSet: { userId: user.userId } },
         }),
       ).toBe(capturesBefore);
     });
@@ -243,19 +255,19 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
     it("never accepts more retries than the cap under concurrency", async () => {
       const concurrentRequests = 3;
       const user = await registerUserWithToken();
-      const sessions = [];
+      const recordedSets = [];
       for (let i = 0; i < concurrentRequests; i++) {
-        sessions.push(await failedSession(user.token));
+        recordedSets.push(await failedRecordedSet(user.token));
       }
       for (let i = 0; i < env.formAnalysis.dailyRetryCap - 1; i++) {
         await prisma.analysisRetry.create({
-          data: { sessionId: sessions[0].sessionId },
+          data: { recordedSetId: recordedSets[0].recordedSetId },
         });
       }
 
       const responses = await Promise.all(
-        sessions.map(({ sessionId }) =>
-          retryAnalysis(app, user.token, sessionId),
+        recordedSets.map(({ recordedSetId }) =>
+          retryAnalysis(app, user.token, recordedSetId),
         ),
       );
 
@@ -268,7 +280,7 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
       ]);
       expect(
         await prisma.analysisRetry.count({
-          where: { session: { userId: user.userId } },
+          where: { recordedSet: { userId: user.userId } },
         }),
       ).toBe(env.formAnalysis.dailyRetryCap);
     });

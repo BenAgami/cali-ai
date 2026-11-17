@@ -15,7 +15,7 @@ vi.mock("../../../src/services/captureService", () => ({
 }));
 
 const { streamAnalysisStatus } =
-  await import("../../../src/controllers/session");
+  await import("../../../src/controllers/recordedSetAnalysis");
 
 const createStream = (): SseStream => ({
   send: vi.fn(),
@@ -83,13 +83,13 @@ describe("streamAnalysisStatus", () => {
     await run();
 
     expect(analysisStreamService.streamProgressToSink).toHaveBeenCalledOnce();
-    const [sessionId, sink] = vi.mocked(
+    const [recordedSetId, sink] = vi.mocked(
       analysisStreamService.streamProgressToSink,
     ).mock.calls[0];
-    expect(sessionId).toBe(42);
+    expect(recordedSetId).toBe(42);
 
     const event = {
-      sessionId: 42,
+      recordedSetId: 42,
       status: "QUEUED" as const,
       stage: "QUEUED" as const,
       stage_label: "Queued",

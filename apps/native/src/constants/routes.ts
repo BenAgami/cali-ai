@@ -26,11 +26,11 @@ export const WORKOUT_ROUTES = {
   recordedSets: (id: number) => `/api/workouts/${id}/recorded-sets`,
 } as const;
 
-export const SESSION_ROUTES = {
-  list: "/api/workout-sessions",
-  create: "/api/workout-sessions",
-  capture: (id: number) => `/api/sessions/${id}/capture`,
-  status: (id: number) => `/api/sessions/${id}/status`,
-  analysis: (id: number) => `/api/sessions/${id}/analysis`,
-  retry: (id: number) => `/api/sessions/${id}/analysis/retry`,
+export const RECORDED_SET_ROUTES = {
+  list: "/api/recorded-sets",
+  create: "/api/recorded-sets",
+  capture: (id: number) => `/api/recorded-sets/${id}/capture`,
+  status: (id: number) => `/api/recorded-sets/${id}/status`,
+  analysis: (id: number) => `/api/recorded-sets/${id}/analysis`,
+  retry: (id: number) => `/api/recorded-sets/${id}/analysis/retry`,
 } as const;

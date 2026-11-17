@@ -5,7 +5,7 @@ import type { AnalysisStatusEvent, FormAnalysisResponse } from "@repo/common";
 
 import { ApiError } from "@src/api";
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
-import { useSessionAnalysis } from "@src/hooks/queries/useSessionAnalysis";
+import { useRecordedSetAnalysis } from "@src/hooks/queries/useRecordedSetAnalysis";
 import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 
 export type AnalysisResultState =
@@ -24,15 +24,15 @@ interface AnalysisResultScreen {
 }
 
 export const useAnalysisResultScreen = (
-  sessionIdParam: string | undefined,
+  recordedSetIdParam: string | undefined,
 ): AnalysisResultScreen => {
-  const sessionId = parsePositiveIntParam(sessionIdParam) ?? undefined;
-  const { markSeen, statusBySession } = useAnalysisTracker();
-  const { data, error, refetch } = useSessionAnalysis(sessionId);
+  const recordedSetId = parsePositiveIntParam(recordedSetIdParam) ?? undefined;
+  const { markSeen, statusByRecordedSet } = useAnalysisTracker();
+  const { data, error, refetch } = useRecordedSetAnalysis(recordedSetId);
 
   useEffect(() => {
-    if (sessionId !== undefined) markSeen(sessionId);
-  }, [sessionId, markSeen]);
+    if (recordedSetId !== undefined) markSeen(recordedSetId);
+  }, [recordedSetId, markSeen]);
 
   const refetchResult = useCallback(() => {
     void refetch();
@@ -56,7 +56,9 @@ export const useAnalysisResultScreen = (
   }, [data]);
 
   const liveEvent =
-    sessionId === undefined ? undefined : statusBySession[sessionId];
+    recordedSetId === undefined
+      ? undefined
+      : statusByRecordedSet[recordedSetId];
 
   let state: AnalysisResultState = "loading";
   if (data !== undefined) {
@@ -66,7 +68,7 @@ export const useAnalysisResultScreen = (
       error instanceof ApiError && error.status === Number(StatusCodes.CONFLICT)
         ? "notReady"
         : "error";
-  } else if (sessionId === undefined) {
+  } else if (recordedSetId === undefined) {
     state = "error";
   }
 

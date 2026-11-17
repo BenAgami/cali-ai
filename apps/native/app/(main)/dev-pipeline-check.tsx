@@ -10,7 +10,7 @@ const DevPipelineCheck: React.FC = () => {
   const { colors } = useTheme();
   const {
     phase,
-    sessionId,
+    recordedSetId,
     jobId,
     event,
     streamError,
@@ -40,7 +40,9 @@ const DevPipelineCheck: React.FC = () => {
       </Pressable>
 
       <Text style={{ color: colors.text }}>Phase: {phase}</Text>
-      <Text style={{ color: colors.text }}>Session: {sessionId ?? "-"}</Text>
+      <Text style={{ color: colors.text }}>
+        RecordedSet: {recordedSetId ?? "-"}
+      </Text>
       <Text style={{ color: colors.text }}>Job: {jobId ?? "-"}</Text>
       <Text style={{ color: colors.text }}>Status: {event?.status ?? "-"}</Text>
       <Text style={{ color: colors.text }}>

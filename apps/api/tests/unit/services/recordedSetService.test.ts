@@ -1,4 +1,4 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   NotFoundError,
@@ -31,8 +31,8 @@ vi.mock("../../../src/services/aiPrerequisitesService", () => ({
   default: { assertAiPrerequisites: vi.fn() },
 }));
 
-const { WorkoutSessionService } =
-  await import("../../../src/services/workoutSessionService");
+const { RecordedSetService } =
+  await import("../../../src/services/recordedSetService");
 
 const USER_UUID = "uuid-1";
 const baseDto = { exerciseCode: "push_up" } as const;
@@ -41,21 +41,21 @@ const rows = (count: number) =>
   Array.from({ length: count }, (_, i) => ({ id: i + 1 }));
 
 let prisma: PrismaMock;
-let workoutSessionService: InstanceType<typeof WorkoutSessionService>;
+let recordedSetService: InstanceType<typeof RecordedSetService>;
 
 /** Resolves the private uuid → id lookup and the active-exercise lookup. */
 const givenUserAndExercise = () => {
   prisma.user.findUnique.mockResolvedValue({ id: 42 });
   prisma.exercise.findFirst.mockResolvedValue({ id: 7, code: "push_up" });
-  prisma.workoutSession.create.mockResolvedValue({ id: 1 });
+  prisma.recordedSet.create.mockResolvedValue({ id: 1 });
 };
 
-const createData = () => prisma.workoutSession.create.mock.calls[0][0].data;
+const createData = () => prisma.recordedSet.create.mock.calls[0][0].data;
 
 beforeEach(() => {
   prisma = createPrismaMock();
   vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma));
-  workoutSessionService = new WorkoutSessionService();
+  recordedSetService = new RecordedSetService();
   vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockResolvedValue({
     userId: 42,
     experienceLevel: "BEGINNER",
@@ -65,7 +65,7 @@ beforeEach(() => {
   });
 });
 
-describe("WorkoutSessionService.createSession", () => {
+describe("RecordedSetService.createRecordedSet", () => {
   it("checks AI prerequisites before any exercise query and propagates failures", async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
     vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockRejectedValue(
@@ -73,7 +73,7 @@ describe("WorkoutSessionService.createSession", () => {
     );
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, baseDto),
+      recordedSetService.createRecordedSet(USER_UUID, baseDto),
     ).rejects.toBeInstanceOf(PreconditionRequiredError);
     expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
       42,
@@ -88,7 +88,7 @@ describe("WorkoutSessionService.createSession", () => {
       exercises: [{ exercise: { code: "push_up" } }],
     });
 
-    await workoutSessionService.createSession(USER_UUID, {
+    await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
       workoutId: 5,
       setNumber: 2,
@@ -112,7 +112,7 @@ describe("WorkoutSessionService.createSession", () => {
   it("stores null workoutId and setNumber when omitted", async () => {
     givenUserAndExercise();
 
-    await workoutSessionService.createSession(USER_UUID, baseDto);
+    await recordedSetService.createRecordedSet(USER_UUID, baseDto);
 
     expect(prisma.workout.findFirst).not.toHaveBeenCalled();
     expect(createData()).toMatchObject({ workoutId: null, setNumber: null });
@@ -123,12 +123,12 @@ describe("WorkoutSessionService.createSession", () => {
     prisma.workout.findFirst.mockResolvedValue(null);
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, {
+      recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
         workoutId: 5,
       }),
     ).rejects.toThrow(new NotFoundError("Workout not found"));
-    expect(prisma.workoutSession.create).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.create).not.toHaveBeenCalled();
   });
 
   it("rejects an exercise that is not part of the workout", async () => {
@@ -139,7 +139,7 @@ describe("WorkoutSessionService.createSession", () => {
     });
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, {
+      recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
         workoutId: 5,
       }),
@@ -152,9 +152,9 @@ describe("WorkoutSessionService.createSession", () => {
     prisma.user.findUnique.mockResolvedValue(null);
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, baseDto),
+      recordedSetService.createRecordedSet(USER_UUID, baseDto),
     ).rejects.toThrow(new NotFoundError("User not found"));
-    expect(prisma.workoutSession.create).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.create).not.toHaveBeenCalled();
   });
 
   it("checks AI prerequisites before any exercise or workout query and propagates failures", async () => {
@@ -164,7 +164,7 @@ describe("WorkoutSessionService.createSession", () => {
     );
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, baseDto),
+      recordedSetService.createRecordedSet(USER_UUID, baseDto),
     ).rejects.toBeInstanceOf(PreconditionRequiredError);
     expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
       42,
@@ -173,14 +173,14 @@ describe("WorkoutSessionService.createSession", () => {
     expect(prisma.workout.findFirst).not.toHaveBeenCalled();
   });
 
-  it("looks up the owned workout and links the session to it", async () => {
+  it("looks up the owned workout and links the recorded set to it", async () => {
     givenUserAndExercise();
     prisma.workout.findFirst.mockResolvedValue({
       id: 5,
       exercises: [{ exercise: { code: "push_up" } }],
     });
 
-    await workoutSessionService.createSession(USER_UUID, {
+    await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
       workoutId: 5,
       setNumber: 2,
@@ -208,7 +208,7 @@ describe("WorkoutSessionService.createSession", () => {
       exercises: [{ exercise: { code: "push_up" } }],
     });
 
-    await workoutSessionService.createSession(USER_UUID, {
+    await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
       workoutId: 5,
       workoutRunId: 9,
@@ -221,7 +221,7 @@ describe("WorkoutSessionService.createSession", () => {
   it("stores null workoutId and setNumber when not supplied", async () => {
     givenUserAndExercise();
 
-    await workoutSessionService.createSession(USER_UUID, baseDto);
+    await recordedSetService.createRecordedSet(USER_UUID, baseDto);
 
     expect(prisma.workout.findFirst).not.toHaveBeenCalled();
     expect(createData()).toMatchObject({ workoutId: null, setNumber: null });
@@ -232,12 +232,12 @@ describe("WorkoutSessionService.createSession", () => {
     prisma.workout.findFirst.mockResolvedValue(null);
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, {
+      recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
         workoutId: 5,
       }),
     ).rejects.toThrow(new NotFoundError("Workout not found"));
-    expect(prisma.workoutSession.create).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.create).not.toHaveBeenCalled();
   });
 
   it("rejects an exercise that is not in the workout", async () => {
@@ -248,7 +248,7 @@ describe("WorkoutSessionService.createSession", () => {
     });
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, {
+      recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
         workoutId: 5,
       }),
@@ -260,7 +260,7 @@ describe("WorkoutSessionService.createSession", () => {
   it("normalizes the exercise code and requires the exercise to be active", async () => {
     givenUserAndExercise();
 
-    await workoutSessionService.createSession(USER_UUID, {
+    await recordedSetService.createRecordedSet(USER_UUID, {
       // the route schema trims/lowercases; the service normalizes again defensively
       exerciseCode: "  PUSH_UP " as "push_up",
     });
@@ -276,35 +276,35 @@ describe("WorkoutSessionService.createSession", () => {
     prisma.exercise.findFirst.mockResolvedValue(null);
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, baseDto),
+      recordedSetService.createRecordedSet(USER_UUID, baseDto),
     ).rejects.toThrow(new NotFoundError("Exercise not found"));
-    expect(prisma.workoutSession.create).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.create).not.toHaveBeenCalled();
   });
 
-  it("starts every session in the PENDING state", async () => {
+  it("starts every recorded set in the PENDING state", async () => {
     givenUserAndExercise();
 
-    await workoutSessionService.createSession(USER_UUID, baseDto);
+    await recordedSetService.createRecordedSet(USER_UUID, baseDto);
 
-    expect(createData().processingStatus).toBe(SessionStatus.PENDING);
+    expect(createData().processingStatus).toBe(ProcessingStatus.PENDING);
   });
 
   it("rejects an unparseable performedAt", async () => {
     givenUserAndExercise();
 
     await expect(
-      workoutSessionService.createSession(USER_UUID, {
+      recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
         performedAt: "garbage",
       }),
     ).rejects.toThrow(new BadRequestError("Invalid performedAt value"));
-    expect(prisma.workoutSession.create).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.create).not.toHaveBeenCalled();
   });
 
   it("passes a valid performedAt through as a Date", async () => {
     givenUserAndExercise();
 
-    await workoutSessionService.createSession(USER_UUID, {
+    await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
       performedAt: "2026-01-01T00:00:00.000Z",
     });
@@ -317,15 +317,15 @@ describe("WorkoutSessionService.createSession", () => {
   it("leaves performedAt undefined when omitted so the column default applies", async () => {
     givenUserAndExercise();
 
-    await workoutSessionService.createSession(USER_UUID, baseDto);
+    await recordedSetService.createRecordedSet(USER_UUID, baseDto);
 
     expect(createData().performedAt).toBeUndefined();
   });
 });
 
-describe("WorkoutSessionService.listSessions", () => {
+describe("RecordedSetService.listRecordedSets", () => {
   const list = (limit: number, offset = 0, exerciseCode?: string) =>
-    workoutSessionService.listSessions({
+    recordedSetService.listRecordedSets({
       userUuid: USER_UUID,
       limit,
       offset,
@@ -343,27 +343,27 @@ describe("WorkoutSessionService.listSessions", () => {
   });
 
   it("adds a normalized exercise filter when a code is supplied", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue([]);
+    prisma.recordedSet.findMany.mockResolvedValue([]);
 
     await list(10, 0, "  PUSH_UP ");
 
-    expect(prisma.workoutSession.findMany.mock.calls[0][0].where).toEqual({
+    expect(prisma.recordedSet.findMany.mock.calls[0][0].where).toEqual({
       userId: 42,
       exercise: { code: "push_up" },
     });
   });
 
   it("adds the processingStatus filter and selects outcome, never formScore", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue([]);
+    prisma.recordedSet.findMany.mockResolvedValue([]);
 
-    await workoutSessionService.listSessions({
+    await recordedSetService.listRecordedSets({
       userUuid: USER_UUID,
       limit: 10,
       offset: 0,
-      processingStatus: SessionStatus.PROCESSING,
+      processingStatus: ProcessingStatus.PROCESSING,
     });
 
-    const args = prisma.workoutSession.findMany.mock.calls[0][0];
+    const args = prisma.recordedSet.findMany.mock.calls[0][0];
     expect(args.where).toEqual({ userId: 42, processingStatus: "PROCESSING" });
     expect(args.include.analysisResult.select).toEqual({
       outcome: true,
@@ -373,16 +373,16 @@ describe("WorkoutSessionService.listSessions", () => {
   });
 
   it("adds the processingStatus filter and selects outcome, not formScore", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue([]);
+    prisma.recordedSet.findMany.mockResolvedValue([]);
 
-    await workoutSessionService.listSessions({
+    await recordedSetService.listRecordedSets({
       userUuid: USER_UUID,
       limit: 10,
       offset: 0,
-      processingStatus: SessionStatus.PROCESSING,
+      processingStatus: ProcessingStatus.PROCESSING,
     });
 
-    const args = prisma.workoutSession.findMany.mock.calls[0][0];
+    const args = prisma.recordedSet.findMany.mock.calls[0][0];
     expect(args.where).toEqual({ userId: 42, processingStatus: "PROCESSING" });
     expect(args.include.analysisResult.select).toEqual({
       outcome: true,
@@ -392,21 +392,21 @@ describe("WorkoutSessionService.listSessions", () => {
   });
 
   it("omits the exercise filter entirely when no code is supplied", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue([]);
+    prisma.recordedSet.findMany.mockResolvedValue([]);
 
     await list(10);
 
-    expect(prisma.workoutSession.findMany.mock.calls[0][0].where).toEqual({
+    expect(prisma.recordedSet.findMany.mock.calls[0][0].where).toEqual({
       userId: 42,
     });
   });
 
   it("pairs a look-ahead take with the requested offset and returns the shared shape", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue(rows(11));
+    prisma.recordedSet.findMany.mockResolvedValue(rows(11));
 
     const result = await list(10, 20);
 
-    expect(prisma.workoutSession.findMany.mock.calls[0][0]).toMatchObject({
+    expect(prisma.recordedSet.findMany.mock.calls[0][0]).toMatchObject({
       take: 11,
       skip: 20,
     });

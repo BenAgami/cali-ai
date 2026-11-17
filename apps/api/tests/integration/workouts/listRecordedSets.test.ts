@@ -1,7 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -47,28 +47,28 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
   it("lists recorded sets newest first with status, outcome and band, without formScore", async () => {
     const { userId, token } = await newUser();
     const workout = await newWorkout(userId);
-    const older = await prisma.workoutSession.create({
+    const older = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         workoutId: workout.id,
         setNumber: 1,
         performedAt: new Date("2026-11-09T10:00:00Z"),
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
         analysisResult: {
           create: { outcome: "SCORED", formScore: 91 },
         },
       },
       select: { id: true },
     });
-    const newer = await prisma.workoutSession.create({
+    const newer = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         workoutId: workout.id,
         setNumber: 2,
         performedAt: new Date("2026-11-09T10:05:00Z"),
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         analysisStage: "ANALYZING_REPS",
       },
       select: { id: true },
@@ -79,14 +79,14 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.items).toHaveLength(2);
     expect(response.body.data.items[0]).toMatchObject({
-      sessionId: newer.id,
+      recordedSetId: newer.id,
       processingStatus: "PROCESSING",
       analysisStage: "ANALYZING_REPS",
       outcome: null,
       band: null,
     });
     expect(response.body.data.items[1]).toMatchObject({
-      sessionId: older.id,
+      recordedSetId: older.id,
       outcome: "SCORED",
       band: "EXCELLENT",
     });
@@ -102,25 +102,25 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     const runB = await prisma.workoutRun.create({
       data: { userId, workoutId: workout.id },
     });
-    const inRunA = await prisma.workoutSession.create({
+    const inRunA = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         workoutId: workout.id,
         workoutRunId: runA.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
       select: { id: true },
     });
-    await prisma.workoutSession.create({
+    await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         workoutId: workout.id,
         workoutRunId: runB.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
     });
 
@@ -133,30 +133,30 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     expect(filtered.status).toBe(StatusCodes.OK);
     expect(filtered.body.data.items).toHaveLength(1);
     expect(filtered.body.data.items[0]).toMatchObject({
-      sessionId: inRunA.id,
+      recordedSetId: inRunA.id,
       workoutRunId: runA.id,
     });
   });
 
-  it("omits PENDING sessions, which never received a capture", async () => {
+  it("omits PENDING recorded sets, which never received a capture", async () => {
     const { userId, token } = await newUser();
     const workout = await newWorkout(userId);
-    await prisma.workoutSession.create({
+    await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         workoutId: workout.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PENDING,
+        processingStatus: ProcessingStatus.PENDING,
       },
     });
-    const processing = await prisma.workoutSession.create({
+    const processing = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
         workoutId: workout.id,
         setNumber: 2,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
       select: { id: true },
     });
@@ -165,7 +165,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
     expect(
       response.body.data.items.map(
-        (set: { sessionId: number }) => set.sessionId,
+        (set: { recordedSetId: number }) => set.recordedSetId,
       ),
     ).toEqual([processing.id]);
   });
@@ -185,14 +185,14 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     const { userId, token } = await newUser();
     const workout = await newWorkout(userId);
     for (const setNumber of [1, 2, 3]) {
-      await prisma.workoutSession.create({
+      await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
           workoutId: workout.id,
           setNumber,
           performedAt: new Date(`2026-11-09T10:0${setNumber}:00Z`),
-          processingStatus: SessionStatus.PROCESSING,
+          processingStatus: ProcessingStatus.PROCESSING,
         },
       });
     }

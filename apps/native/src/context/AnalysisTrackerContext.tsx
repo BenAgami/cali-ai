@@ -11,11 +11,11 @@ import React, {
 import { useQueryClient } from "@tanstack/react-query";
 import type { AnalysisStatusEvent } from "@repo/common";
 
-import { analysisKeys, sessionsApi } from "@src/api";
+import { analysisKeys, recordedSetsApi } from "@src/api";
 import { useAnalysisStatus } from "@src/hooks/useAnalysisStatus";
 
 export type TrackedAnalysis = {
-  sessionId: number;
+  recordedSetId: number;
   jobId: string;
   workoutId: number | null;
   setNumber: number | null;
@@ -24,18 +24,18 @@ export type TrackedAnalysis = {
 };
 
 export type AnalysisToastState = {
-  sessionId: number;
+  recordedSetId: number;
   title: string;
   body: string;
 };
 
 type AnalysisTrackerValue = {
   tracked: TrackedAnalysis[];
-  statusBySession: Record<number, AnalysisStatusEvent | undefined>;
-  unseenSessionIds: ReadonlySet<number>;
+  statusByRecordedSet: Record<number, AnalysisStatusEvent | undefined>;
+  unseenRecordedSetIds: ReadonlySet<number>;
   track: (item: TrackedAnalysis) => void;
-  retry: (sessionId: number) => Promise<void>;
-  markSeen: (sessionId: number) => void;
+  retry: (recordedSetId: number) => Promise<void>;
+  markSeen: (recordedSetId: number) => void;
   toast: AnalysisToastState | null;
   dismissToast: () => void;
 };
@@ -48,7 +48,7 @@ type AnalysisWatcherProps = {
 };
 
 const AnalysisWatcher: React.FC<AnalysisWatcherProps> = ({ item, onEvent }) => {
-  const { event } = useAnalysisStatus(item.sessionId, item.jobId);
+  const { event } = useAnalysisStatus(item.recordedSetId, item.jobId);
 
   useEffect(() => {
     if (event !== null) onEvent(item, event);
@@ -62,34 +62,34 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
 }) => {
   const queryClient = useQueryClient();
   const [tracked, setTracked] = useState<TrackedAnalysis[]>([]);
-  const [statusBySession, setStatusBySession] = useState<
+  const [statusByRecordedSet, setStatusByRecordedSet] = useState<
     Record<number, AnalysisStatusEvent | undefined>
   >({});
-  const [unseenSessionIds, setUnseenSessionIds] = useState<ReadonlySet<number>>(
-    () => new Set(),
-  );
+  const [unseenRecordedSetIds, setUnseenRecordedSetIds] = useState<
+    ReadonlySet<number>
+  >(() => new Set());
   const [toast, setToast] = useState<AnalysisToastState | null>(null);
-  // Terminal events are handled once per sessionId:jobId run.
+  // Terminal events are handled once per recordedSetId:jobId run.
   const handledRuns = useRef<Set<string>>(new Set());
 
   const track = useCallback((item: TrackedAnalysis) => {
     setTracked((current) => [
-      ...current.filter((entry) => entry.sessionId !== item.sessionId),
+      ...current.filter((entry) => entry.recordedSetId !== item.recordedSetId),
       item,
     ]);
   }, []);
 
   const handleEvent = useCallback(
     (item: TrackedAnalysis, event: AnalysisStatusEvent) => {
-      setStatusBySession((current) => ({
+      setStatusByRecordedSet((current) => ({
         ...current,
-        [item.sessionId]: event,
+        [item.recordedSetId]: event,
       }));
 
       const isTerminal =
         event.status === "COMPLETED" || event.status === "FAILED";
       if (!isTerminal) return;
-      const runId = `${item.sessionId}:${item.jobId}`;
+      const runId = `${item.recordedSetId}:${item.jobId}`;
       if (handledRuns.current.has(runId)) return;
       handledRuns.current.add(runId);
 
@@ -101,11 +101,13 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
       if (event.status !== "COMPLETED") return;
 
       void queryClient.invalidateQueries({
-        queryKey: analysisKeys.session(item.sessionId),
+        queryKey: analysisKeys.recordedSet(item.recordedSetId),
       });
-      setUnseenSessionIds((current) => new Set(current).add(item.sessionId));
+      setUnseenRecordedSetIds((current) =>
+        new Set(current).add(item.recordedSetId),
+      );
       setToast({
-        sessionId: item.sessionId,
+        recordedSetId: item.recordedSetId,
         title: "Feedback ready",
         body:
           item.setNumber !== null
@@ -116,48 +118,48 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
     [queryClient],
   );
 
-  const retry = useCallback(async (sessionId: number) => {
-    const accepted = await sessionsApi.retryAnalysis(sessionId);
-    setStatusBySession((current) => ({
+  const retry = useCallback(async (recordedSetId: number) => {
+    const accepted = await recordedSetsApi.retryAnalysis(recordedSetId);
+    setStatusByRecordedSet((current) => ({
       ...current,
-      [sessionId]: undefined,
+      [recordedSetId]: undefined,
     }));
     setTracked((current) =>
       current.map((entry) =>
-        entry.sessionId === sessionId
+        entry.recordedSetId === recordedSetId
           ? { ...entry, jobId: accepted.jobId }
           : entry,
       ),
     );
   }, []);
 
-  const markSeen = useCallback((sessionId: number) => {
-    setUnseenSessionIds((current) => {
-      if (!current.has(sessionId)) return current;
+  const markSeen = useCallback((recordedSetId: number) => {
+    setUnseenRecordedSetIds((current) => {
+      if (!current.has(recordedSetId)) return current;
       const next = new Set(current);
-      next.delete(sessionId);
+      next.delete(recordedSetId);
       return next;
     });
   }, []);
 
   const dismissToast = useCallback(() => setToast(null), []);
 
-  // Re-attach sessions still PROCESSING on the server after an app restart.
+  // Re-attach recorded sets still PROCESSING on the server after an app restart.
   useEffect(() => {
     let isCancelled = false;
     void (async () => {
       try {
-        const response = await sessionsApi.listByStatus("PROCESSING");
+        const response = await recordedSetsApi.listByStatus("PROCESSING");
         if (isCancelled) return;
-        for (const session of response.items) {
-          if (session.bullmqJobId === null) continue;
+        for (const recordedSet of response.items) {
+          if (recordedSet.bullmqJobId === null) continue;
           track({
-            sessionId: session.id,
-            jobId: session.bullmqJobId,
-            workoutId: session.workoutId,
-            setNumber: session.setNumber,
-            exerciseCode: session.exercise.code,
-            exerciseDisplayName: session.exercise.displayName,
+            recordedSetId: recordedSet.id,
+            jobId: recordedSet.bullmqJobId,
+            workoutId: recordedSet.workoutId,
+            setNumber: recordedSet.setNumber,
+            exerciseCode: recordedSet.exercise.code,
+            exerciseDisplayName: recordedSet.exercise.displayName,
           });
         }
       } catch {
@@ -172,8 +174,8 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
   const value = useMemo<AnalysisTrackerValue>(
     () => ({
       tracked,
-      statusBySession,
-      unseenSessionIds,
+      statusByRecordedSet,
+      unseenRecordedSetIds,
       track,
       retry,
       markSeen,
@@ -182,8 +184,8 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
     }),
     [
       tracked,
-      statusBySession,
-      unseenSessionIds,
+      statusByRecordedSet,
+      unseenRecordedSetIds,
       track,
       retry,
       markSeen,
@@ -197,7 +199,7 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
       {children}
       {tracked.map((item) => (
         <AnalysisWatcher
-          key={`${item.sessionId}:${item.jobId}`}
+          key={`${item.recordedSetId}:${item.jobId}`}
           item={item}
           onEvent={handleEvent}
         />

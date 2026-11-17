@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-import { ANALYSIS_STAGES, SESSION_STATUSES } from "./analysis";
+import { ANALYSIS_STAGES, PROCESSING_STATUSES } from "./analysis";
 import { ANALYSIS_OUTCOMES, FORM_ANALYSIS_EXERCISES } from "./formAnalysis";
 import { EXERCISE_TYPES } from "./exercise";
 import { paginatedSchema } from "./pagination";
 
-export const createWorkoutSessionSchema = z
+export const createRecordedSetSchema = z
   .object({
     exerciseCode: z
       .string()
@@ -34,15 +34,13 @@ export const createWorkoutSessionSchema = z
     },
   );
 
-export type CreateWorkoutSessionValues = z.infer<
-  typeof createWorkoutSessionSchema
->;
+export type CreateRecordedSetValues = z.infer<typeof createRecordedSetSchema>;
 
-export const workoutSessionResponseSchema = z.object({
+export const recordedSetResponseSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   exerciseId: z.number().int(),
-  processingStatus: z.enum(SESSION_STATUSES),
+  processingStatus: z.enum(PROCESSING_STATUSES),
   workoutId: z.number().int().nullable(),
   workoutRunId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
@@ -63,30 +61,24 @@ export const workoutSessionResponseSchema = z.object({
   }),
 });
 
-export type WorkoutSessionResponse = z.infer<
-  typeof workoutSessionResponseSchema
->;
+export type RecordedSetResponse = z.infer<typeof recordedSetResponseSchema>;
 
-export const workoutSessionListItemSchema = workoutSessionResponseSchema.extend(
-  {
-    analysisResult: z
-      .object({
-        outcome: z.enum(ANALYSIS_OUTCOMES),
-        analyzedAt: z.string(),
-        summaryFeedback: z.string().nullable(),
-      })
-      .nullable(),
-  },
+export const recordedSetListItemSchema = recordedSetResponseSchema.extend({
+  analysisResult: z
+    .object({
+      outcome: z.enum(ANALYSIS_OUTCOMES),
+      analyzedAt: z.string(),
+      summaryFeedback: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export type RecordedSetListItem = z.infer<typeof recordedSetListItemSchema>;
+
+export const recordedSetListResponseSchema = paginatedSchema(
+  recordedSetListItemSchema,
 );
 
-export type WorkoutSessionListItem = z.infer<
-  typeof workoutSessionListItemSchema
->;
-
-export const workoutSessionListResponseSchema = paginatedSchema(
-  workoutSessionListItemSchema,
-);
-
-export type WorkoutSessionListResponse = z.infer<
-  typeof workoutSessionListResponseSchema
+export type RecordedSetListResponse = z.infer<
+  typeof recordedSetListResponseSchema
 >;

@@ -1,7 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -98,13 +98,13 @@ describe("workout runs: POST/PATCH /api/workouts/:id/runs", () => {
       const withSet = await prisma.workoutRun.create({
         data: { userId, workoutId: workout.id, startedAt: stale },
       });
-      await prisma.workoutSession.create({
+      await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
           workoutId: workout.id,
           workoutRunId: withSet.id,
-          processingStatus: SessionStatus.PROCESSING,
+          processingStatus: ProcessingStatus.PROCESSING,
         },
       });
 
@@ -119,19 +119,19 @@ describe("workout runs: POST/PATCH /api/workouts/:id/runs", () => {
       ).not.toBeNull();
     });
 
-    it("drops a stale open run whose only session never had a capture accepted", async () => {
+    it("drops a stale open run whose only recorded set never had a capture accepted", async () => {
       const { userId, token } = await newUser();
       const workout = await newWorkout(userId);
       const run = await prisma.workoutRun.create({
         data: { userId, workoutId: workout.id },
       });
-      const session = await prisma.workoutSession.create({
+      const recordedSet = await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
           workoutId: workout.id,
           workoutRunId: run.id,
-          processingStatus: SessionStatus.PENDING,
+          processingStatus: ProcessingStatus.PENDING,
         },
       });
       await prisma.workoutRun.update({
@@ -144,8 +144,8 @@ describe("workout runs: POST/PATCH /api/workouts/:id/runs", () => {
       expect(
         await prisma.workoutRun.findUnique({ where: { id: run.id } }),
       ).toBeNull();
-      const detached = await prisma.workoutSession.findUniqueOrThrow({
-        where: { id: session.id },
+      const detached = await prisma.recordedSet.findUniqueOrThrow({
+        where: { id: recordedSet.id },
       });
       expect(detached.workoutRunId).toBeNull();
     });

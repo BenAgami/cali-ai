@@ -26,7 +26,7 @@ const MODELS = [
   "workout",
   "workoutExercise",
   "workoutRun",
-  "workoutSession",
+  "recordedSet",
   "userGoal",
   "poseCapture",
   "bodyMetric",

@@ -1,12 +1,12 @@
 import { z } from "zod";
 
-import { SESSION_STATUSES } from "@repo/common";
+import { PROCESSING_STATUSES } from "@repo/common";
 
 import { registry } from "../registry";
 import {
-  CreateWorkoutSessionBody,
-  WorkoutSessionResponse,
-  WorkoutSessionListItem,
+  CreateRecordedSetBody,
+  RecordedSetResponse,
+  RecordedSetListItem,
   paginatedData,
   successResponse,
   errorResponse,
@@ -16,18 +16,18 @@ const bearerAuth = { BearerAuth: [] };
 
 registry.registerPath({
   method: "post",
-  path: "/workout-sessions",
-  tags: ["Workout Sessions"],
-  summary: "Create a workout session",
+  path: "/recorded-sets",
+  tags: ["Recorded Sets"],
+  summary: "Create a recorded set",
   security: [bearerAuth],
   request: {
     body: {
       required: true,
-      content: { "application/json": { schema: CreateWorkoutSessionBody } },
+      content: { "application/json": { schema: CreateRecordedSetBody } },
     },
   },
   responses: {
-    201: successResponse(WorkoutSessionResponse, "Workout session created"),
+    201: successResponse(RecordedSetResponse, "Recorded set created"),
     400: errorResponse("Validation error or unsupported exercise"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Exercise, workout or workout run not found"),
@@ -41,9 +41,9 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
-  path: "/workout-sessions",
-  tags: ["Workout Sessions"],
-  summary: "List workout sessions for the current user",
+  path: "/recorded-sets",
+  tags: ["Recorded Sets"],
+  summary: "List recorded sets for the current user",
   security: [bearerAuth],
   request: {
     query: z.object({
@@ -64,7 +64,7 @@ registry.registerPath({
         description: "Filter by exercise code",
         example: "push_up",
       }),
-      processingStatus: z.enum(SESSION_STATUSES).optional().openapi({
+      processingStatus: z.enum(PROCESSING_STATUSES).optional().openapi({
         description: "Filter by processing status",
         example: "PROCESSING",
       }),
@@ -72,8 +72,8 @@ registry.registerPath({
   },
   responses: {
     200: successResponse(
-      paginatedData(WorkoutSessionListItem),
-      "Paginated workout session list",
+      paginatedData(RecordedSetListItem),
+      "Paginated recorded set list",
     ),
     400: errorResponse("Invalid query parameters"),
     401: errorResponse("Unauthorized"),

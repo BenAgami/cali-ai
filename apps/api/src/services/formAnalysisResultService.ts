@@ -22,7 +22,7 @@ const POSITIVE_TITLE = "What went well";
 export class FormAnalysisResultService {
   async saveScored(
     tx: Prisma.TransactionClient,
-    sessionId: number,
+    recordedSetId: number,
     metrics: ScoredFormMetrics,
     outcome: FormFeedbackOutcome,
   ): Promise<void> {
@@ -81,8 +81,8 @@ export class FormAnalysisResultService {
       analyzedAt: new Date(),
     };
     const result = await tx.analysisResult.upsert({
-      where: { sessionId },
-      create: { sessionId, ...data },
+      where: { recordedSetId },
+      create: { recordedSetId, ...data },
       update: data,
       select: { id: true },
     });
@@ -100,7 +100,7 @@ export class FormAnalysisResultService {
 
   async saveUntrackable(
     tx: Prisma.TransactionClient,
-    sessionId: number,
+    recordedSetId: number,
     metrics: UntrackableFormMetrics,
   ): Promise<void> {
     const rawFeedback = storedRawFeedbackSchema.parse({
@@ -124,8 +124,8 @@ export class FormAnalysisResultService {
       analyzedAt: new Date(),
     };
     const result = await tx.analysisResult.upsert({
-      where: { sessionId },
-      create: { sessionId, ...data },
+      where: { recordedSetId },
+      create: { recordedSetId, ...data },
       update: data,
       select: { id: true },
     });

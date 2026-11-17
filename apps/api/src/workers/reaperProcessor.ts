@@ -8,7 +8,7 @@ export const processReapJob = async (job: Job): Promise<{ reaped: number }> => {
   const ids = await analysisStateService.reapStuck(new Date(), log);
 
   if (ids.length > 0) {
-    log.warn({ sessionIds: ids }, "Failed stuck analysis sessions");
+    log.warn({ recordedSetIds: ids }, "Failed stuck recorded set analyses");
   }
 
   return { reaped: ids.length };

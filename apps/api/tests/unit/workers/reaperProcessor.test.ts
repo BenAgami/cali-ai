@@ -39,7 +39,7 @@ describe("processReapJob", () => {
     );
     expect(result).toEqual({ reaped: 2 });
     expect(mockChild.warn).toHaveBeenCalledWith(
-      { sessionIds: [4, 5] },
+      { recordedSetIds: [4, 5] },
       expect.any(String),
     );
   });
