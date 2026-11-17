@@ -234,16 +234,16 @@ export function useUpdateProfile() {
 
 **Query key conventions:**
 
-- First element is the resource name: `["profile"]`, `["sessions"]`, `["exercises"]`
-- Add scoping params after: `["sessions", sessionId]`, `["profile", token]`
+- First element is the resource name: `["profile"]`, `["recordedSets"]`, `["exercises"]`
+- Add scoping params after: `["recordedSets", recordedSetId]`, `["profile", token]`
 - Keep keys in a constants file when they're shared across hooks:
 
 ```ts
 // apps/native/src/constants/queryKeys.ts
 export const QUERY_KEYS = {
   profile: (token: string) => ["profile", token] as const,
-  sessions: () => ["sessions"] as const,
-  session: (id: string) => ["sessions", id] as const,
+  recordedSets: () => ["recordedSets"] as const,
+  recordedSet: (id: number) => ["recordedSets", id] as const,
 } as const;
 ```
 
