@@ -81,7 +81,7 @@ const scoredResult = (overrides: Record<string, unknown> = {}) => ({
 
 const recordedSet = (overrides: Record<string, unknown> = {}) => ({
   id: RECORDED_SET_ID,
-  workoutId: 9,
+  workoutPlanId: 9,
   setNumber: 2,
   processingStatus: ProcessingStatus.COMPLETED,
   workoutRun: null,
@@ -105,7 +105,7 @@ describe("AnalysisResultQueryService", () => {
   describe("listRecordedSets", () => {
     const row = (overrides: Record<string, unknown> = {}) => ({
       id: 11,
-      workoutId: 9,
+      workoutPlanId: 9,
       workoutRunId: 4,
       setNumber: 1,
       performedAt: ANALYZED_AT,
@@ -122,7 +122,7 @@ describe("AnalysisResultQueryService", () => {
     const query = { limit: 50, offset: 0 };
 
     it("throws NotFoundError when the workout is not owned", async () => {
-      prisma.workout.findFirst.mockResolvedValue(null);
+      prisma.workoutPlan.findFirst.mockResolvedValue(null);
 
       await expect(service.listRecordedSets(USER, 9, query)).rejects.toThrow(
         new NotFoundError("Workout not found"),
@@ -131,7 +131,7 @@ describe("AnalysisResultQueryService", () => {
     });
 
     it("queries newest first with a look-ahead row and maps band from the score", async () => {
-      prisma.workout.findFirst.mockResolvedValue({ id: 9 });
+      prisma.workoutPlan.findFirst.mockResolvedValue({ id: 9 });
       prisma.recordedSet.findMany.mockResolvedValue([
         row(),
         row({
@@ -152,7 +152,7 @@ describe("AnalysisResultQueryService", () => {
       expect(prisma.recordedSet.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            workoutId: 9,
+            workoutPlanId: 9,
             userId: USER_ID,
             processingStatus: { not: ProcessingStatus.PENDING },
           },
@@ -177,7 +177,7 @@ describe("AnalysisResultQueryService", () => {
     });
 
     it("scopes the query to one run and maps workoutRunId when given", async () => {
-      prisma.workout.findFirst.mockResolvedValue({ id: 9 });
+      prisma.workoutPlan.findFirst.mockResolvedValue({ id: 9 });
       prisma.recordedSet.findMany.mockResolvedValue([row()]);
 
       const { items: result } = await service.listRecordedSets(USER, 9, {
@@ -188,7 +188,7 @@ describe("AnalysisResultQueryService", () => {
       expect(prisma.recordedSet.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            workoutId: 9,
+            workoutPlanId: 9,
             userId: USER_ID,
             workoutRunId: 4,
             processingStatus: { not: ProcessingStatus.PENDING },
@@ -199,7 +199,7 @@ describe("AnalysisResultQueryService", () => {
     });
 
     it("pages with skip and a look-ahead take, trimming the extra row", async () => {
-      prisma.workout.findFirst.mockResolvedValue({ id: 9 });
+      prisma.workoutPlan.findFirst.mockResolvedValue({ id: 9 });
       prisma.recordedSet.findMany.mockResolvedValue(
         [20, 19, 18, 17, 16, 15].map((id) => row({ id })),
       );
@@ -238,7 +238,7 @@ describe("AnalysisResultQueryService", () => {
       );
       expect(result).toEqual({
         recordedSetId: RECORDED_SET_ID,
-        workoutId: 9,
+        workoutPlanId: 9,
         openWorkoutRunId: null,
         setNumber: 2,
         exerciseCode: "push_up",

@@ -203,7 +203,7 @@ export const formDimensionResultSchema = z.object({
 
 const analysisBase = {
   recordedSetId: z.number().int(),
-  workoutId: z.number().int().nullable(),
+  workoutPlanId: z.number().int().nullable(),
   openWorkoutRunId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   exerciseCode: z.string(),
@@ -233,7 +233,7 @@ export type FormAnalysisResponse = z.infer<typeof formAnalysisResponseSchema>;
 
 export const recordedSetSummarySchema = z.object({
   recordedSetId: z.number().int(),
-  workoutId: z.number().int(),
+  workoutPlanId: z.number().int(),
   workoutRunId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   exerciseCode: z.string(),

@@ -9,13 +9,13 @@ import {
   logoutSchema,
   updateProfileSchema,
   upsertGoalSchema,
-  createWorkoutSchema,
-  updateWorkoutSchema,
+  createWorkoutPlanSchema,
+  updateWorkoutPlanSchema,
   createRecordedSetSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
   exerciseDetailSchema,
-  workoutWithExercisesSchema,
+  workoutPlanWithExercisesSchema,
   workoutRunResponseSchema,
   pageMetaSchema,
   poseCapturePayloadSchema,
@@ -80,13 +80,13 @@ export const AiConsentBody = registry.register(
   "AiConsentBody",
   aiConsentSchema,
 );
-export const CreateWorkoutBody = registry.register(
-  "CreateWorkoutBody",
-  createWorkoutSchema,
+export const CreateWorkoutPlanBody = registry.register(
+  "CreateWorkoutPlanBody",
+  createWorkoutPlanSchema,
 );
-export const UpdateWorkoutBody = registry.register(
-  "UpdateWorkoutBody",
-  updateWorkoutSchema,
+export const UpdateWorkoutPlanBody = registry.register(
+  "UpdateWorkoutPlanBody",
+  updateWorkoutPlanSchema,
 );
 export const GenerateWorkoutBody = registry.register(
   "GenerateWorkoutBody",
@@ -298,9 +298,9 @@ export const ExerciseResponse = registry.register(
 
 // ── Workout responses ─────────────────────────────────────────────────────────
 
-export const WorkoutResponse = registry.register(
-  "Workout",
-  workoutWithExercisesSchema,
+export const WorkoutPlanResponse = registry.register(
+  "WorkoutPlan",
+  workoutPlanWithExercisesSchema,
 );
 
 export const WorkoutGenerationPreviewResponse = registry.register(

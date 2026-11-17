@@ -14,27 +14,27 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { ScreenHeader } from "@repo/ui";
 import { useTheme } from "@src/context/ThemeContext";
-import { useWorkouts } from "@src/hooks/queries/useWorkouts";
-import { workoutKeys } from "@src/api";
+import { useWorkoutPlans } from "@src/hooks/queries/useWorkoutPlans";
+import { workoutPlanKeys } from "@src/api";
 import WorkoutCard from "@src/components/WorkoutCard";
 
 const WorkoutsTab: React.FC = () => {
   const { colors } = useTheme();
   const queryClient = useQueryClient();
-  const { data, isLoading, error } = useWorkouts();
+  const { data, isLoading, error } = useWorkoutPlans();
 
   // Per Phase 2 lesson + RESEARCH Pitfall 4: invalidate the list query on focus
   // so that returning from create/edit/delete shows the latest data.
   useFocusEffect(
     useCallback(() => {
-      void queryClient.invalidateQueries({ queryKey: workoutKeys.lists() });
+      void queryClient.invalidateQueries({ queryKey: workoutPlanKeys.lists() });
     }, [queryClient]),
   );
 
-  const handleCardPress = (workoutId: number) => {
+  const handleCardPress = (workoutPlanId: number) => {
     router.push({
       pathname: "/workout-detail",
-      params: { id: String(workoutId) },
+      params: { id: String(workoutPlanId) },
     });
   };
 

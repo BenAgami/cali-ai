@@ -6,7 +6,7 @@ const withAuth = (req: supertest.Test, token?: string) => {
   return req;
 };
 
-export const createWorkout = async (
+export const createWorkoutPlan = async (
   app: Application,
   token: string | undefined,
   data: object | string,
@@ -14,7 +14,7 @@ export const createWorkout = async (
   withAuth(
     supertest
       .agent(app)
-      .post("/api/workouts")
+      .post("/api/workout-plans")
       .set("Content-Type", "application/json"),
     token,
   ).send(data);
@@ -27,28 +27,28 @@ export const postGenerateWorkout = async (
   withAuth(
     supertest
       .agent(app)
-      .post("/api/workouts/generate")
+      .post("/api/workout-plans/generate")
       .set("Content-Type", "application/json"),
     token,
   ).send(body);
 
-export const listWorkouts = async (
+export const listWorkoutPlans = async (
   app: Application,
   token: string | undefined,
   query?: Record<string, string | number | undefined>,
 ) => {
-  const req = withAuth(supertest.agent(app).get("/api/workouts"), token);
+  const req = withAuth(supertest.agent(app).get("/api/workout-plans"), token);
   if (query) req.query(query);
   return req;
 };
 
-export const getWorkout = async (
+export const getWorkoutPlan = async (
   app: Application,
   token: string | undefined,
   id: number | string,
-) => withAuth(supertest.agent(app).get(`/api/workouts/${id}`), token);
+) => withAuth(supertest.agent(app).get(`/api/workout-plans/${id}`), token);
 
-export const updateWorkout = async (
+export const updateWorkoutPlan = async (
   app: Application,
   token: string | undefined,
   id: number | string,
@@ -57,22 +57,23 @@ export const updateWorkout = async (
   withAuth(
     supertest
       .agent(app)
-      .patch(`/api/workouts/${id}`)
+      .patch(`/api/workout-plans/${id}`)
       .set("Content-Type", "application/json"),
     token,
   ).send(data);
 
-export const deleteWorkout = async (
+export const deleteWorkoutPlan = async (
   app: Application,
   token: string | undefined,
   id: number | string,
-) => withAuth(supertest.agent(app).delete(`/api/workouts/${id}`), token);
+) => withAuth(supertest.agent(app).delete(`/api/workout-plans/${id}`), token);
 
 export const startWorkout = async (
   app: Application,
   token: string | undefined,
   id: number | string,
-) => withAuth(supertest.agent(app).post(`/api/workouts/${id}/runs`), token);
+) =>
+  withAuth(supertest.agent(app).post(`/api/workout-plans/${id}/runs`), token);
 
 export const completeWorkout = async (
   app: Application,
@@ -84,7 +85,7 @@ export const completeWorkout = async (
   withAuth(
     supertest
       .agent(app)
-      .patch(`/api/workouts/${id}/runs/${runId}`)
+      .patch(`/api/workout-plans/${id}/runs/${runId}`)
       .set("Content-Type", "application/json"),
     token,
   ).send(data);
@@ -96,6 +97,9 @@ export const getRecordedSets = async (
   query: Record<string, number | string> = {},
 ) =>
   withAuth(
-    supertest.agent(app).get(`/api/workouts/${id}/recorded-sets`).query(query),
+    supertest
+      .agent(app)
+      .get(`/api/workout-plans/${id}/recorded-sets`)
+      .query(query),
     token,
   );

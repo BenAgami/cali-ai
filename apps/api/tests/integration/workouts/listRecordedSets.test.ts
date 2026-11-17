@@ -8,13 +8,13 @@ import {
   teardownIntegrationTest,
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { getRecordedSets } from "../helpers/requestSender/workoutsRequests";
+import { getRecordedSets } from "../helpers/requestSender/workoutPlansRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("GET /api/workouts/:id/recorded-sets", () => {
+describe("GET /api/workout-plans/:id/recorded-sets", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let exerciseId: number;
@@ -29,8 +29,8 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     return { userId: user.id, token: res.body.data.token as string };
   };
 
-  const newWorkout = (userId: number) =>
-    createWorkoutFixture(prisma, {
+  const newWorkoutPlan = (userId: number) =>
+    createWorkoutPlanFixture(prisma, {
       userId,
       exercises: [{ exerciseId, position: 1 }],
     });
@@ -46,12 +46,12 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("lists recorded sets newest first with status, outcome and band, without formScore", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
     const older = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 1,
         performedAt: new Date("2026-11-09T10:00:00Z"),
         processingStatus: ProcessingStatus.COMPLETED,
@@ -65,7 +65,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 2,
         performedAt: new Date("2026-11-09T10:05:00Z"),
         processingStatus: ProcessingStatus.PROCESSING,
@@ -95,18 +95,18 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("filters to one run when workoutRunId is given and exposes workoutRunId", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
     const runA = await prisma.workoutRun.create({
-      data: { userId, workoutId: workout.id },
+      data: { userId, workoutPlanId: workout.id },
     });
     const runB = await prisma.workoutRun.create({
-      data: { userId, workoutId: workout.id },
+      data: { userId, workoutPlanId: workout.id },
     });
     const inRunA = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         workoutRunId: runA.id,
         setNumber: 1,
         processingStatus: ProcessingStatus.PROCESSING,
@@ -117,7 +117,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         workoutRunId: runB.id,
         setNumber: 1,
         processingStatus: ProcessingStatus.PROCESSING,
@@ -140,12 +140,12 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("omits PENDING recorded sets, which never received a capture", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
     await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 1,
         processingStatus: ProcessingStatus.PENDING,
       },
@@ -154,7 +154,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 2,
         processingStatus: ProcessingStatus.PROCESSING,
       },
@@ -172,7 +172,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("returns an empty list for a workout with no recorded sets", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
 
     const response = await getRecordedSets(app, token, workout.id);
 
@@ -183,13 +183,13 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("pages with limit and offset and reports hasMore and nextOffset", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
     for (const setNumber of [1, 2, 3]) {
       await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
-          workoutId: workout.id,
+          workoutPlanId: workout.id,
           setNumber,
           performedAt: new Date(`2026-11-09T10:0${setNumber}:00Z`),
           processingStatus: ProcessingStatus.PROCESSING,
@@ -218,7 +218,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("defaults the page size to 50", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
 
     const response = await getRecordedSets(app, token, workout.id);
 
@@ -231,7 +231,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     { offset: -1 },
   ])("returns 400 for invalid paging %j", async (query) => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
 
     const response = await getRecordedSets(app, token, workout.id, query);
 
@@ -241,7 +241,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
   it("returns 404 for another user's workout", async () => {
     const owner = await newUser();
     const other = await newUser();
-    const workout = await newWorkout(owner.userId);
+    const workout = await newWorkoutPlan(owner.userId);
 
     const response = await getRecordedSets(app, other.token, workout.id);
 

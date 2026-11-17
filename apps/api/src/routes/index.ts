@@ -8,14 +8,14 @@ import userRoutes from "./user";
 import recordedSetRoutes from "./recordedSet";
 import recordedSetAnalysisRoutes from "./recordedSetAnalysis";
 import exerciseRoutes from "./exercise";
-import workoutRoutes from "./workout";
+import workoutPlanRoutes from "./workoutPlan";
 import openapiRoutes from "./openapi";
 
 const registerPublicRoutes = (router: Router): void => {
   router.use("/auth", authRoutes);
   router.use("/users", userRoutes);
   router.use("/exercises", exerciseRoutes);
-  router.use("/workouts", workoutRoutes);
+  router.use("/workout-plans", workoutPlanRoutes);
   router.use("/recorded-sets", recordedSetRoutes);
   router.use("/recorded-sets", recordedSetAnalysisRoutes);
 };

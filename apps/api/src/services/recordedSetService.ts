@@ -9,7 +9,7 @@ import { parseOptionalDate } from "../utils/parseDate";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 
 import aiPrerequisitesService from "./aiPrerequisitesService";
-import workoutService from "./workoutService";
+import workoutPlanService from "./workoutPlanService";
 
 type ListRecordedSetsInput = {
   userUuid: string;
@@ -42,13 +42,13 @@ export class RecordedSetService {
     return exercise;
   }
 
-  private async assertWorkoutContainsExercise(
+  private async assertWorkoutPlanContainsExercise(
     userId: number,
-    workoutId: number,
+    workoutPlanId: number,
     exerciseCode: string,
   ) {
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
       select: {
         id: true,
         exercises: { select: { exercise: { select: { code: true } } } },
@@ -71,16 +71,16 @@ export class RecordedSetService {
     const exerciseCode = normalizeString(data.exerciseCode);
     const exercise = await this.getExerciseByCode(exerciseCode);
 
-    if (data.workoutId !== undefined) {
-      await this.assertWorkoutContainsExercise(
+    if (data.workoutPlanId !== undefined) {
+      await this.assertWorkoutPlanContainsExercise(
         userId,
-        data.workoutId,
+        data.workoutPlanId,
         exercise.code,
       );
       if (data.workoutRunId !== undefined) {
-        await workoutService.assertOpenWorkoutRun(
+        await workoutPlanService.assertOpenWorkoutRun(
           userId,
-          data.workoutId,
+          data.workoutPlanId,
           data.workoutRunId,
         );
       }
@@ -92,7 +92,7 @@ export class RecordedSetService {
       data: {
         userId,
         exerciseId: exercise.id,
-        workoutId: data.workoutId ?? null,
+        workoutPlanId: data.workoutPlanId ?? null,
         workoutRunId: data.workoutRunId ?? null,
         setNumber: data.setNumber ?? null,
         notes: data.notes,

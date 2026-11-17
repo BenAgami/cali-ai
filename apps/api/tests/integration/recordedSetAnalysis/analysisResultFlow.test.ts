@@ -21,10 +21,10 @@ import {
   getRecordedSetAnalysis,
   submitCapture,
 } from "../helpers/requestSender/recordedSetAnalysisRequests";
-import { getRecordedSets } from "../helpers/requestSender/workoutsRequests";
+import { getRecordedSets } from "../helpers/requestSender/workoutPlansRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
@@ -98,14 +98,14 @@ describe("recorded set analysis result flow (FORM-08)", () => {
   });
 
   it("goes from capture to a stored result readable over HTTP", async () => {
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId,
       exercises: [{ exerciseId, position: 1 }],
     });
 
     const created = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
-      workoutId: workout.id,
+      workoutPlanId: workout.id,
       setNumber: 1,
     });
     expect(created.status).toBe(StatusCodes.CREATED);

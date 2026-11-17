@@ -43,7 +43,7 @@ export class AnalysisResultQueryService {
       where: { id: recordedSetId, userId },
       select: {
         id: true,
-        workoutId: true,
+        workoutPlanId: true,
         setNumber: true,
         processingStatus: true,
         workoutRun: { select: { id: true, completedAt: true } },
@@ -92,7 +92,7 @@ export class AnalysisResultQueryService {
     const exerciseCode = recordedSet.exercise.code;
     const base = {
       recordedSetId: recordedSet.id,
-      workoutId: recordedSet.workoutId,
+      workoutPlanId: recordedSet.workoutPlanId,
       openWorkoutRunId:
         recordedSet.workoutRun?.completedAt === null
           ? recordedSet.workoutRun.id
@@ -167,13 +167,13 @@ export class AnalysisResultQueryService {
 
   async listRecordedSets(
     userUuid: string,
-    workoutId: number,
+    workoutPlanId: number,
     query: RecordedSetsQuery,
   ): Promise<RecordedSetPage> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
       select: { id: true },
     });
     if (!workout) {
@@ -183,7 +183,7 @@ export class AnalysisResultQueryService {
     const recordedSets = await this.prisma.recordedSet.findMany({
       // PENDING means no capture was accepted, so there is nothing to show.
       where: {
-        workoutId,
+        workoutPlanId,
         userId,
         workoutRunId: query.workoutRunId,
         processingStatus: { not: ProcessingStatus.PENDING },
@@ -193,7 +193,7 @@ export class AnalysisResultQueryService {
       take: lookAheadTake(query.limit),
       select: {
         id: true,
-        workoutId: true,
+        workoutPlanId: true,
         workoutRunId: true,
         setNumber: true,
         performedAt: true,
@@ -211,7 +211,7 @@ export class AnalysisResultQueryService {
       const result = recordedSet.analysisResult;
       return {
         recordedSetId: recordedSet.id,
-        workoutId: recordedSet.workoutId,
+        workoutPlanId: recordedSet.workoutPlanId,
         workoutRunId: recordedSet.workoutRunId,
         setNumber: recordedSet.setNumber,
         exerciseCode: recordedSet.exercise.code,

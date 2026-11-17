@@ -176,7 +176,7 @@ describe("GET /api/recorded-sets", () => {
     const exercise = await prisma.exercise.findUniqueOrThrow({
       where: { code: "push_up" },
     });
-    const workout = await prisma.workout.create({
+    const workout = await prisma.workoutPlan.create({
       data: { userId, name: "W" },
     });
 
@@ -184,7 +184,7 @@ describe("GET /api/recorded-sets", () => {
       data: {
         userId,
         exerciseId: exercise.id,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 1,
         processingStatus: ProcessingStatus.PROCESSING,
         bullmqJobId: "analysis-1",
@@ -221,7 +221,7 @@ describe("GET /api/recorded-sets", () => {
     expect(filtered.body.data.items).toHaveLength(1);
     expect(filtered.body.data.items[0]).toMatchObject({
       id: processing.id,
-      workoutId: workout.id,
+      workoutPlanId: workout.id,
       setNumber: 1,
       bullmqJobId: "analysis-1",
       analysisResult: null,

@@ -26,7 +26,7 @@ Package manager: Yarn Classic 1.22.19. Task runner: Turborepo.
 
 **Zod validation at boundaries.** Validate all request bodies in middleware before they reach controllers. Schemas live in `packages/common/src/validations/`.
 
-**Response shapes are shared, not duplicated.** Server response shapes used by `apps/native` (e.g. `WorkoutWithExercises`, `ExerciseSummary`) and by `apps/api/src/openapi/schemas.ts` are defined once in `packages/common/src/validations/` and imported by both — never hand-rolled a second time in `apps/native/src/types/` or the OpenAPI registry. `@repo/common` schemas stay framework-agnostic (no `.openapi()` calls) since `apps/native` also consumes them; add OpenAPI-only presentation metadata at the registration site in `apps/api/src/openapi/schemas.ts` instead. `apps/native/src/types/` is for local-only UI/form-state shapes that never cross the API boundary.
+**Response shapes are shared, not duplicated.** Server response shapes used by `apps/native` (e.g. `WorkoutPlanWithExercises`, `ExerciseSummary`) and by `apps/api/src/openapi/schemas.ts` are defined once in `packages/common/src/validations/` and imported by both — never hand-rolled a second time in `apps/native/src/types/` or the OpenAPI registry. `@repo/common` schemas stay framework-agnostic (no `.openapi()` calls) since `apps/native` also consumes them; add OpenAPI-only presentation metadata at the registration site in `apps/api/src/openapi/schemas.ts` instead. `apps/native/src/types/` is for local-only UI/form-state shapes that never cross the API boundary.
 
 **HTTP error hierarchy** is in `apps/api/src/errors/`. Throw typed errors (e.g. `NotFoundError`, `UnauthorizedError`) — the error handler catches them.
 

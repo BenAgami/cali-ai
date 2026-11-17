@@ -7,9 +7,9 @@ model RecordedSet {
   exercise   Exercise @relation(fields: [exerciseId], references: [id])
   exerciseId Int      @map("exercise_id")
 
-  workout   Workout? @relation(fields: [workoutId], references: [id], onDelete: SetNull)
-  workoutId Int?     @map("workout_id")
-  setNumber Int?     @map("set_number") @db.SmallInt
+  workoutPlan   WorkoutPlan? @relation(fields: [workoutPlanId], references: [id], onDelete: SetNull)
+  workoutPlanId Int?         @map("workout_plan_id")
+  setNumber     Int?         @map("set_number") @db.SmallInt
 
   workoutRun   WorkoutRun? @relation(fields: [workoutRunId], references: [id], onDelete: SetNull)
   workoutRunId Int?        @map("workout_run_id")
@@ -35,7 +35,7 @@ model RecordedSet {
 
   @@index([userId, performedAt(sort: Desc)], map: "idx_recorded_sets_user_performed_at_desc")
   @@index([userId, exerciseId, performedAt(sort: Desc)], map: "idx_recorded_sets_user_exercise_performed_at_desc")
-  @@index([workoutId, performedAt(sort: Desc)], map: "idx_recorded_sets_workout_performed_at_desc")
+  @@index([workoutPlanId, performedAt(sort: Desc)], map: "idx_recorded_sets_workout_plan_performed_at_desc")
   @@index([workoutRunId], map: "idx_recorded_sets_workout_run_id")
   @@index([processingStatus], map: "idx_recorded_sets_processing_status")
   @@map("recorded_sets")

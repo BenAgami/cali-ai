@@ -18,7 +18,7 @@ erDiagram
     User ||--o{ UserGoal : sets
     User ||--o{ RecordedSet : performs
     Exercise ||--o{ RecordedSet : selected_in
-    Workout ||--o{ RecordedSet : recorded_in
+    WorkoutPlan ||--o{ RecordedSet : recorded_in
     RecordedSet ||--o| PoseCapture : captures
     RecordedSet ||--o| AnalysisResult : produces
     AnalysisResult ||--o{ AnalysisFinding : contains
@@ -55,7 +55,7 @@ erDiagram
         int id PK
         int user_id FK
         int exercise_id FK
-        int workout_id FK
+        int workout_plan_id FK
         int set_number
         string processing_status
         text notes
@@ -136,7 +136,7 @@ erDiagram
 
 ### Phase 5 notes
 
-- `RecordedSet.workoutId` is a nullable FK to `Workout` (SET NULL on delete, so the recorded set survives workout deletion). `setNumber` is the 1-based set within the workout run. Several recorded sets may share one `(workoutId, setNumber)`: "Record again" creates a new recorded set and the latest is shown.
+- `RecordedSet.workoutPlanId` is a nullable FK to `WorkoutPlan` (SET NULL on delete, so the recorded set survives plan deletion). `setNumber` is the 1-based set within the workout run. Several recorded sets may share one `(workoutPlanId, setNumber)`: "Record again" creates a new recorded set and the latest is shown.
 - `AnalysisResult.outcome` is `SCORED` or `UNTRACKABLE`. `formScore` is null when `UNTRACKABLE`, and `untrackableReasons` lists why. Phase 7 trend queries must filter `outcome = SCORED`. `formScore` is stored but never returned to the app (FORM-04).
 - `AnalysisFinding.repNumbers` holds 1-based rep references (FORM-06).
 
@@ -451,7 +451,7 @@ Indexes: `(user_id, created_at DESC)`.
 Rules:
 
 - The daily cap counts all rows (any status) in a rolling 24h window.
-- `workouts.ai_model` (VARCHAR(80) NULL) and `workouts.generation_id` (INT NULL, UNIQUE, FK -> `workout_generations(id)` ON DELETE SET NULL) record provenance of saved AI plans.
+- `workout_plans.ai_model` (VARCHAR(80) NULL) and `workout_plans.generation_id` (INT NULL, UNIQUE, FK -> `workout_generations(id)` ON DELETE SET NULL) record provenance of saved AI plans.
 - `body_metrics` is now written from the profile/onboarding forms: append-only, skipped when height and weight are unchanged.
 
 ## 5. Smart To Add Now (Low Cost, High Future Value)

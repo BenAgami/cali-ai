@@ -151,7 +151,7 @@ interface UseRecordedSetParams {
     status: AiPrerequisiteStatus;
     refetchStatus: () => Promise<AiPrerequisiteStatus>;
   };
-  workoutId: number | null;
+  workoutPlanId: number | null;
   workoutRunId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
@@ -163,7 +163,7 @@ interface UseRecordedSetParams {
 export const useRecordedSet = (params: UseRecordedSetParams) => {
   const {
     prerequisites,
-    workoutId,
+    workoutPlanId,
     workoutRunId,
     setNumber,
     exerciseCode,
@@ -371,7 +371,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       recordedSetIdRef.current ??= (
         await createRecordedSetForSet({
           exerciseCode,
-          workoutId: workoutId ?? undefined,
+          workoutPlanId: workoutPlanId ?? undefined,
           workoutRunId: workoutRunId ?? undefined,
           setNumber: setNumber ?? undefined,
         })
@@ -381,13 +381,17 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
       track({
         recordedSetId,
         jobId: accepted.jobId,
-        workoutId,
+        workoutPlanId,
         setNumber,
         exerciseCode,
         exerciseDisplayName,
       });
-      if (source === "execute" && workoutId !== null && setNumber !== null) {
-        markRecordedSetDone({ workoutId, setNumber });
+      if (
+        source === "execute" &&
+        workoutPlanId !== null &&
+        setNumber !== null
+      ) {
+        markRecordedSetDone({ workoutPlanId, setNumber });
       }
       payloadRef.current = null;
       setHasHeldUpload(false);
@@ -420,7 +424,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     setNumber,
     source,
     track,
-    workoutId,
+    workoutPlanId,
     workoutRunId,
   ]);
 

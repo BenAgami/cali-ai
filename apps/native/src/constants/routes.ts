@@ -17,13 +17,13 @@ export const EXERCISE_ROUTES = {
   byCode: (code: string) => `/api/exercises/${encodeURIComponent(code)}`,
 } as const;
 
-export const WORKOUT_ROUTES = {
-  list: "/api/workouts",
-  generate: "/api/workouts/generate",
-  detail: (id: number) => `/api/workouts/${id}`,
-  runs: (id: number) => `/api/workouts/${id}/runs`,
-  run: (id: number, runId: number) => `/api/workouts/${id}/runs/${runId}`,
-  recordedSets: (id: number) => `/api/workouts/${id}/recorded-sets`,
+export const WORKOUT_PLAN_ROUTES = {
+  list: "/api/workout-plans",
+  generate: "/api/workout-plans/generate",
+  detail: (id: number) => `/api/workout-plans/${id}`,
+  runs: (id: number) => `/api/workout-plans/${id}/runs`,
+  run: (id: number, runId: number) => `/api/workout-plans/${id}/runs/${runId}`,
+  recordedSets: (id: number) => `/api/workout-plans/${id}/recorded-sets`,
 } as const;
 
 export const RECORDED_SET_ROUTES = {

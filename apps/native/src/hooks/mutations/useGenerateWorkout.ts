@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 
-import { workoutApi } from "@src/api";
+import { workoutPlanApi } from "@src/api";
 import type {
   GenerateWorkoutValues,
   WorkoutGenerationPreview,
@@ -8,6 +8,6 @@ import type {
 
 export const useGenerateWorkout = () =>
   useMutation<WorkoutGenerationPreview, Error, GenerateWorkoutValues>({
-    mutationFn: workoutApi.generate,
+    mutationFn: workoutPlanApi.generate,
     retry: false,
   });

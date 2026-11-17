@@ -39,11 +39,11 @@ export const useAnalysisResultScreen = (
   }, [refetch]);
 
   const recordAgain = useCallback(() => {
-    if (data === undefined || data.workoutId === null) return;
+    if (data === undefined || data.workoutPlanId === null) return;
     router.push({
       pathname: "/record-set",
       params: {
-        workoutId: String(data.workoutId),
+        workoutPlanId: String(data.workoutPlanId),
         ...(data.openWorkoutRunId !== null && {
           runId: String(data.openWorkoutRunId),
         }),
@@ -77,6 +77,6 @@ export const useAnalysisResultScreen = (
     analysis: data,
     liveEvent,
     refetch: refetchResult,
-    recordAgain: data?.workoutId === null ? undefined : recordAgain,
+    recordAgain: data?.workoutPlanId === null ? undefined : recordAgain,
   };
 };

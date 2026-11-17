@@ -1,8 +1,8 @@
 import { getPrismaClient, ProcessingStatus } from "@repo/db";
 import {
   API_ERROR_CODES,
-  type CreateWorkoutValues,
-  type UpdateWorkoutValues,
+  type CreateWorkoutPlanValues,
+  type UpdateWorkoutPlanValues,
   type WorkoutExerciseInput,
 } from "@repo/common";
 
@@ -20,13 +20,13 @@ const SECOND_MS = 1000;
 const RUN_RESUME_WINDOW_MS = 3 * 60 * 60 * SECOND_MS;
 const WORKOUT_RUN_COMPLETED_MESSAGE = "Workout run is already completed";
 
-type ListWorkoutsInput = {
+type ListWorkoutPlansInput = {
   userUuid: string;
   limit: number;
   offset: number;
 };
 
-const workoutInclude = {
+const workoutPlanInclude = {
   exercises: {
     include: {
       exercise: {
@@ -42,7 +42,7 @@ const workoutInclude = {
   },
 };
 
-export class WorkoutService {
+export class WorkoutPlanService {
   private get prisma() {
     return getPrismaClient();
   }
@@ -71,30 +71,30 @@ export class WorkoutService {
     }
   }
 
-  async listWorkouts(input: ListWorkoutsInput) {
+  async listWorkoutPlans(input: ListWorkoutPlansInput) {
     const userId = await getUserIdByUuid(this.prisma, input.userUuid);
-    const workouts = await this.prisma.workout.findMany({
+    const workouts = await this.prisma.workoutPlan.findMany({
       where: { userId },
       orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
       skip: input.offset,
       take: lookAheadTake(input.limit),
-      include: workoutInclude,
+      include: workoutPlanInclude,
     });
 
     return paginate(workouts, input.limit, input.offset);
   }
 
-  async getWorkoutById(userUuid: string, workoutId: number) {
+  async getWorkoutPlanById(userUuid: string, workoutPlanId: number) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
-      include: workoutInclude,
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
+      include: workoutPlanInclude,
     });
     if (!workout) throw new NotFoundError("Workout not found");
     return workout;
   }
 
-  async createWorkout(userUuid: string, data: CreateWorkoutValues) {
+  async createWorkoutPlan(userUuid: string, data: CreateWorkoutPlanValues) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     data.exercises.forEach((ex) => this.validateExerciseInput(ex));
     await this.assertExercisesExist(data.exercises.map((ex) => ex.exerciseId));
@@ -110,7 +110,7 @@ export class WorkoutService {
     }
 
     try {
-      return await this.prisma.workout.create({
+      return await this.prisma.workoutPlan.create({
         data: {
           userId,
           name: data.name,
@@ -126,7 +126,7 @@ export class WorkoutService {
             })),
           },
         },
-        include: workoutInclude,
+        include: workoutPlanInclude,
       });
     } catch (error) {
       if (
@@ -142,14 +142,14 @@ export class WorkoutService {
     }
   }
 
-  async updateWorkout(
+  async updateWorkoutPlan(
     userUuid: string,
-    workoutId: number,
-    data: UpdateWorkoutValues,
+    workoutPlanId: number,
+    data: UpdateWorkoutPlanValues,
   ) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
-    const existing = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const existing = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
       select: { id: true },
     });
     if (!existing) throw new NotFoundError("Workout not found");
@@ -163,17 +163,17 @@ export class WorkoutService {
 
     return this.prisma.$transaction(async (tx) => {
       if (data.name !== undefined) {
-        await tx.workout.update({
-          where: { id: workoutId },
+        await tx.workoutPlan.update({
+          where: { id: workoutPlanId },
           data: { name: data.name },
         });
       }
 
       if (data.exercises) {
-        await tx.workoutExercise.deleteMany({ where: { workoutId } });
+        await tx.workoutExercise.deleteMany({ where: { workoutPlanId } });
         await tx.workoutExercise.createMany({
           data: data.exercises.map((ex, idx) => ({
-            workoutId,
+            workoutPlanId,
             exerciseId: ex.exerciseId,
             position: idx,
             sets: ex.sets,
@@ -184,23 +184,26 @@ export class WorkoutService {
         });
       }
 
-      const updated = await tx.workout.findUnique({
-        where: { id: workoutId },
-        include: workoutInclude,
+      const updated = await tx.workoutPlan.findUnique({
+        where: { id: workoutPlanId },
+        include: workoutPlanInclude,
       });
       if (!updated) throw new NotFoundError("Workout not found");
       return updated;
     });
   }
 
-  async deleteWorkout(userUuid: string, workoutId: number): Promise<void> {
+  async deleteWorkoutPlan(
+    userUuid: string,
+    workoutPlanId: number,
+  ): Promise<void> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
-    const existing = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const existing = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
       select: { id: true },
     });
     if (!existing) throw new NotFoundError("Workout not found");
-    await this.prisma.workout.delete({ where: { id: workoutId } });
+    await this.prisma.workoutPlan.delete({ where: { id: workoutPlanId } });
   }
 
   /**
@@ -210,16 +213,16 @@ export class WorkoutService {
    * it is deleted instead of piling up. A PENDING recorded set has no accepted
    * capture, so it does not count as a recorded set.
    */
-  async startWorkoutRun(userUuid: string, workoutId: number) {
+  async startWorkoutRun(userUuid: string, workoutPlanId: number) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
       select: { id: true },
     });
     if (!workout) throw new NotFoundError("Workout not found");
 
     const resumeCutoff = new Date(Date.now() - RUN_RESUME_WINDOW_MS);
-    const openRun = { userId, workoutId, completedAt: null };
+    const openRun = { userId, workoutPlanId, completedAt: null };
     await this.prisma.workoutRun.deleteMany({
       where: {
         ...openRun,
@@ -236,18 +239,18 @@ export class WorkoutService {
 
     return (
       resumable ??
-      this.prisma.workoutRun.create({ data: { userId, workoutId } })
+      this.prisma.workoutRun.create({ data: { userId, workoutPlanId } })
     );
   }
 
   /** The run must be the user's, for that workout, and not yet completed. */
   async assertOpenWorkoutRun(
     userId: number,
-    workoutId: number,
+    workoutPlanId: number,
     runId: number,
   ): Promise<{ startedAt: Date }> {
     const run = await this.prisma.workoutRun.findFirst({
-      where: { id: runId, workoutId, userId },
+      where: { id: runId, workoutPlanId, userId },
       select: { startedAt: true, completedAt: true },
     });
     if (!run) throw new NotFoundError("Workout run not found");
@@ -261,11 +264,15 @@ export class WorkoutService {
   }
 
   /** The duration is the server's startedAt to completedAt, not a client clock. */
-  async completeWorkoutRun(userUuid: string, workoutId: number, runId: number) {
+  async completeWorkoutRun(
+    userUuid: string,
+    workoutPlanId: number,
+    runId: number,
+  ) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     const { startedAt } = await this.assertOpenWorkoutRun(
       userId,
-      workoutId,
+      workoutPlanId,
       runId,
     );
 
@@ -291,4 +298,4 @@ export class WorkoutService {
   }
 }
 
-export default new WorkoutService();
+export default new WorkoutPlanService();

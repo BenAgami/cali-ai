@@ -12,7 +12,7 @@ import { registerUser } from "../helpers/requestSender/authRequests";
 import { createRecordedSet } from "../helpers/requestSender/recordedSetsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 
 import {
   RecordedSetBuilder,
@@ -149,19 +149,19 @@ describe("POST /api/recorded-sets", () => {
 
   it("should link the recorded set to an owned workout and set number", async () => {
     const { token, userId } = await registerReadyUser();
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId,
       exercises: [{ exerciseId: pushUp.id, position: 1 }],
     });
 
     const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
-      workoutId: workout.id,
+      workoutPlanId: workout.id,
       setNumber: 2,
     });
 
     expect(response.status).toBe(StatusCodes.CREATED);
-    expect(response.body.data.workoutId).toBe(workout.id);
+    expect(response.body.data.workoutPlanId).toBe(workout.id);
     expect(response.body.data.setNumber).toBe(2);
     expect(JSON.stringify(response.body)).not.toContain("formScore");
   });
@@ -169,12 +169,12 @@ describe("POST /api/recorded-sets", () => {
   describe("workoutRunId", () => {
     const setup = async () => {
       const { token, userId } = await registerReadyUser();
-      const workout = await createWorkoutFixture(prisma, {
+      const workout = await createWorkoutPlanFixture(prisma, {
         userId,
         exercises: [{ exerciseId: pushUp.id, position: 1 }],
       });
       const run = await prisma.workoutRun.create({
-        data: { userId, workoutId: workout.id },
+        data: { userId, workoutPlanId: workout.id },
       });
       return { token, userId, workout, run };
     };
@@ -184,7 +184,7 @@ describe("POST /api/recorded-sets", () => {
 
       const response = await createRecordedSet(app, token, {
         exerciseCode: "push_up",
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         workoutRunId: run.id,
         setNumber: 1,
       });
@@ -193,7 +193,7 @@ describe("POST /api/recorded-sets", () => {
       expect(response.body.data.workoutRunId).toBe(run.id);
     });
 
-    it("should return 400 for workoutRunId without workoutId", async () => {
+    it("should return 400 for workoutRunId without workoutPlanId", async () => {
       const { token, run } = await setup();
 
       const response = await createRecordedSet(app, token, {
@@ -210,7 +210,7 @@ describe("POST /api/recorded-sets", () => {
 
       const response = await createRecordedSet(app, other.token, {
         exerciseCode: "push_up",
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         workoutRunId: run.id,
       });
 
@@ -226,7 +226,7 @@ describe("POST /api/recorded-sets", () => {
 
       const response = await createRecordedSet(app, token, {
         exerciseCode: "push_up",
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         workoutRunId: run.id,
       });
 
@@ -238,14 +238,14 @@ describe("POST /api/recorded-sets", () => {
   it("should return 404 for another user's workout", async () => {
     const owner = await registerReadyUser();
     const { token } = await registerReadyUser();
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: owner.userId,
       exercises: [{ exerciseId: pushUp.id, position: 1 }],
     });
 
     const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
-      workoutId: workout.id,
+      workoutPlanId: workout.id,
     });
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
@@ -254,21 +254,21 @@ describe("POST /api/recorded-sets", () => {
 
   it("should return 400 when the exercise is not part of the workout", async () => {
     const { token, userId } = await registerReadyUser();
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId,
       exercises: [{ exerciseId: squat.id, position: 1 }],
     });
 
     const response = await createRecordedSet(app, token, {
       exerciseCode: "push_up",
-      workoutId: workout.id,
+      workoutPlanId: workout.id,
     });
 
     expect(response.status).toBe(StatusCodes.BAD_REQUEST);
     expect(response.body.message).toBe("Exercise is not part of this workout");
   });
 
-  it("should return 400 for setNumber without workoutId", async () => {
+  it("should return 400 for setNumber without workoutPlanId", async () => {
     const { token } = await registerReadyUser();
 
     const response = await createRecordedSet(app, token, {

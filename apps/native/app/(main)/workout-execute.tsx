@@ -12,7 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 
 import { useTheme } from "@src/context/ThemeContext";
-import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
+import { useWorkoutPlanDetail } from "@src/hooks/queries/useWorkoutPlanDetail";
 import { useWorkoutExecution } from "@src/hooks/useWorkoutExecution";
 import { useCompleteWorkoutRun } from "@src/hooks/mutations/useCompleteWorkoutRun";
 import RestTimer from "@src/components/RestTimer";
@@ -59,7 +59,7 @@ const WorkoutExecuteScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<ExecuteParams>();
   const id = parsePositiveIntParam(params.id) ?? undefined;
-  const { data: workout, isLoading, error } = useWorkoutDetail(id);
+  const { data: workout, isLoading, error } = useWorkoutPlanDetail(id);
   const execution = useWorkoutExecution(workout);
   const runId = parsePositiveIntParam(params.runId);
   const completeMutation = useCompleteWorkoutRun();
@@ -70,7 +70,9 @@ const WorkoutExecuteScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       if (id === undefined || phase !== "working") return;
-      if (consumeRecordedSetDone({ workoutId: id, setNumber: currentSet })) {
+      if (
+        consumeRecordedSetDone({ workoutPlanId: id, setNumber: currentSet })
+      ) {
         completeSet();
       }
     }, [id, phase, currentSet, completeSet]),
@@ -96,7 +98,7 @@ const WorkoutExecuteScreen: React.FC = () => {
       return;
     }
     completeMutation.mutate(
-      { workoutId: id, runId },
+      { workoutPlanId: id, runId },
       {
         onSuccess: () => {
           // Pop back to the workouts tab — the list will refetch via useFocusEffect.
@@ -260,7 +262,7 @@ const WorkoutExecuteScreen: React.FC = () => {
                 router.push({
                   pathname: "/record-set",
                   params: {
-                    workoutId: String(id),
+                    workoutPlanId: String(id),
                     setNumber: String(execution.currentSet),
                     exerciseCode: ex.exercise.code,
                     exerciseDisplayName: ex.exercise.displayName,

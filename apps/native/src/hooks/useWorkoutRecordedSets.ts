@@ -41,7 +41,7 @@ const toRetryIssue = (
 };
 
 export const useWorkoutRecordedSets = (
-  workoutId: number | undefined,
+  workoutPlanId: number | undefined,
   runId?: number,
 ) => {
   const {
@@ -52,7 +52,7 @@ export const useWorkoutRecordedSets = (
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useRecordedSets(workoutId, runId);
+  } = useRecordedSets(workoutPlanId, runId);
   const recordedSets = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
     [data],
@@ -93,7 +93,7 @@ export const useWorkoutRecordedSets = (
       track({
         recordedSetId: recorded.recordedSetId,
         jobId: recorded.bullmqJobId,
-        workoutId: recorded.workoutId,
+        workoutPlanId: recorded.workoutPlanId,
         setNumber: recorded.setNumber,
         exerciseCode: recorded.exerciseCode,
         exerciseDisplayName: recorded.exerciseDisplayName,

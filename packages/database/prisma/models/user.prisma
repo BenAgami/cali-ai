@@ -23,7 +23,7 @@ model User {
   goals              UserGoal[]
   recordedSets       RecordedSet[]
   userMilestones     UserMilestone[]
-  workouts           Workout[]
+  workoutPlans       WorkoutPlan[]
   workoutRuns        WorkoutRun[]
   refreshTokens      RefreshToken[]
   workoutGenerations WorkoutGeneration[]

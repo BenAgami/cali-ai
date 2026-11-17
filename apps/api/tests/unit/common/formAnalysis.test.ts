@@ -10,7 +10,7 @@ import {
 
 const base = {
   recordedSetId: 1,
-  workoutId: 2,
+  workoutPlanId: 2,
   openWorkoutRunId: null,
   setNumber: 1,
   exerciseCode: "push_up",
@@ -143,7 +143,7 @@ describe("recordedSetSummarySchema", () => {
     expect(
       recordedSetSummarySchema.safeParse({
         recordedSetId: 1,
-        workoutId: 2,
+        workoutPlanId: 2,
         workoutRunId: null,
         setNumber: 1,
         exerciseCode: "squat",

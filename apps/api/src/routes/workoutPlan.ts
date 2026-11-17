@@ -2,11 +2,11 @@ import { Router } from "express";
 import z from "zod";
 
 import {
-  createWorkoutSchema,
+  createWorkoutPlanSchema,
   generateWorkoutSchema,
   recordedSetsQuerySchema,
-  updateWorkoutSchema,
-  workoutIdParamSchema,
+  updateWorkoutPlanSchema,
+  workoutPlanIdParamSchema,
   workoutRunIdParamSchema,
 } from "@repo/common";
 
@@ -14,20 +14,20 @@ import validateSchema from "../middlewares/validateSchema";
 import { authenticateToken } from "../middlewares/auth";
 
 import {
-  listWorkouts,
-  getWorkoutById,
-  createWorkout,
+  listWorkoutPlans,
+  getWorkoutPlanById,
+  createWorkoutPlan,
   generateWorkout,
-  updateWorkout,
-  deleteWorkout,
+  updateWorkoutPlan,
+  deleteWorkoutPlan,
   startWorkout,
   completeWorkout,
   listRecordedSets,
-} from "../controllers/workout";
+} from "../controllers/workoutPlan";
 
 const router: Router = Router();
 
-const listWorkoutsQuerySchema = z.object({
+const listWorkoutPlansQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),
 });
@@ -39,8 +39,8 @@ const listWorkoutsQuerySchema = z.object({
 router.get(
   "/",
   authenticateToken,
-  validateSchema(z.object({ query: listWorkoutsQuerySchema })),
-  listWorkouts,
+  validateSchema(z.object({ query: listWorkoutPlansQuerySchema })),
+  listWorkoutPlans,
 );
 
 /**
@@ -50,8 +50,8 @@ router.get(
 router.post(
   "/",
   authenticateToken,
-  validateSchema(z.object({ body: createWorkoutSchema })),
-  createWorkout,
+  validateSchema(z.object({ body: createWorkoutPlanSchema })),
+  createWorkoutPlan,
 );
 
 /**
@@ -72,8 +72,8 @@ router.post(
 router.get(
   "/:id",
   authenticateToken,
-  validateSchema(z.object({ params: workoutIdParamSchema })),
-  getWorkoutById,
+  validateSchema(z.object({ params: workoutPlanIdParamSchema })),
+  getWorkoutPlanById,
 );
 
 /**
@@ -84,9 +84,12 @@ router.patch(
   "/:id",
   authenticateToken,
   validateSchema(
-    z.object({ params: workoutIdParamSchema, body: updateWorkoutSchema }),
+    z.object({
+      params: workoutPlanIdParamSchema,
+      body: updateWorkoutPlanSchema,
+    }),
   ),
-  updateWorkout,
+  updateWorkoutPlan,
 );
 
 /**
@@ -96,8 +99,8 @@ router.patch(
 router.delete(
   "/:id",
   authenticateToken,
-  validateSchema(z.object({ params: workoutIdParamSchema })),
-  deleteWorkout,
+  validateSchema(z.object({ params: workoutPlanIdParamSchema })),
+  deleteWorkoutPlan,
 );
 
 /**
@@ -107,7 +110,7 @@ router.delete(
 router.post(
   "/:id/runs",
   authenticateToken,
-  validateSchema(z.object({ params: workoutIdParamSchema })),
+  validateSchema(z.object({ params: workoutPlanIdParamSchema })),
   startWorkout,
 );
 
@@ -131,7 +134,7 @@ router.get(
   authenticateToken,
   validateSchema(
     z.object({
-      params: workoutIdParamSchema,
+      params: workoutPlanIdParamSchema,
       query: recordedSetsQuerySchema,
     }),
   ),

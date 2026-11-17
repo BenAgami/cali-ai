@@ -5,7 +5,7 @@ import { registry } from "./registry";
 import "./paths/health";
 import "./paths/auth";
 import "./paths/users";
-import "./paths/workouts";
+import "./paths/workoutPlans";
 import "./paths/exercises";
 import "./paths/recordedSets";
 import "./paths/recordedSetAnalysis";

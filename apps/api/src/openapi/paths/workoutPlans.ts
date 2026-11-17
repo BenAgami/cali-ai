@@ -4,11 +4,11 @@ import { recordedSetsQuerySchema, workoutRunIdParamSchema } from "@repo/common";
 
 import { registry } from "../registry";
 import {
-  CreateWorkoutBody,
+  CreateWorkoutPlanBody,
   GenerateWorkoutBody,
   WorkoutGenerationPreviewResponse,
-  UpdateWorkoutBody,
-  WorkoutResponse,
+  UpdateWorkoutPlanBody,
+  WorkoutPlanResponse,
   WorkoutRunResponse,
   RecordedSetSummary,
   paginatedData,
@@ -18,7 +18,7 @@ import {
 
 const bearerAuth = { BearerAuth: [] };
 
-const workoutIdParam = z.object({
+const workoutPlanIdParam = z.object({
   id: z.number().int().openapi({ example: 1 }),
 });
 
@@ -40,14 +40,14 @@ const paginationQuery = z.object({
 
 registry.registerPath({
   method: "get",
-  path: "/workouts",
-  tags: ["Workouts"],
+  path: "/workout-plans",
+  tags: ["Workout Plans"],
   summary: "List workouts for the current user",
   security: [bearerAuth],
   request: { query: paginationQuery },
   responses: {
     200: successResponse(
-      paginatedData(WorkoutResponse),
+      paginatedData(WorkoutPlanResponse),
       "Paginated workout list",
     ),
     400: errorResponse("Invalid query parameters"),
@@ -58,18 +58,18 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
-  path: "/workouts",
-  tags: ["Workouts"],
+  path: "/workout-plans",
+  tags: ["Workout Plans"],
   summary: "Create a new workout",
   security: [bearerAuth],
   request: {
     body: {
       required: true,
-      content: { "application/json": { schema: CreateWorkoutBody } },
+      content: { "application/json": { schema: CreateWorkoutPlanBody } },
     },
   },
   responses: {
-    201: successResponse(WorkoutResponse, "Workout created"),
+    201: successResponse(WorkoutPlanResponse, "Workout created"),
     400: errorResponse("Validation error"),
     401: errorResponse("Unauthorized"),
     404: errorResponse(
@@ -82,8 +82,8 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
-  path: "/workouts/generate",
-  tags: ["Workouts"],
+  path: "/workout-plans/generate",
+  tags: ["Workout Plans"],
   summary: "Generate a workout preview with AI (not saved)",
   description:
     "Synchronous. Save the preview via POST /workouts with its generationId.",
@@ -115,13 +115,13 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
-  path: "/workouts/{id}",
-  tags: ["Workouts"],
+  path: "/workout-plans/{id}",
+  tags: ["Workout Plans"],
   summary: "Get a workout by ID",
   security: [bearerAuth],
-  request: { params: workoutIdParam },
+  request: { params: workoutPlanIdParam },
   responses: {
-    200: successResponse(WorkoutResponse, "Workout"),
+    200: successResponse(WorkoutPlanResponse, "WorkoutPlan"),
     400: errorResponse("Invalid workout ID"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout not found"),
@@ -131,14 +131,14 @@ registry.registerPath({
 
 registry.registerPath({
   method: "get",
-  path: "/workouts/{id}/recorded-sets",
-  tags: ["Workouts"],
+  path: "/workout-plans/{id}/recorded-sets",
+  tags: ["Workout Plans"],
   summary: "List the recorded sets of a workout",
   description:
     "Newest first, paged by limit (default 50, max 100) and offset; page.hasMore and page.nextOffset say whether earlier sets exist. Includes processing status, stage, outcome and band. The raw score is never returned.",
   security: [bearerAuth],
   request: {
-    params: workoutIdParam,
+    params: workoutPlanIdParam,
     query: recordedSetsQuerySchema.extend({
       workoutRunId: recordedSetsQuerySchema.shape.workoutRunId.openapi({
         description: "Only the sets recorded during this workout run",
@@ -157,19 +157,19 @@ registry.registerPath({
 
 registry.registerPath({
   method: "patch",
-  path: "/workouts/{id}",
-  tags: ["Workouts"],
+  path: "/workout-plans/{id}",
+  tags: ["Workout Plans"],
   summary: "Update a workout",
   security: [bearerAuth],
   request: {
-    params: workoutIdParam,
+    params: workoutPlanIdParam,
     body: {
       required: true,
-      content: { "application/json": { schema: UpdateWorkoutBody } },
+      content: { "application/json": { schema: UpdateWorkoutPlanBody } },
     },
   },
   responses: {
-    200: successResponse(WorkoutResponse, "Updated workout"),
+    200: successResponse(WorkoutPlanResponse, "Updated workout"),
     400: errorResponse("Validation error"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout or referenced exercise not found"),
@@ -179,11 +179,11 @@ registry.registerPath({
 
 registry.registerPath({
   method: "delete",
-  path: "/workouts/{id}",
-  tags: ["Workouts"],
+  path: "/workout-plans/{id}",
+  tags: ["Workout Plans"],
   summary: "Delete a workout",
   security: [bearerAuth],
-  request: { params: workoutIdParam },
+  request: { params: workoutPlanIdParam },
   responses: {
     204: { description: "Workout deleted" },
     400: errorResponse("Invalid workout ID"),
@@ -195,13 +195,13 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
-  path: "/workouts/{id}/runs",
-  tags: ["Workouts"],
+  path: "/workout-plans/{id}/runs",
+  tags: ["Workout Plans"],
   summary: "Start a workout run",
   description:
     "Opens an in-progress run of the workout plan, or resumes this plan's open run started in the last 3 hours. Open runs older than that with no recorded sets are deleted. Recorded sets attach to the run through workoutRunId; complete it with PATCH.",
   security: [bearerAuth],
-  request: { params: workoutIdParam },
+  request: { params: workoutPlanIdParam },
   responses: {
     201: successResponse(WorkoutRunResponse, "Workout run started"),
     400: errorResponse("Invalid workout ID"),
@@ -213,8 +213,8 @@ registry.registerPath({
 
 registry.registerPath({
   method: "patch",
-  path: "/workouts/{id}/runs/{runId}",
-  tags: ["Workouts"],
+  path: "/workout-plans/{id}/runs/{runId}",
+  tags: ["Workout Plans"],
   summary: "Complete a workout run",
   description:
     "Stamps completedAt; durationSecs is computed from the run's startedAt. Any request body is ignored.",

@@ -14,22 +14,23 @@ export const createRecordedSetSchema = z
       .pipe(z.enum(FORM_ANALYSIS_EXERCISES)),
     notes: z.string().trim().max(2000).optional(),
     performedAt: z.iso.datetime().optional(),
-    workoutId: z.number().int().positive().optional(),
+    workoutPlanId: z.number().int().positive().optional(),
     setNumber: z.number().int().min(1).max(50).optional(),
     workoutRunId: z.number().int().positive().optional(),
   })
   .refine(
-    (value) => value.setNumber === undefined || value.workoutId !== undefined,
+    (value) =>
+      value.setNumber === undefined || value.workoutPlanId !== undefined,
     {
-      message: "setNumber requires workoutId",
+      message: "setNumber requires workoutPlanId",
       path: ["setNumber"],
     },
   )
   .refine(
     (value) =>
-      value.workoutRunId === undefined || value.workoutId !== undefined,
+      value.workoutRunId === undefined || value.workoutPlanId !== undefined,
     {
-      message: "workoutRunId requires workoutId",
+      message: "workoutRunId requires workoutPlanId",
       path: ["workoutRunId"],
     },
   );
@@ -41,7 +42,7 @@ export const recordedSetResponseSchema = z.object({
   userId: z.number().int(),
   exerciseId: z.number().int(),
   processingStatus: z.enum(PROCESSING_STATUSES),
-  workoutId: z.number().int().nullable(),
+  workoutPlanId: z.number().int().nullable(),
   workoutRunId: z.number().int().nullable(),
   setNumber: z.number().int().nullable(),
   notes: z.string().nullable(),

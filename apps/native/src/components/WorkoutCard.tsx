@@ -2,7 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@src/context/ThemeContext";
-import type { WorkoutWithExercises } from "@repo/common";
+import type { WorkoutPlanWithExercises } from "@repo/common";
 
 const formatDate = (iso: string): string => {
   const d = new Date(iso);
@@ -18,8 +18,8 @@ const formatExerciseCount = (n: number): string =>
   n === 1 ? "1 exercise" : `${n} exercises`;
 
 export interface WorkoutCardProps {
-  workout: WorkoutWithExercises;
-  onPress: (workoutId: number) => void;
+  workout: WorkoutPlanWithExercises;
+  onPress: (workoutPlanId: number) => void;
 }
 
 const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {

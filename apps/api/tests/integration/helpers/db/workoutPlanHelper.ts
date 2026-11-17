@@ -1,6 +1,6 @@
 import type { getPrismaClient } from "@repo/db";
 
-type CreateWorkoutFixtureInput = {
+type CreateWorkoutPlanFixtureInput = {
   userId: number;
   name?: string;
   exercises: Array<{
@@ -13,11 +13,11 @@ type CreateWorkoutFixtureInput = {
   }>;
 };
 
-export const createWorkoutFixture = async (
+export const createWorkoutPlanFixture = async (
   prisma: ReturnType<typeof getPrismaClient>,
-  input: CreateWorkoutFixtureInput,
+  input: CreateWorkoutPlanFixtureInput,
 ) => {
-  return prisma.workout.create({
+  return prisma.workoutPlan.create({
     data: {
       userId: input.userId,
       name: input.name ?? "Test Workout",

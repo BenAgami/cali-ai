@@ -21,8 +21,8 @@ import {
 import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
 import { groupRecordedSetsByRun } from "@src/utils/groupRecordedSetsByRun";
 import { useTheme } from "@src/context/ThemeContext";
-import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
-import { useDeleteWorkout } from "@src/hooks/mutations/useDeleteWorkout";
+import { useWorkoutPlanDetail } from "@src/hooks/queries/useWorkoutPlanDetail";
+import { useDeleteWorkoutPlan } from "@src/hooks/mutations/useDeleteWorkoutPlan";
 import { useStartWorkoutRun } from "@src/hooks/mutations/useStartWorkoutRun";
 import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 import {
@@ -63,8 +63,8 @@ const WorkoutDetailScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<DetailParams>();
   const id = parsePositiveIntParam(params.id) ?? undefined;
-  const { data, isLoading, error } = useWorkoutDetail(id);
-  const deleteMutation = useDeleteWorkout();
+  const { data, isLoading, error } = useWorkoutPlanDetail(id);
+  const deleteMutation = useDeleteWorkoutPlan();
   const startRunMutation = useStartWorkoutRun();
   const recorded = useWorkoutRecordedSets(id);
 

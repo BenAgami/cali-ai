@@ -10,7 +10,7 @@ model WorkoutGeneration {
   errorCode     String?          @map("error_code") @db.VarChar(40)
   createdAt     DateTime         @default(now()) @map("created_at")
   completedAt   DateTime?        @map("completed_at")
-  workout       Workout?
+  workoutPlan   WorkoutPlan?
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_workout_generations_user_created_at_desc")
   @@map("workout_generations")

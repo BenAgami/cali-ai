@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 
 import { useCountdown } from "@src/hooks/useCountdown";
 import type {
-  WorkoutWithExercises,
+  WorkoutPlanWithExercises,
   WorkoutExerciseHydrated,
 } from "@repo/common";
 
@@ -23,7 +23,7 @@ export interface UseWorkoutExecutionResult {
 }
 
 export const useWorkoutExecution = (
-  workout: WorkoutWithExercises | undefined,
+  workout: WorkoutPlanWithExercises | undefined,
 ): UseWorkoutExecutionResult => {
   const exercises = workout?.exercises ?? [];
   const [exerciseIndex, setExerciseIndex] = useState(0);

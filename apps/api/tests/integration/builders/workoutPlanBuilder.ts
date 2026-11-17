@@ -2,13 +2,13 @@ import type { WorkoutExerciseInput } from "@repo/common";
 
 export type WorkoutExerciseDto = WorkoutExerciseInput;
 
-export interface WorkoutDto {
+export interface WorkoutPlanDto {
   name?: string;
   exercises?: WorkoutExerciseDto[];
 }
 
-export class WorkoutBuilder {
-  private workout: WorkoutDto;
+export class WorkoutPlanBuilder {
+  private workout: WorkoutPlanDto;
 
   constructor() {
     this.workout = {
@@ -17,17 +17,17 @@ export class WorkoutBuilder {
     };
   }
 
-  setName(name?: string): WorkoutBuilder {
+  setName(name?: string): WorkoutPlanBuilder {
     this.workout.name = name;
     return this;
   }
 
-  setExercises(exercises: WorkoutExerciseDto[]): WorkoutBuilder {
+  setExercises(exercises: WorkoutExerciseDto[]): WorkoutPlanBuilder {
     this.workout.exercises = exercises;
     return this;
   }
 
-  build(): WorkoutDto {
+  build(): WorkoutPlanDto {
     return {
       ...this.workout,
       exercises: this.workout.exercises

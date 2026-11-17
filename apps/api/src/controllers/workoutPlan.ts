@@ -2,36 +2,36 @@ import type { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import type {
-  CreateWorkoutValues,
+  CreateWorkoutPlanValues,
   GenerateWorkoutValues,
   RecordedSetsQuery,
-  UpdateWorkoutValues,
+  UpdateWorkoutPlanValues,
 } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import analysisResultQueryService from "../services/analysisResultQueryService";
-import workoutService from "../services/workoutService";
+import workoutPlanService from "../services/workoutPlanService";
 import workoutGenerationService from "../services/workoutGenerationService";
 
-type ListWorkoutsQuery = {
+type ListWorkoutPlansQuery = {
   limit?: number;
   offset?: number;
 };
 
-type WorkoutIdParam = {
+type WorkoutPlanIdParam = {
   id: string;
 };
 
-type WorkoutRunIdParam = WorkoutIdParam & {
+type WorkoutRunIdParam = WorkoutPlanIdParam & {
   runId: string;
 };
 
 /**
  * List workouts for current user
- * @route GET /api/workouts
+ * @route GET /api/workout-plans
  */
-export const listWorkouts = async (
-  req: Request<WorkoutIdParam, unknown, unknown, ListWorkoutsQuery>,
+export const listWorkoutPlans = async (
+  req: Request<WorkoutPlanIdParam, unknown, unknown, ListWorkoutPlansQuery>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
@@ -40,7 +40,7 @@ export const listWorkouts = async (
   const limit = req.query.limit ?? 20;
   const offset = req.query.offset ?? 0;
 
-  const result = await workoutService.listWorkouts({
+  const result = await workoutPlanService.listWorkoutPlans({
     userUuid,
     limit,
     offset,
@@ -55,17 +55,20 @@ export const listWorkouts = async (
 
 /**
  * Get workout by id
- * @route GET /api/workouts/:id
+ * @route GET /api/workout-plans/:id
  */
-export const getWorkoutById = async (
-  req: Request<WorkoutIdParam>,
+export const getWorkoutPlanById = async (
+  req: Request<WorkoutPlanIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const workoutId = Number(req.params.id);
-  const workout = await workoutService.getWorkoutById(userUuid, workoutId);
+  const workoutPlanId = Number(req.params.id);
+  const workout = await workoutPlanService.getWorkoutPlanById(
+    userUuid,
+    workoutPlanId,
+  );
 
   res.status(StatusCodes.OK).json({
     success: true,
@@ -76,10 +79,10 @@ export const getWorkoutById = async (
 
 /**
  * List the recorded (form-analysed) sets of a workout
- * @route GET /api/workouts/:id/recorded-sets
+ * @route GET /api/workout-plans/:id/recorded-sets
  */
 export const listRecordedSets = async (
-  req: Request<WorkoutIdParam>,
+  req: Request<WorkoutPlanIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
@@ -102,16 +105,19 @@ export const listRecordedSets = async (
 
 /**
  * Create workout
- * @route POST /api/workouts
+ * @route POST /api/workout-plans
  */
-export const createWorkout = async (
-  req: Request<WorkoutIdParam, unknown, CreateWorkoutValues>,
+export const createWorkoutPlan = async (
+  req: Request<WorkoutPlanIdParam, unknown, CreateWorkoutPlanValues>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const workout = await workoutService.createWorkout(userUuid, req.body);
+  const workout = await workoutPlanService.createWorkoutPlan(
+    userUuid,
+    req.body,
+  );
 
   res.status(StatusCodes.CREATED).json({
     success: true,
@@ -122,19 +128,19 @@ export const createWorkout = async (
 
 /**
  * Update workout
- * @route PATCH /api/workouts/:id
+ * @route PATCH /api/workout-plans/:id
  */
-export const updateWorkout = async (
-  req: Request<WorkoutIdParam, unknown, UpdateWorkoutValues>,
+export const updateWorkoutPlan = async (
+  req: Request<WorkoutPlanIdParam, unknown, UpdateWorkoutPlanValues>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const workoutId = Number(req.params.id);
-  const workout = await workoutService.updateWorkout(
+  const workoutPlanId = Number(req.params.id);
+  const workout = await workoutPlanService.updateWorkoutPlan(
     userUuid,
-    workoutId,
+    workoutPlanId,
     req.body,
   );
 
@@ -147,34 +153,34 @@ export const updateWorkout = async (
 
 /**
  * Delete workout
- * @route DELETE /api/workouts/:id
+ * @route DELETE /api/workout-plans/:id
  */
-export const deleteWorkout = async (
-  req: Request<WorkoutIdParam>,
+export const deleteWorkoutPlan = async (
+  req: Request<WorkoutPlanIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const workoutId = Number(req.params.id);
-  await workoutService.deleteWorkout(userUuid, workoutId);
+  const workoutPlanId = Number(req.params.id);
+  await workoutPlanService.deleteWorkoutPlan(userUuid, workoutPlanId);
 
   res.status(StatusCodes.NO_CONTENT).send();
 };
 
 /**
  * Start a workout run (create an in-progress run)
- * @route POST /api/workouts/:id/runs
+ * @route POST /api/workout-plans/:id/runs
  */
 export const startWorkout = async (
-  req: Request<WorkoutIdParam>,
+  req: Request<WorkoutPlanIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const workoutId = Number(req.params.id);
-  const run = await workoutService.startWorkoutRun(userUuid, workoutId);
+  const workoutPlanId = Number(req.params.id);
+  const run = await workoutPlanService.startWorkoutRun(userUuid, workoutPlanId);
 
   res.status(StatusCodes.CREATED).json({
     success: true,
@@ -185,7 +191,7 @@ export const startWorkout = async (
 
 /**
  * Complete a workout run
- * @route PATCH /api/workouts/:id/runs/:runId
+ * @route PATCH /api/workout-plans/:id/runs/:runId
  */
 export const completeWorkout = async (
   req: Request<WorkoutRunIdParam>,
@@ -194,7 +200,7 @@ export const completeWorkout = async (
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const run = await workoutService.completeWorkoutRun(
+  const run = await workoutPlanService.completeWorkoutRun(
     userUuid,
     Number(req.params.id),
     Number(req.params.runId),
@@ -209,10 +215,10 @@ export const completeWorkout = async (
 
 /**
  * Generate an AI workout preview
- * @route POST /api/workouts/generate
+ * @route POST /api/workout-plans/generate
  */
 export const generateWorkout = async (
-  req: Request<WorkoutIdParam, unknown, GenerateWorkoutValues>,
+  req: Request<WorkoutPlanIdParam, unknown, GenerateWorkoutValues>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);

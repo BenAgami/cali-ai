@@ -12,27 +12,27 @@ const workoutExerciseInputSchema = z.object({
 });
 export type WorkoutExerciseInput = z.infer<typeof workoutExerciseInputSchema>;
 
-export const createWorkoutSchema = z.object({
+export const createWorkoutPlanSchema = z.object({
   name: z.string().trim().min(1).max(100),
   exercises: z.array(workoutExerciseInputSchema).min(1).max(50),
   generationId: z.number().int().positive().optional(),
 });
-export type CreateWorkoutValues = z.infer<typeof createWorkoutSchema>;
+export type CreateWorkoutPlanValues = z.infer<typeof createWorkoutPlanSchema>;
 
-export const updateWorkoutSchema = z.object({
+export const updateWorkoutPlanSchema = z.object({
   name: z.string().trim().min(1).max(100).optional(),
   exercises: z.array(workoutExerciseInputSchema).min(1).max(50).optional(),
 });
-export type UpdateWorkoutValues = z.infer<typeof updateWorkoutSchema>;
+export type UpdateWorkoutPlanValues = z.infer<typeof updateWorkoutPlanSchema>;
 
 const DEFAULT_RECORDED_SETS_LIMIT = 50;
 const MAX_RECORDED_SETS_LIMIT = 100;
 
-export const workoutIdParamSchema = z.object({
+export const workoutPlanIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
-export const workoutRunIdParamSchema = workoutIdParamSchema.extend({
+export const workoutRunIdParamSchema = workoutPlanIdParamSchema.extend({
   runId: z.coerce.number().int().positive(),
 });
 
@@ -52,7 +52,7 @@ export type RecordedSetsQuery = z.infer<typeof recordedSetsQuerySchema>;
 
 export const workoutExerciseHydratedSchema = z.object({
   id: z.number().int(),
-  workoutId: z.number().int(),
+  workoutPlanId: z.number().int(),
   exerciseId: z.number().int(),
   position: z.number().int(),
   sets: z.number().int(),
@@ -67,7 +67,7 @@ export type WorkoutExerciseHydrated = z.infer<
   typeof workoutExerciseHydratedSchema
 >;
 
-export const workoutWithExercisesSchema = z.object({
+export const workoutPlanWithExercisesSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   name: z.string(),
@@ -77,17 +77,21 @@ export const workoutWithExercisesSchema = z.object({
   generationId: z.number().int().nullable(),
   exercises: z.array(workoutExerciseHydratedSchema),
 });
-export type WorkoutWithExercises = z.infer<typeof workoutWithExercisesSchema>;
+export type WorkoutPlanWithExercises = z.infer<
+  typeof workoutPlanWithExercisesSchema
+>;
 
-export const workoutListResponseSchema = paginatedSchema(
-  workoutWithExercisesSchema,
+export const workoutPlanListResponseSchema = paginatedSchema(
+  workoutPlanWithExercisesSchema,
 );
-export type WorkoutListResponse = z.infer<typeof workoutListResponseSchema>;
+export type WorkoutPlanListResponse = z.infer<
+  typeof workoutPlanListResponseSchema
+>;
 
 export const workoutRunResponseSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
-  workoutId: z.number().int().nullable(),
+  workoutPlanId: z.number().int().nullable(),
   startedAt: z.string(),
   completedAt: z.string().nullable(),
   durationSecs: z.number().int().nullable(),

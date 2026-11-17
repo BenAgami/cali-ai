@@ -17,7 +17,7 @@ import { useAnalysisStatus } from "@src/hooks/useAnalysisStatus";
 export type TrackedAnalysis = {
   recordedSetId: number;
   jobId: string;
-  workoutId: number | null;
+  workoutPlanId: number | null;
   setNumber: number | null;
   exerciseCode: string;
   exerciseDisplayName: string;
@@ -93,9 +93,9 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
       if (handledRuns.current.has(runId)) return;
       handledRuns.current.add(runId);
 
-      if (item.workoutId !== null) {
+      if (item.workoutPlanId !== null) {
         void queryClient.invalidateQueries({
-          queryKey: analysisKeys.recordedSets(item.workoutId),
+          queryKey: analysisKeys.recordedSets(item.workoutPlanId),
         });
       }
       if (event.status !== "COMPLETED") return;
@@ -156,7 +156,7 @@ export const AnalysisTrackerProvider: React.FC<{ children: ReactNode }> = ({
           track({
             recordedSetId: recordedSet.id,
             jobId: recordedSet.bullmqJobId,
-            workoutId: recordedSet.workoutId,
+            workoutPlanId: recordedSet.workoutPlanId,
             setNumber: recordedSet.setNumber,
             exerciseCode: recordedSet.exercise.code,
             exerciseDisplayName: recordedSet.exercise.displayName,

@@ -161,7 +161,7 @@ The rubric (deterministic metrics) is the scorer at launch; the LLM only writes 
 
 # 6a. AI Workout Generation
 
-- Synchronous `POST /api/workouts/generate` (no queue); returns a draft plan the client previews, then saves through the normal workout endpoint.
+- Synchronous `POST /api/workout-plans/generate` (no queue); returns a draft plan the client previews, then saves through the normal workout endpoint.
 - Shared gate `aiPrerequisitesService.assertAiPrerequisites` checks profile completeness, AI consent and catalog; Phase 5 reuses it.
 - `LlmProvider` interface with `AnthropicProvider`: structured outputs, a per-request exercise-code enum (no exercise outside the catalog), `maxRetries: 0`, `AbortSignal` for timeouts (no `withTimeout`).
 - Attempt ladder: Haiku, then Haiku with validation feedback, then Sonnet.

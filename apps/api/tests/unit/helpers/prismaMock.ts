@@ -23,7 +23,7 @@ const MODELS = [
   "user",
   "refreshToken",
   "exercise",
-  "workout",
+  "workoutPlan",
   "workoutExercise",
   "workoutRun",
   "recordedSet",

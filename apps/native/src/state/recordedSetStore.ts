@@ -1,5 +1,5 @@
 export interface RecordedSetKey {
-  workoutId: number;
+  workoutPlanId: number;
   setNumber: number;
 }
 
@@ -13,7 +13,7 @@ export const markRecordedSetDone = (key: RecordedSetKey): void => {
 export const consumeRecordedSetDone = (key: RecordedSetKey): boolean => {
   const isMatch =
     pending !== undefined &&
-    pending.workoutId === key.workoutId &&
+    pending.workoutPlanId === key.workoutPlanId &&
     pending.setNumber === key.setNumber;
   if (isMatch) pending = undefined;
   return isMatch;

@@ -9,11 +9,11 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { createWorkout } from "../helpers/requestSender/workoutsRequests";
-import { WorkoutBuilder } from "../builders/workoutBuilder";
+import { createWorkoutPlan } from "../helpers/requestSender/workoutPlansRequests";
+import { WorkoutPlanBuilder } from "../builders/workoutPlanBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("POST /api/workouts", () => {
+describe("POST /api/workout-plans", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -33,13 +33,13 @@ describe("POST /api/workouts", () => {
     const exercise = await createExercise(prisma, {
       exerciseType: ExerciseType.DYNAMIC,
     });
-    const workoutDto = new WorkoutBuilder()
+    const workoutPlanDto = new WorkoutPlanBuilder()
       .setExercises([
         { exerciseId: exercise.id, sets: 3, reps: 10, restSecs: 60 },
       ])
       .build();
 
-    const response = await createWorkout(app, token, workoutDto);
+    const response = await createWorkoutPlan(app, token, workoutPlanDto);
 
     expect(response.status).toBe(StatusCodes.CREATED);
     expect(response.body.success).toBe(true);
@@ -53,7 +53,7 @@ describe("POST /api/workouts", () => {
     expect(response.body.data.generationId).toBeNull();
 
     const dbExercises = await prisma.workoutExercise.findMany({
-      where: { workoutId: response.body.data.id },
+      where: { workoutPlanId: response.body.data.id },
     });
     expect(dbExercises).toHaveLength(1);
     expect(dbExercises[0].position).toBe(0);
@@ -68,7 +68,7 @@ describe("POST /api/workouts", () => {
     const ex2 = await createExercise(prisma);
     const ex3 = await createExercise(prisma);
 
-    const workoutDto = new WorkoutBuilder()
+    const workoutPlanDto = new WorkoutPlanBuilder()
       .setExercises([
         { exerciseId: ex1.id, sets: 3, reps: 5, restSecs: 60 },
         { exerciseId: ex2.id, sets: 3, reps: 8, restSecs: 60 },
@@ -76,7 +76,7 @@ describe("POST /api/workouts", () => {
       ])
       .build();
 
-    const response = await createWorkout(app, token, workoutDto);
+    const response = await createWorkoutPlan(app, token, workoutPlanDto);
 
     expect(response.status).toBe(StatusCodes.CREATED);
     expect(response.body.data.exercises).toHaveLength(3);
@@ -96,13 +96,13 @@ describe("POST /api/workouts", () => {
     const exercise = await createExercise(prisma, {
       exerciseType: ExerciseType.STATIC_HOLD,
     });
-    const workoutDto = new WorkoutBuilder()
+    const workoutPlanDto = new WorkoutPlanBuilder()
       .setExercises([
         { exerciseId: exercise.id, sets: 3, durationSecs: 30, restSecs: 60 },
       ])
       .build();
 
-    const response = await createWorkout(app, token, workoutDto);
+    const response = await createWorkoutPlan(app, token, workoutPlanDto);
 
     expect(response.status).toBe(StatusCodes.CREATED);
     expect(response.body.data.exercises[0].durationSecs).toBe(30);
@@ -111,13 +111,13 @@ describe("POST /api/workouts", () => {
 
   it("should return 401 without auth token", async () => {
     const exercise = await createExercise(prisma);
-    const workoutDto = new WorkoutBuilder()
+    const workoutPlanDto = new WorkoutPlanBuilder()
       .setExercises([
         { exerciseId: exercise.id, sets: 3, reps: 10, restSecs: 60 },
       ])
       .build();
 
-    const response = await createWorkout(app, undefined, workoutDto);
+    const response = await createWorkoutPlan(app, undefined, workoutPlanDto);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
@@ -128,7 +128,7 @@ describe("POST /api/workouts", () => {
     const token = registerRes.body.data.token;
 
     const exercise = await createExercise(prisma);
-    const response = await createWorkout(app, token, {
+    const response = await createWorkoutPlan(app, token, {
       exercises: [{ exerciseId: exercise.id, sets: 3, reps: 10, restSecs: 60 }],
     });
 
@@ -141,7 +141,7 @@ describe("POST /api/workouts", () => {
     const registerRes = await registerUser(app, registerUserDto);
     const token = registerRes.body.data.token;
 
-    const response = await createWorkout(app, token, {
+    const response = await createWorkoutPlan(app, token, {
       name: "X",
       exercises: [],
     });
@@ -155,7 +155,7 @@ describe("POST /api/workouts", () => {
     const registerRes = await registerUser(app, registerUserDto);
     const token = registerRes.body.data.token;
 
-    const response = await createWorkout(app, token, {
+    const response = await createWorkoutPlan(app, token, {
       name: "X",
       exercises: [{ exerciseId: "abc", sets: 3, reps: 10, restSecs: 60 }],
     });
@@ -168,11 +168,11 @@ describe("POST /api/workouts", () => {
     const registerRes = await registerUser(app, registerUserDto);
     const token = registerRes.body.data.token;
 
-    const workoutDto = new WorkoutBuilder()
+    const workoutPlanDto = new WorkoutPlanBuilder()
       .setExercises([{ exerciseId: 999999, sets: 3, reps: 10, restSecs: 60 }])
       .build();
 
-    const response = await createWorkout(app, token, workoutDto);
+    const response = await createWorkoutPlan(app, token, workoutPlanDto);
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
     expect(response.body.message).toContain("Exercise");

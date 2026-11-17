@@ -6,7 +6,7 @@ import {
   PreconditionRequiredError,
 } from "../../../src/errors";
 import aiPrerequisitesService from "../../../src/services/aiPrerequisitesService";
-import workoutService from "../../../src/services/workoutService";
+import workoutPlanService from "../../../src/services/workoutPlanService";
 
 import {
   asPrismaClient,
@@ -23,7 +23,7 @@ vi.mock("../../../src/services/aiPrerequisitesService", () => ({
   default: { assertAiPrerequisites: vi.fn() },
 }));
 
-vi.mock("../../../src/services/workoutService", () => ({
+vi.mock("../../../src/services/workoutPlanService", () => ({
   default: { assertOpenWorkoutRun: vi.fn() },
 }));
 
@@ -81,20 +81,20 @@ describe("RecordedSetService.createRecordedSet", () => {
     expect(prisma.exercise.findFirst).not.toHaveBeenCalled();
   });
 
-  it("verifies workout ownership and membership when workoutId is set", async () => {
+  it("verifies workout ownership and membership when workoutPlanId is set", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue({
+    prisma.workoutPlan.findFirst.mockResolvedValue({
       id: 5,
       exercises: [{ exercise: { code: "push_up" } }],
     });
 
     await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
-      workoutId: 5,
+      workoutPlanId: 5,
       setNumber: 2,
     });
 
-    expect(prisma.workout.findFirst).toHaveBeenCalledWith({
+    expect(prisma.workoutPlan.findFirst).toHaveBeenCalledWith({
       where: { id: 5, userId: 42 },
       select: {
         id: true,
@@ -104,28 +104,31 @@ describe("RecordedSetService.createRecordedSet", () => {
     expect(createData()).toMatchObject({
       userId: 42,
       exerciseId: 7,
-      workoutId: 5,
+      workoutPlanId: 5,
       setNumber: 2,
     });
   });
 
-  it("stores null workoutId and setNumber when omitted", async () => {
+  it("stores null workoutPlanId and setNumber when omitted", async () => {
     givenUserAndExercise();
 
     await recordedSetService.createRecordedSet(USER_UUID, baseDto);
 
-    expect(prisma.workout.findFirst).not.toHaveBeenCalled();
-    expect(createData()).toMatchObject({ workoutId: null, setNumber: null });
+    expect(prisma.workoutPlan.findFirst).not.toHaveBeenCalled();
+    expect(createData()).toMatchObject({
+      workoutPlanId: null,
+      setNumber: null,
+    });
   });
 
   it("rejects a workout the user does not own", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue(null);
+    prisma.workoutPlan.findFirst.mockResolvedValue(null);
 
     await expect(
       recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
-        workoutId: 5,
+        workoutPlanId: 5,
       }),
     ).rejects.toThrow(new NotFoundError("Workout not found"));
     expect(prisma.recordedSet.create).not.toHaveBeenCalled();
@@ -133,7 +136,7 @@ describe("RecordedSetService.createRecordedSet", () => {
 
   it("rejects an exercise that is not part of the workout", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue({
+    prisma.workoutPlan.findFirst.mockResolvedValue({
       id: 5,
       exercises: [{ exercise: { code: "squat" } }],
     });
@@ -141,7 +144,7 @@ describe("RecordedSetService.createRecordedSet", () => {
     await expect(
       recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
-        workoutId: 5,
+        workoutPlanId: 5,
       }),
     ).rejects.toThrow(
       new BadRequestError("Exercise is not part of this workout"),
@@ -170,23 +173,23 @@ describe("RecordedSetService.createRecordedSet", () => {
       42,
     );
     expect(prisma.exercise.findFirst).not.toHaveBeenCalled();
-    expect(prisma.workout.findFirst).not.toHaveBeenCalled();
+    expect(prisma.workoutPlan.findFirst).not.toHaveBeenCalled();
   });
 
   it("looks up the owned workout and links the recorded set to it", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue({
+    prisma.workoutPlan.findFirst.mockResolvedValue({
       id: 5,
       exercises: [{ exercise: { code: "push_up" } }],
     });
 
     await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
-      workoutId: 5,
+      workoutPlanId: 5,
       setNumber: 2,
     });
 
-    expect(prisma.workout.findFirst).toHaveBeenCalledWith({
+    expect(prisma.workoutPlan.findFirst).toHaveBeenCalledWith({
       where: { id: 5, userId: 42 },
       select: {
         id: true,
@@ -196,45 +199,52 @@ describe("RecordedSetService.createRecordedSet", () => {
     expect(createData()).toMatchObject({
       userId: 42,
       exerciseId: 7,
-      workoutId: 5,
+      workoutPlanId: 5,
       setNumber: 2,
     });
   });
 
   it("checks the run belongs to the user and workout before linking it", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue({
+    prisma.workoutPlan.findFirst.mockResolvedValue({
       id: 5,
       exercises: [{ exercise: { code: "push_up" } }],
     });
 
     await recordedSetService.createRecordedSet(USER_UUID, {
       ...baseDto,
-      workoutId: 5,
+      workoutPlanId: 5,
       workoutRunId: 9,
     });
 
-    expect(workoutService.assertOpenWorkoutRun).toHaveBeenCalledWith(42, 5, 9);
-    expect(createData()).toMatchObject({ workoutId: 5, workoutRunId: 9 });
+    expect(workoutPlanService.assertOpenWorkoutRun).toHaveBeenCalledWith(
+      42,
+      5,
+      9,
+    );
+    expect(createData()).toMatchObject({ workoutPlanId: 5, workoutRunId: 9 });
   });
 
-  it("stores null workoutId and setNumber when not supplied", async () => {
+  it("stores null workoutPlanId and setNumber when not supplied", async () => {
     givenUserAndExercise();
 
     await recordedSetService.createRecordedSet(USER_UUID, baseDto);
 
-    expect(prisma.workout.findFirst).not.toHaveBeenCalled();
-    expect(createData()).toMatchObject({ workoutId: null, setNumber: null });
+    expect(prisma.workoutPlan.findFirst).not.toHaveBeenCalled();
+    expect(createData()).toMatchObject({
+      workoutPlanId: null,
+      setNumber: null,
+    });
   });
 
   it("rejects a workout the user does not own", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue(null);
+    prisma.workoutPlan.findFirst.mockResolvedValue(null);
 
     await expect(
       recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
-        workoutId: 5,
+        workoutPlanId: 5,
       }),
     ).rejects.toThrow(new NotFoundError("Workout not found"));
     expect(prisma.recordedSet.create).not.toHaveBeenCalled();
@@ -242,7 +252,7 @@ describe("RecordedSetService.createRecordedSet", () => {
 
   it("rejects an exercise that is not in the workout", async () => {
     givenUserAndExercise();
-    prisma.workout.findFirst.mockResolvedValue({
+    prisma.workoutPlan.findFirst.mockResolvedValue({
       id: 5,
       exercises: [{ exercise: { code: "squat" } }],
     });
@@ -250,7 +260,7 @@ describe("RecordedSetService.createRecordedSet", () => {
     await expect(
       recordedSetService.createRecordedSet(USER_UUID, {
         ...baseDto,
-        workoutId: 5,
+        workoutPlanId: 5,
       }),
     ).rejects.toThrow(
       new BadRequestError("Exercise is not part of this workout"),
