@@ -166,14 +166,16 @@ export const buildUntrackableAdvice = (
   reasons: readonly UntrackableReason[],
   exerciseCode: FormAnalysisExercise,
 ): string[] => {
-  const unique = reasons.filter(
+  const uniqueReasons = reasons.filter(
     (reason, index) => reasons.indexOf(reason) === index,
   );
-  if (unique.length === 0) {
+  if (uniqueReasons.length === 0) {
     return [UNTRACKABLE_FALLBACK_ADVICE];
   }
-  const advice = unique.map((reason) => UNTRACKABLE_ADVICE[reason]);
-  if (unique.some((reason) => VIEW_HINT_REASONS.indexOf(reason) !== -1)) {
+  const advice = uniqueReasons.map((reason) => UNTRACKABLE_ADVICE[reason]);
+  if (
+    uniqueReasons.some((reason) => VIEW_HINT_REASONS.indexOf(reason) !== -1)
+  ) {
     advice.push(FORM_VIEW_HINTS[exerciseCode]);
   }
   return advice;

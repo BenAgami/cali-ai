@@ -23,12 +23,10 @@ const MOVING_JOINTS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 export type SetEndVerdict =
   | {
       isOver: false;
-      /** Whole seconds until the set ends, inside the warning window only. */
       stopsInSecs: number | null;
     }
   | {
       isOver: true;
-      /** Frames to keep: everything up to the end of the set, idle tail dropped. */
       keepCount: number;
     };
 
@@ -82,7 +80,6 @@ const hadMotion = (frames: readonly SetupFrame[]): boolean => {
   const first = frames[0];
   const last = frames[frames.length - 1];
   if (!first || !last) return false;
-  // Frames arrive in timestamp order, so both window edges only move forward.
   let windowStart = 0;
   let windowEnd = 0;
   for (
@@ -167,7 +164,6 @@ export const evaluateSetEnd = (input: {
   }
   if (lostSecs > 0) return endsIn(LOST_SECS - lostSecs);
 
-  // Windows are nested, so the longest still tail is found by growing it.
   let stillSecs = 0;
   let stillIndex = 0;
   for (let secs = 1; secs <= STILL_SECS; secs += 1) {

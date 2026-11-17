@@ -25,9 +25,6 @@ export const updateWorkoutSchema = z.object({
 });
 export type UpdateWorkoutValues = z.infer<typeof updateWorkoutSchema>;
 
-const DEFAULT_RECORDED_SETS_LIMIT = 50;
-const MAX_RECORDED_SETS_LIMIT = 100;
-
 export const workoutIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
@@ -38,12 +35,7 @@ export const workoutLogIdParamSchema = workoutIdParamSchema.extend({
 
 export const recordedSetsQuerySchema = z.object({
   workoutLogId: z.coerce.number().int().positive().optional(),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(MAX_RECORDED_SETS_LIMIT)
-    .default(DEFAULT_RECORDED_SETS_LIMIT),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
   offset: z.coerce.number().int().min(0).default(0),
 });
 export type RecordedSetsQuery = z.infer<typeof recordedSetsQuerySchema>;

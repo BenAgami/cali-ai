@@ -52,15 +52,15 @@ const meanVisibility = (
   frames: readonly SetupFrame[],
   joints: readonly number[],
 ): number => {
+  const total = frames.length * joints.length;
+  if (total === 0) return 0;
   let sum = 0;
-  let count = 0;
   for (const frame of frames) {
     for (const joint of joints) {
       sum += frame.keypoints[joint]?.[2] ?? 0;
-      count += 1;
     }
   }
-  return count === 0 ? 0 : sum / count;
+  return sum / total;
 };
 
 const distance = (dx: number, dy: number): number =>
@@ -103,18 +103,16 @@ const shoulderToTorsoRatio = (
 };
 
 /**
- * Which frame edge cuts the body off. A joint outside the frame is no longer
- * confidently visible, so the visibility check fails first; but the pose model
- * still places it at or beyond the edge, and the adapter forwards those
- * coordinates unclamped.
- * Counting hidden key joints at a boundary names the edge. Needs part of the
- * body to be detected, so an empty frame (all zeros) is never read as clipped.
+ * Which frame edge cuts the body off: the one with the most hidden key joints
+ * at or beyond it (the pose model still places off-frame joints there,
+ * unclamped). Null when no key joint is visible, so an empty frame is never
+ * read as clipped.
  */
 const clippedEdgeOf = (
-  last: SetupFrame,
+  latestFrame: SetupFrame,
   keyJoints: readonly number[],
 ): SetupIssue | null => {
-  const points = keyJoints.map((joint) => last.keypoints[joint]);
+  const points = keyJoints.map((joint) => latestFrame.keypoints[joint]);
   const visibleCount = points.filter(
     (point) => (point?.[2] ?? 0) >= VISIBILITY_MIN,
   ).length;
@@ -135,7 +133,10 @@ const clippedEdgeOf = (
   return count > 0 ? issue : null;
 };
 
-/** Nearest edge, as a fraction of the frame, that counts as where a body left. */
+/**
+ * Max gap (fraction of the frame) between a body's last detected position and
+ * an edge for that edge to count as where it left.
+ */
 const EXIT_EDGE_MAX_DISTANCE = 0.3;
 
 /**
@@ -143,8 +144,10 @@ const EXIT_EDGE_MAX_DISTANCE = 0.3;
  * check has no clipped joints to read. The body left through the edge its last
  * detected position was closest to; null when that was mid-frame.
  */
-export const exitEdgeOf = (last: SetupFrame): SetupIssue | null => {
-  const visible = last.keypoints.filter(([, , v]) => v >= VISIBILITY_MIN);
+export const exitEdgeOf = (latestFrame: SetupFrame): SetupIssue | null => {
+  const visible = latestFrame.keypoints.filter(
+    ([, , v]) => v >= VISIBILITY_MIN,
+  );
   if (visible.length === 0) return null;
   const xs = visible.map(([x]) => x);
   const ys = visible.map(([, y]) => y);
@@ -169,8 +172,8 @@ export const evaluateSetup = (input: {
 }): SetupCheckResult => {
   const { exerciseCode, aspectRatio, lumaMean } = input;
   const window = input.frames.slice(-SETUP_WINDOW_FRAMES);
-  const last = window[window.length - 1];
-  if (window.length < SETUP_WINDOW_FRAMES || !last) {
+  const latestFrame = window[window.length - 1];
+  if (window.length < SETUP_WINDOW_FRAMES || !latestFrame) {
     return notReady("NOT_DETECTED");
   }
 
@@ -182,10 +185,12 @@ export const evaluateSetup = (input: {
   ).length;
   if (visibleFrames / window.length < VISIBLE_FRAME_SHARE_MIN) {
     if (lumaMean !== null && lumaMean < DARK_LUMA) return notReady("TOO_DARK");
-    return notReady(clippedEdgeOf(last, keyJoints) ?? "NOT_DETECTED");
+    return notReady(clippedEdgeOf(latestFrame, keyJoints) ?? "NOT_DETECTED");
   }
 
-  const visible = last.keypoints.filter(([, , v]) => v >= VISIBILITY_MIN);
+  const visible = latestFrame.keypoints.filter(
+    ([, , v]) => v >= VISIBILITY_MIN,
+  );
   const xs = visible.map(([x]) => x);
   const ys = visible.map(([, y]) => y);
   const minX = Math.min(...xs);
