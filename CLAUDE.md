@@ -32,7 +32,7 @@ Package manager: Yarn Classic 1.22.19. Task runner: Turborepo.
 
 **Prisma client** is a singleton exported from `packages/database/src/index.ts`. Never instantiate a new PrismaClient elsewhere.
 
-**Environment variables** are validated at startup via Zod in `apps/api/src/config/env.ts`. Add new vars there with a schema entry — never read `process.env` directly elsewhere in the API.
+**Environment variables** are validated at startup via Zod in `apps/api/src/config/env.ts`. Add new vars there with a schema entry — never read `process.env` directly elsewhere in the API. `env.ts` only validates and never loads a file: each entry point loads its own (`dev` and `eval:workouts` via `tsx --env-file=.env`, Vitest via `.env.test`, production from the platform's env), so tests only ever see `.env.test`.
 
 **Form metrics.** `apps/api/src/metrics/` is pure — no I/O, no logger. Rubric values come from `05-RUBRICS.md` and change only with a `RUBRIC_VERSION` bump (calibration evidence lives in `05-CALIBRATION.md`). Score, band and findings are computed deterministically; the LLM only phrases the server-selected findings and never scores. `formScore` is stored but never appears in a response shape (clients get the band).
 
