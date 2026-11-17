@@ -6,7 +6,7 @@ model Workout {
   createdAt    DateTime           @default(now()) @map("created_at")
   updatedAt    DateTime           @updatedAt @map("updated_at")
   exercises    WorkoutExercise[]
-  logs         WorkoutLog[]
+  runs         WorkoutRun[]
   sessions     WorkoutSession[]
   aiModel      String?            @map("ai_model") @db.VarChar(80)
   generation   WorkoutGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
@@ -34,7 +34,7 @@ model WorkoutExercise {
   @@map("workout_exercises")
 }
 
-model WorkoutLog {
+model WorkoutRun {
   id           Int      @id @default(autoincrement())
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       Int      @map("user_id")
@@ -47,6 +47,6 @@ model WorkoutLog {
 
   sessions WorkoutSession[]
 
-  @@index([userId, completedAt(sort: Desc)], map: "idx_workout_logs_user_completed")
-  @@map("workout_logs")
+  @@index([userId, completedAt(sort: Desc)], map: "idx_workout_runs_user_completed")
+  @@map("workout_runs")
 }

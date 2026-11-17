@@ -77,11 +77,11 @@ export class WorkoutSessionService {
         data.workoutId,
         exercise.code,
       );
-      if (data.workoutLogId !== undefined) {
-        await workoutService.assertOpenWorkoutLog(
+      if (data.workoutRunId !== undefined) {
+        await workoutService.assertOpenWorkoutRun(
           userId,
           data.workoutId,
-          data.workoutLogId,
+          data.workoutRunId,
         );
       }
     }
@@ -93,7 +93,7 @@ export class WorkoutSessionService {
         userId,
         exerciseId: exercise.id,
         workoutId: data.workoutId ?? null,
-        workoutLogId: data.workoutLogId ?? null,
+        workoutRunId: data.workoutRunId ?? null,
         setNumber: data.setNumber ?? null,
         notes: data.notes,
         performedAt,

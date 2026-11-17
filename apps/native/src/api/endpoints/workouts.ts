@@ -5,7 +5,7 @@ import type {
   UpdateWorkoutValues,
   WorkoutWithExercises,
   WorkoutListResponse,
-  WorkoutLogResponse,
+  WorkoutRunResponse,
   RecordedSetPage,
 } from "@repo/common";
 
@@ -41,20 +41,20 @@ export const workoutApi = {
   remove: (id: number): Promise<void> =>
     apiClient.delete<void>(WORKOUT_ROUTES.detail(id)),
 
-  startLog: (id: number): Promise<WorkoutLogResponse> =>
-    apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), {}),
+  startRun: (id: number): Promise<WorkoutRunResponse> =>
+    apiClient.post<WorkoutRunResponse>(WORKOUT_ROUTES.runs(id), {}),
 
-  completeLog: (id: number, logId: number): Promise<WorkoutLogResponse> =>
-    apiClient.patch<WorkoutLogResponse>(WORKOUT_ROUTES.log(id, logId), {}),
+  completeRun: (id: number, runId: number): Promise<WorkoutRunResponse> =>
+    apiClient.patch<WorkoutRunResponse>(WORKOUT_ROUTES.run(id, runId), {}),
 
   recordedSets: (
     workoutId: number,
-    workoutLogId?: number,
+    workoutRunId?: number,
     offset?: number,
   ): Promise<RecordedSetPage> =>
     apiClient.get<RecordedSetPage>(
       withQuery(WORKOUT_ROUTES.recordedSets(workoutId), {
-        workoutLogId,
+        workoutRunId,
         offset,
       }),
     ),

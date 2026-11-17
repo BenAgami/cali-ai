@@ -18,7 +18,7 @@ import { getUserIdByUuid } from "../utils/getUserIdByUuid";
 const SECOND_MS = 1000;
 /** A Start within this long of an unfinished run resumes it. */
 const RUN_RESUME_WINDOW_MS = 3 * 60 * 60 * SECOND_MS;
-const WORKOUT_LOG_COMPLETED_MESSAGE = "Workout log is already completed";
+const WORKOUT_RUN_COMPLETED_MESSAGE = "Workout run is already completed";
 
 type ListWorkoutsInput = {
   userUuid: string;
@@ -210,7 +210,7 @@ export class WorkoutService {
    * it is deleted instead of piling up. A PENDING session has no accepted
    * capture, so it does not count as a recorded set.
    */
-  async startWorkoutLog(userUuid: string, workoutId: number) {
+  async startWorkoutRun(userUuid: string, workoutId: number) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     const workout = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
@@ -220,7 +220,7 @@ export class WorkoutService {
 
     const resumeCutoff = new Date(Date.now() - RUN_RESUME_WINDOW_MS);
     const openRun = { userId, workoutId, completedAt: null };
-    await this.prisma.workoutLog.deleteMany({
+    await this.prisma.workoutRun.deleteMany({
       where: {
         ...openRun,
         startedAt: { lt: resumeCutoff },
@@ -229,44 +229,44 @@ export class WorkoutService {
         },
       },
     });
-    const resumable = await this.prisma.workoutLog.findFirst({
+    const resumable = await this.prisma.workoutRun.findFirst({
       where: { ...openRun, startedAt: { gte: resumeCutoff } },
       orderBy: { startedAt: "desc" },
     });
 
     return (
       resumable ??
-      this.prisma.workoutLog.create({ data: { userId, workoutId } })
+      this.prisma.workoutRun.create({ data: { userId, workoutId } })
     );
   }
 
   /** The run must be the user's, for that workout, and not yet completed. */
-  async assertOpenWorkoutLog(
+  async assertOpenWorkoutRun(
     userId: number,
     workoutId: number,
-    logId: number,
+    runId: number,
   ): Promise<{ startedAt: Date }> {
-    const log = await this.prisma.workoutLog.findFirst({
-      where: { id: logId, workoutId, userId },
+    const run = await this.prisma.workoutRun.findFirst({
+      where: { id: runId, workoutId, userId },
       select: { startedAt: true, completedAt: true },
     });
-    if (!log) throw new NotFoundError("Workout log not found");
-    if (log.completedAt !== null) {
+    if (!run) throw new NotFoundError("Workout run not found");
+    if (run.completedAt !== null) {
       throw new ConflictError(
-        WORKOUT_LOG_COMPLETED_MESSAGE,
-        API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+        WORKOUT_RUN_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_RUN_COMPLETED,
       );
     }
-    return { startedAt: log.startedAt };
+    return { startedAt: run.startedAt };
   }
 
   /** The duration is the server's startedAt to completedAt, not a client clock. */
-  async completeWorkoutLog(userUuid: string, workoutId: number, logId: number) {
+  async completeWorkoutRun(userUuid: string, workoutId: number, runId: number) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
-    const { startedAt } = await this.assertOpenWorkoutLog(
+    const { startedAt } = await this.assertOpenWorkoutRun(
       userId,
       workoutId,
-      logId,
+      runId,
     );
 
     const completedAt = new Date();
@@ -276,18 +276,18 @@ export class WorkoutService {
     );
 
     // Guarded on completedAt so a concurrent request cannot complete it twice.
-    const { count } = await this.prisma.workoutLog.updateMany({
-      where: { id: logId, completedAt: null },
+    const { count } = await this.prisma.workoutRun.updateMany({
+      where: { id: runId, completedAt: null },
       data: { completedAt, durationSecs },
     });
     if (count === 0) {
       throw new ConflictError(
-        WORKOUT_LOG_COMPLETED_MESSAGE,
-        API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+        WORKOUT_RUN_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_RUN_COMPLETED,
       );
     }
 
-    return this.prisma.workoutLog.findUniqueOrThrow({ where: { id: logId } });
+    return this.prisma.workoutRun.findUniqueOrThrow({ where: { id: runId } });
   }
 }
 

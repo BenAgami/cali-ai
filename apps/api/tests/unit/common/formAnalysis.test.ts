@@ -11,7 +11,7 @@ import {
 const base = {
   sessionId: 1,
   workoutId: 2,
-  openWorkoutLogId: null,
+  openWorkoutRunId: null,
   setNumber: 1,
   exerciseCode: "push_up",
   exerciseDisplayName: "Push-up",
@@ -144,7 +144,7 @@ describe("recordedSetSchema", () => {
       recordedSetSchema.safeParse({
         sessionId: 1,
         workoutId: 2,
-        workoutLogId: null,
+        workoutRunId: null,
         setNumber: 1,
         exerciseCode: "squat",
         exerciseDisplayName: "Squat",

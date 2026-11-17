@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { recordedSetsQuerySchema, workoutLogIdParamSchema } from "@repo/common";
+import { recordedSetsQuerySchema, workoutRunIdParamSchema } from "@repo/common";
 
 import { registry } from "../registry";
 import {
@@ -9,7 +9,7 @@ import {
   WorkoutGenerationPreviewResponse,
   UpdateWorkoutBody,
   WorkoutResponse,
-  WorkoutLogResponse,
+  WorkoutRunResponse,
   RecordedSet,
   paginatedData,
   successResponse,
@@ -140,7 +140,7 @@ registry.registerPath({
   request: {
     params: workoutIdParam,
     query: recordedSetsQuerySchema.extend({
-      workoutLogId: recordedSetsQuerySchema.shape.workoutLogId.openapi({
+      workoutRunId: recordedSetsQuerySchema.shape.workoutRunId.openapi({
         description: "Only the sets recorded during this workout run",
         example: 1,
       }),
@@ -195,15 +195,15 @@ registry.registerPath({
 
 registry.registerPath({
   method: "post",
-  path: "/workouts/{id}/logs",
+  path: "/workouts/{id}/runs",
   tags: ["Workouts"],
   summary: "Start a workout run",
   description:
-    "Opens an in-progress run of the workout plan, or resumes this plan's open run started in the last 3 hours. Open runs older than that with no recorded sets are deleted. Recorded sets attach to the run through workoutLogId; complete it with PATCH.",
+    "Opens an in-progress run of the workout plan, or resumes this plan's open run started in the last 3 hours. Open runs older than that with no recorded sets are deleted. Recorded sets attach to the run through workoutRunId; complete it with PATCH.",
   security: [bearerAuth],
   request: { params: workoutIdParam },
   responses: {
-    201: successResponse(WorkoutLogResponse, "Workout run started"),
+    201: successResponse(WorkoutRunResponse, "Workout run started"),
     400: errorResponse("Invalid workout ID"),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Workout not found"),
@@ -213,21 +213,21 @@ registry.registerPath({
 
 registry.registerPath({
   method: "patch",
-  path: "/workouts/{id}/logs/{logId}",
+  path: "/workouts/{id}/runs/{runId}",
   tags: ["Workouts"],
   summary: "Complete a workout run",
   description:
     "Stamps completedAt; durationSecs is computed from the run's startedAt. Any request body is ignored.",
   security: [bearerAuth],
   request: {
-    params: workoutLogIdParamSchema,
+    params: workoutRunIdParamSchema,
   },
   responses: {
-    200: successResponse(WorkoutLogResponse, "Workout run completed"),
-    400: errorResponse("Invalid workout or log ID"),
+    200: successResponse(WorkoutRunResponse, "Workout run completed"),
+    400: errorResponse("Invalid workout or run ID"),
     401: errorResponse("Unauthorized"),
-    404: errorResponse("Workout log not found"),
-    409: errorResponse("Workout log is already completed"),
+    404: errorResponse("Workout run not found"),
+    409: errorResponse("Workout run is already completed"),
     500: errorResponse("Internal server error"),
   },
 });

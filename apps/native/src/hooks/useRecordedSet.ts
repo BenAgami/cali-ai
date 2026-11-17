@@ -108,18 +108,18 @@ const toUploadErrorCode = (error: unknown): UploadErrorCode => {
 };
 
 // A run completed elsewhere (e.g. Done on another screen) refuses new sets with
-// WORKOUT_LOG_COMPLETED; record the set outside the run instead of losing it.
+// WORKOUT_RUN_COMPLETED; record the set outside the run instead of losing it.
 const createSessionForSet = async (input: CreateWorkoutSessionValues) => {
   try {
     return await sessionsApi.create(input);
   } catch (error) {
     if (
-      input.workoutLogId !== undefined &&
+      input.workoutRunId !== undefined &&
       error instanceof ApiError &&
       error.status === Number(StatusCodes.CONFLICT) &&
-      error.code === API_ERROR_CODES.WORKOUT_LOG_COMPLETED
+      error.code === API_ERROR_CODES.WORKOUT_RUN_COMPLETED
     ) {
-      return sessionsApi.create({ ...input, workoutLogId: undefined });
+      return sessionsApi.create({ ...input, workoutRunId: undefined });
     }
     throw error;
   }
@@ -152,7 +152,7 @@ interface UseRecordedSetParams {
     refetchStatus: () => Promise<AiPrerequisiteStatus>;
   };
   workoutId: number | null;
-  workoutLogId: number | null;
+  workoutRunId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
   exerciseDisplayName: string;
@@ -164,7 +164,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   const {
     prerequisites,
     workoutId,
-    workoutLogId,
+    workoutRunId,
     setNumber,
     exerciseCode,
     exerciseDisplayName,
@@ -372,7 +372,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
         await createSessionForSet({
           exerciseCode,
           workoutId: workoutId ?? undefined,
-          workoutLogId: workoutLogId ?? undefined,
+          workoutRunId: workoutRunId ?? undefined,
           setNumber: setNumber ?? undefined,
         })
       ).id;
@@ -421,7 +421,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     source,
     track,
     workoutId,
-    workoutLogId,
+    workoutRunId,
   ]);
 
   // keepCount drops the idle tail after the set (see evaluateSetEnd).

@@ -93,13 +93,13 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     expect(JSON.stringify(response.body)).not.toContain("formScore");
   });
 
-  it("filters to one run when workoutLogId is given and exposes workoutLogId", async () => {
+  it("filters to one run when workoutRunId is given and exposes workoutRunId", async () => {
     const { userId, token } = await newUser();
     const workout = await newWorkout(userId);
-    const runA = await prisma.workoutLog.create({
+    const runA = await prisma.workoutRun.create({
       data: { userId, workoutId: workout.id },
     });
-    const runB = await prisma.workoutLog.create({
+    const runB = await prisma.workoutRun.create({
       data: { userId, workoutId: workout.id },
     });
     const inRunA = await prisma.workoutSession.create({
@@ -107,7 +107,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
         userId,
         exerciseId,
         workoutId: workout.id,
-        workoutLogId: runA.id,
+        workoutRunId: runA.id,
         setNumber: 1,
         processingStatus: SessionStatus.PROCESSING,
       },
@@ -118,7 +118,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
         userId,
         exerciseId,
         workoutId: workout.id,
-        workoutLogId: runB.id,
+        workoutRunId: runB.id,
         setNumber: 1,
         processingStatus: SessionStatus.PROCESSING,
       },
@@ -126,7 +126,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
     const all = await getRecordedSets(app, token, workout.id);
     const filtered = await getRecordedSets(app, token, workout.id, {
-      workoutLogId: runA.id,
+      workoutRunId: runA.id,
     });
 
     expect(all.body.data.items).toHaveLength(2);
@@ -134,7 +134,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     expect(filtered.body.data.items).toHaveLength(1);
     expect(filtered.body.data.items[0]).toMatchObject({
       sessionId: inRunA.id,
-      workoutLogId: runA.id,
+      workoutRunId: runA.id,
     });
   });
 

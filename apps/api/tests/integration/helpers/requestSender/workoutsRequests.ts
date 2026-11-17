@@ -72,19 +72,19 @@ export const startWorkout = async (
   app: Application,
   token: string | undefined,
   id: number | string,
-) => withAuth(supertest.agent(app).post(`/api/workouts/${id}/logs`), token);
+) => withAuth(supertest.agent(app).post(`/api/workouts/${id}/runs`), token);
 
 export const completeWorkout = async (
   app: Application,
   token: string | undefined,
   id: number | string,
-  logId: number | string,
+  runId: number | string,
   data: object | string,
 ) =>
   withAuth(
     supertest
       .agent(app)
-      .patch(`/api/workouts/${id}/logs/${logId}`)
+      .patch(`/api/workouts/${id}/runs/${runId}`)
       .set("Content-Type", "application/json"),
     token,
   ).send(data);

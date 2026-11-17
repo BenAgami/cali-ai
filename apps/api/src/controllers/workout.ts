@@ -22,8 +22,8 @@ type WorkoutIdParam = {
   id: string;
 };
 
-type WorkoutLogIdParam = WorkoutIdParam & {
-  logId: string;
+type WorkoutRunIdParam = WorkoutIdParam & {
+  runId: string;
 };
 
 /**
@@ -163,8 +163,8 @@ export const deleteWorkout = async (
 };
 
 /**
- * Start a workout run (create an in-progress log)
- * @route POST /api/workouts/:id/logs
+ * Start a workout run (create an in-progress run)
+ * @route POST /api/workouts/:id/runs
  */
 export const startWorkout = async (
   req: Request<WorkoutIdParam>,
@@ -174,36 +174,36 @@ export const startWorkout = async (
   if (!userUuid) return;
 
   const workoutId = Number(req.params.id);
-  const log = await workoutService.startWorkoutLog(userUuid, workoutId);
+  const run = await workoutService.startWorkoutRun(userUuid, workoutId);
 
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Workout started successfully",
-    data: log,
+    data: run,
   });
 };
 
 /**
  * Complete a workout run
- * @route PATCH /api/workouts/:id/logs/:logId
+ * @route PATCH /api/workouts/:id/runs/:runId
  */
 export const completeWorkout = async (
-  req: Request<WorkoutLogIdParam>,
+  req: Request<WorkoutRunIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
-  const log = await workoutService.completeWorkoutLog(
+  const run = await workoutService.completeWorkoutRun(
     userUuid,
     Number(req.params.id),
-    Number(req.params.logId),
+    Number(req.params.runId),
   );
 
   res.status(StatusCodes.OK).json({
     success: true,
     message: "Workout completed successfully",
-    data: log,
+    data: run,
   });
 };
 

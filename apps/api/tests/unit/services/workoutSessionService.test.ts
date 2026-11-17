@@ -24,7 +24,7 @@ vi.mock("../../../src/services/aiPrerequisitesService", () => ({
 }));
 
 vi.mock("../../../src/services/workoutService", () => ({
-  default: { assertOpenWorkoutLog: vi.fn() },
+  default: { assertOpenWorkoutRun: vi.fn() },
 }));
 
 vi.mock("../../../src/services/aiPrerequisitesService", () => ({
@@ -211,11 +211,11 @@ describe("WorkoutSessionService.createSession", () => {
     await workoutSessionService.createSession(USER_UUID, {
       ...baseDto,
       workoutId: 5,
-      workoutLogId: 9,
+      workoutRunId: 9,
     });
 
-    expect(workoutService.assertOpenWorkoutLog).toHaveBeenCalledWith(42, 5, 9);
-    expect(createData()).toMatchObject({ workoutId: 5, workoutLogId: 9 });
+    expect(workoutService.assertOpenWorkoutRun).toHaveBeenCalledWith(42, 5, 9);
+    expect(createData()).toMatchObject({ workoutId: 5, workoutRunId: 9 });
   });
 
   it("stores null workoutId and setNumber when not supplied", async () => {

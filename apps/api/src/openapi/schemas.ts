@@ -16,7 +16,7 @@ import {
   GOAL_TYPES,
   exerciseDetailSchema,
   workoutWithExercisesSchema,
-  workoutLogResponseSchema,
+  workoutRunResponseSchema,
   pageMetaSchema,
   poseCapturePayloadSchema,
   captureAcceptedResponseSchema,
@@ -308,9 +308,9 @@ export const WorkoutGenerationPreviewResponse = registry.register(
   workoutGenerationPreviewSchema,
 );
 
-export const WorkoutLogResponse = registry.register(
-  "WorkoutLog",
-  workoutLogResponseSchema,
+export const WorkoutRunResponse = registry.register(
+  "WorkoutRun",
+  workoutRunResponseSchema,
 );
 
 // ── Workout session responses ─────────────────────────────────────────────────

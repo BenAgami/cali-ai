@@ -84,7 +84,7 @@ const OrientationDebug: React.FC<{ cameraPosition: string }> = ({
 
 interface RecorderProps {
   workoutId: number | null;
-  workoutLogId: number | null;
+  workoutRunId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
   exerciseDisplayName: string;
@@ -93,7 +93,7 @@ interface RecorderProps {
 
 const Recorder: React.FC<RecorderProps> = ({
   workoutId,
-  workoutLogId,
+  workoutRunId,
   setNumber,
   exerciseCode,
   exerciseDisplayName,
@@ -107,7 +107,7 @@ const Recorder: React.FC<RecorderProps> = ({
       refetchStatus: prerequisites.refetchStatus,
     },
     workoutId,
-    workoutLogId,
+    workoutRunId,
     setNumber,
     exerciseCode,
     exerciseDisplayName,
@@ -398,13 +398,13 @@ const RecordSetScreen: React.FC = () => {
   // The API rejects a setNumber or run without a workoutId.
   const setNumber =
     workoutId === null ? null : parsePositiveIntParam(params.setNumber);
-  const workoutLogId =
+  const workoutRunId =
     workoutId === null ? null : parsePositiveIntParam(params.runId);
 
   return (
     <Recorder
       workoutId={workoutId}
-      workoutLogId={workoutLogId}
+      workoutRunId={workoutRunId}
       setNumber={setNumber}
       exerciseCode={exerciseCode}
       exerciseDisplayName={params.exerciseDisplayName ?? exerciseCode}

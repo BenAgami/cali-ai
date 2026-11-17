@@ -7,7 +7,7 @@ import {
   recordedSetsQuerySchema,
   updateWorkoutSchema,
   workoutIdParamSchema,
-  workoutLogIdParamSchema,
+  workoutRunIdParamSchema,
 } from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
@@ -101,24 +101,24 @@ router.delete(
 );
 
 /**
- * POST /:id/logs
- * Start a workout run (create an in-progress log)
+ * POST /:id/runs
+ * Start a workout run (create an in-progress run)
  */
 router.post(
-  "/:id/logs",
+  "/:id/runs",
   authenticateToken,
   validateSchema(z.object({ params: workoutIdParamSchema })),
   startWorkout,
 );
 
 /**
- * PATCH /:id/logs/:logId
+ * PATCH /:id/runs/:runId
  * Complete a workout run
  */
 router.patch(
-  "/:id/logs/:logId",
+  "/:id/runs/:runId",
   authenticateToken,
-  validateSchema(z.object({ params: workoutLogIdParamSchema })),
+  validateSchema(z.object({ params: workoutRunIdParamSchema })),
   completeWorkout,
 );
 

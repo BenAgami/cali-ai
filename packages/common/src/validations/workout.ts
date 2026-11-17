@@ -32,12 +32,12 @@ export const workoutIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
 
-export const workoutLogIdParamSchema = workoutIdParamSchema.extend({
-  logId: z.coerce.number().int().positive(),
+export const workoutRunIdParamSchema = workoutIdParamSchema.extend({
+  runId: z.coerce.number().int().positive(),
 });
 
 export const recordedSetsQuerySchema = z.object({
-  workoutLogId: z.coerce.number().int().positive().optional(),
+  workoutRunId: z.coerce.number().int().positive().optional(),
   limit: z.coerce
     .number()
     .int()
@@ -84,7 +84,7 @@ export const workoutListResponseSchema = paginatedSchema(
 );
 export type WorkoutListResponse = z.infer<typeof workoutListResponseSchema>;
 
-export const workoutLogResponseSchema = z.object({
+export const workoutRunResponseSchema = z.object({
   id: z.number().int(),
   userId: z.number().int(),
   workoutId: z.number().int().nullable(),
@@ -93,4 +93,4 @@ export const workoutLogResponseSchema = z.object({
   durationSecs: z.number().int().nullable(),
   createdAt: z.string(),
 });
-export type WorkoutLogResponse = z.infer<typeof workoutLogResponseSchema>;
+export type WorkoutRunResponse = z.infer<typeof workoutRunResponseSchema>;

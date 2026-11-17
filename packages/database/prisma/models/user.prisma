@@ -24,7 +24,7 @@ model User {
   workoutSessions    WorkoutSession[]
   userMilestones     UserMilestone[]
   workouts           Workout[]
-  workoutLogs        WorkoutLog[]
+  workoutRuns        WorkoutRun[]
   refreshTokens      RefreshToken[]
   workoutGenerations WorkoutGeneration[]
 

@@ -75,7 +75,7 @@ describe("DELETE /api/workouts/:id", () => {
       name: "Started",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
-    const run = await prisma.workoutLog.create({
+    const run = await prisma.workoutRun.create({
       data: { userId: dbUser.id, workoutId: workout.id },
     });
     const session = await prisma.workoutSession.create({
@@ -83,14 +83,14 @@ describe("DELETE /api/workouts/:id", () => {
         userId: dbUser.id,
         exerciseId: exercise.id,
         workoutId: workout.id,
-        workoutLogId: run.id,
+        workoutRunId: run.id,
       },
     });
 
     const response = await deleteWorkout(app, token, workout.id);
 
     expect(response.status).toBe(StatusCodes.NO_CONTENT);
-    const keptRun = await prisma.workoutLog.findUniqueOrThrow({
+    const keptRun = await prisma.workoutRun.findUniqueOrThrow({
       where: { id: run.id },
     });
     expect(keptRun.workoutId).toBeNull();
@@ -98,7 +98,7 @@ describe("DELETE /api/workouts/:id", () => {
       where: { id: session.id },
     });
     expect(kept.workoutId).toBeNull();
-    expect(kept.workoutLogId).toBe(run.id);
+    expect(kept.workoutRunId).toBe(run.id);
   });
 
   it("should return 404 for another user's workout", async () => {

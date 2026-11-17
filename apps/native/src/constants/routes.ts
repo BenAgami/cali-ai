@@ -21,8 +21,8 @@ export const WORKOUT_ROUTES = {
   list: "/api/workouts",
   generate: "/api/workouts/generate",
   detail: (id: number) => `/api/workouts/${id}`,
-  logs: (id: number) => `/api/workouts/${id}/logs`,
-  log: (id: number, logId: number) => `/api/workouts/${id}/logs/${logId}`,
+  runs: (id: number) => `/api/workouts/${id}/runs`,
+  run: (id: number, runId: number) => `/api/workouts/${id}/runs/${runId}`,
   recordedSets: (id: number) => `/api/workouts/${id}/recorded-sets`,
 } as const;
 

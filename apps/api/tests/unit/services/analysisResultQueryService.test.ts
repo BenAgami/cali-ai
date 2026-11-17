@@ -84,7 +84,7 @@ const session = (overrides: Record<string, unknown> = {}) => ({
   workoutId: 9,
   setNumber: 2,
   processingStatus: SessionStatus.COMPLETED,
-  workoutLog: null,
+  workoutRun: null,
   exercise: { code: "push_up", displayName: "Push-up" },
   analysisResult: scoredResult(),
   ...overrides,
@@ -106,7 +106,7 @@ describe("AnalysisResultQueryService", () => {
     const row = (overrides: Record<string, unknown> = {}) => ({
       id: 11,
       workoutId: 9,
-      workoutLogId: 4,
+      workoutRunId: 4,
       setNumber: 1,
       performedAt: ANALYZED_AT,
       processingStatus: SessionStatus.COMPLETED,
@@ -176,13 +176,13 @@ describe("AnalysisResultQueryService", () => {
       expect(JSON.stringify(result)).not.toContain("formScore");
     });
 
-    it("scopes the query to one run and maps workoutLogId when given", async () => {
+    it("scopes the query to one run and maps workoutRunId when given", async () => {
       prisma.workout.findFirst.mockResolvedValue({ id: 9 });
       prisma.workoutSession.findMany.mockResolvedValue([row()]);
 
       const { items: result } = await service.listRecordedSets(USER, 9, {
         ...query,
-        workoutLogId: 4,
+        workoutRunId: 4,
       });
 
       expect(prisma.workoutSession.findMany).toHaveBeenCalledWith(
@@ -190,12 +190,12 @@ describe("AnalysisResultQueryService", () => {
           where: {
             workoutId: 9,
             userId: USER_ID,
-            workoutLogId: 4,
+            workoutRunId: 4,
             processingStatus: { not: SessionStatus.PENDING },
           },
         }),
       );
-      expect(result[0]).toMatchObject({ workoutLogId: 4 });
+      expect(result[0]).toMatchObject({ workoutRunId: 4 });
     });
 
     it("pages with skip and a look-ahead take, trimming the extra row", async () => {
@@ -234,7 +234,7 @@ describe("AnalysisResultQueryService", () => {
       expect(result).toEqual({
         sessionId: SESSION_ID,
         workoutId: 9,
-        openWorkoutLogId: null,
+        openWorkoutRunId: null,
         setNumber: 2,
         exerciseCode: "push_up",
         exerciseDisplayName: "Push-up",
@@ -274,12 +274,12 @@ describe("AnalysisResultQueryService", () => {
       "links the set's run only while it is open (completedAt %s)",
       async (completedAt, expected) => {
         prisma.workoutSession.findFirst.mockResolvedValue(
-          session({ workoutLog: { id: 4, completedAt } }),
+          session({ workoutRun: { id: 4, completedAt } }),
         );
 
         const result = await service.getSessionAnalysis(USER, SESSION_ID);
 
-        expect(result.openWorkoutLogId).toBe(expected);
+        expect(result.openWorkoutRunId).toBe(expected);
       },
     );
 

@@ -11,8 +11,8 @@ model WorkoutSession {
   workoutId Int?     @map("workout_id")
   setNumber Int?     @map("set_number") @db.SmallInt
 
-  workoutLog   WorkoutLog? @relation(fields: [workoutLogId], references: [id], onDelete: SetNull)
-  workoutLogId Int?        @map("workout_log_id")
+  workoutRun   WorkoutRun? @relation(fields: [workoutRunId], references: [id], onDelete: SetNull)
+  workoutRunId Int?        @map("workout_run_id")
 
   processingStatus SessionStatus @default(PENDING) @map("processing_status")
   notes            String?
@@ -36,7 +36,7 @@ model WorkoutSession {
   @@index([userId, performedAt(sort: Desc)], map: "idx_sessions_user_performed_at_desc")
   @@index([userId, exerciseId, performedAt(sort: Desc)], map: "idx_sessions_user_exercise_performed_at_desc")
   @@index([workoutId, performedAt(sort: Desc)], map: "idx_sessions_workout_performed_at_desc")
-  @@index([workoutLogId], map: "idx_sessions_workout_log_id")
+  @@index([workoutRunId], map: "idx_sessions_workout_run_id")
   @@index([processingStatus], map: "idx_sessions_processing_status")
   @@map("workout_sessions")
 }

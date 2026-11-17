@@ -166,14 +166,14 @@ describe("POST /api/workout-sessions", () => {
     expect(JSON.stringify(response.body)).not.toContain("formScore");
   });
 
-  describe("workoutLogId", () => {
+  describe("workoutRunId", () => {
     const setup = async () => {
       const { token, userId } = await registerReadyUser();
       const workout = await createWorkoutFixture(prisma, {
         userId,
         exercises: [{ exerciseId: pushUp.id, position: 1 }],
       });
-      const run = await prisma.workoutLog.create({
+      const run = await prisma.workoutRun.create({
         data: { userId, workoutId: workout.id },
       });
       return { token, userId, workout, run };
@@ -185,20 +185,20 @@ describe("POST /api/workout-sessions", () => {
       const response = await createWorkoutSession(app, token, {
         exerciseCode: "push_up",
         workoutId: workout.id,
-        workoutLogId: run.id,
+        workoutRunId: run.id,
         setNumber: 1,
       });
 
       expect(response.status).toBe(StatusCodes.CREATED);
-      expect(response.body.data.workoutLogId).toBe(run.id);
+      expect(response.body.data.workoutRunId).toBe(run.id);
     });
 
-    it("should return 400 for workoutLogId without workoutId", async () => {
+    it("should return 400 for workoutRunId without workoutId", async () => {
       const { token, run } = await setup();
 
       const response = await createWorkoutSession(app, token, {
         exerciseCode: "push_up",
-        workoutLogId: run.id,
+        workoutRunId: run.id,
       });
 
       expect(response.status).toBe(StatusCodes.BAD_REQUEST);
@@ -211,7 +211,7 @@ describe("POST /api/workout-sessions", () => {
       const response = await createWorkoutSession(app, other.token, {
         exerciseCode: "push_up",
         workoutId: workout.id,
-        workoutLogId: run.id,
+        workoutRunId: run.id,
       });
 
       expect(response.status).toBe(StatusCodes.NOT_FOUND);
@@ -219,7 +219,7 @@ describe("POST /api/workout-sessions", () => {
 
     it("should return 409 when the run is already completed", async () => {
       const { token, workout, run } = await setup();
-      await prisma.workoutLog.update({
+      await prisma.workoutRun.update({
         where: { id: run.id },
         data: { completedAt: new Date(), durationSecs: 60 },
       });
@@ -227,11 +227,11 @@ describe("POST /api/workout-sessions", () => {
       const response = await createWorkoutSession(app, token, {
         exerciseCode: "push_up",
         workoutId: workout.id,
-        workoutLogId: run.id,
+        workoutRunId: run.id,
       });
 
       expect(response.status).toBe(StatusCodes.CONFLICT);
-      expect(response.body.code).toBe(API_ERROR_CODES.WORKOUT_LOG_COMPLETED);
+      expect(response.body.code).toBe(API_ERROR_CODES.WORKOUT_RUN_COMPLETED);
     });
   });
 

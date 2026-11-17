@@ -46,7 +46,7 @@ export class AnalysisResultQueryService {
         workoutId: true,
         setNumber: true,
         processingStatus: true,
-        workoutLog: { select: { id: true, completedAt: true } },
+        workoutRun: { select: { id: true, completedAt: true } },
         exercise: { select: { code: true, displayName: true } },
         analysisResult: {
           select: {
@@ -90,8 +90,8 @@ export class AnalysisResultQueryService {
     const base = {
       sessionId: session.id,
       workoutId: session.workoutId,
-      openWorkoutLogId:
-        session.workoutLog?.completedAt === null ? session.workoutLog.id : null,
+      openWorkoutRunId:
+        session.workoutRun?.completedAt === null ? session.workoutRun.id : null,
       setNumber: session.setNumber,
       exerciseCode,
       exerciseDisplayName: session.exercise.displayName,
@@ -180,7 +180,7 @@ export class AnalysisResultQueryService {
       where: {
         workoutId,
         userId,
-        workoutLogId: query.workoutLogId,
+        workoutRunId: query.workoutRunId,
         processingStatus: { not: SessionStatus.PENDING },
       },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
@@ -189,7 +189,7 @@ export class AnalysisResultQueryService {
       select: {
         id: true,
         workoutId: true,
-        workoutLogId: true,
+        workoutRunId: true,
         setNumber: true,
         performedAt: true,
         processingStatus: true,
@@ -207,7 +207,7 @@ export class AnalysisResultQueryService {
       return {
         sessionId: session.id,
         workoutId: session.workoutId,
-        workoutLogId: session.workoutLogId,
+        workoutRunId: session.workoutRunId,
         setNumber: session.setNumber,
         exerciseCode: session.exercise.code,
         exerciseDisplayName: session.exercise.displayName,
