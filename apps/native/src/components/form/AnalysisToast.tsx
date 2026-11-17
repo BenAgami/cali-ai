@@ -25,11 +25,11 @@ const AnalysisToast: React.FC = () => {
   if (toast === null) return null;
 
   const handleView = () => {
-    markSeen(toast.sessionId);
+    markSeen(toast.recordedSetId);
     dismissToast();
     router.push({
       pathname: "/analysis-result",
-      params: { sessionId: String(toast.sessionId) },
+      params: { recordedSetId: String(toast.recordedSetId) },
     });
   };
 

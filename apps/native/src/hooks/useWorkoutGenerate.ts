@@ -3,7 +3,7 @@ import { router } from "expo-router";
 import { StatusCodes } from "http-status-codes";
 
 import { ApiError } from "@src/api";
-import { useCreateWorkout } from "@src/hooks/mutations/useCreateWorkout";
+import { useCreateWorkoutPlan } from "@src/hooks/mutations/useCreateWorkoutPlan";
 import { useGenerateWorkout } from "@src/hooks/mutations/useGenerateWorkout";
 import { useAiPrerequisiteSteps } from "@src/hooks/useAiPrerequisiteSteps";
 import {
@@ -39,7 +39,7 @@ export const useWorkoutGenerate = () => {
   const [preview, setPreview] = useState<WorkoutGenerationPreview | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const generateMutation = useGenerateWorkout();
-  const createMutation = useCreateWorkout();
+  const createMutation = useCreateWorkoutPlan();
 
   const canGenerate =
     step === "READY" &&

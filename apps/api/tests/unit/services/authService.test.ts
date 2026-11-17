@@ -137,8 +137,8 @@ describe("authService.register", () => {
 
     expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 10);
     const { data } = prisma.user.create.mock.calls[0][0];
-    expect(data.password).toBe("hashed-password");
-    expect(data.password).not.toBe(registerDto.password);
+    expect(data.passwordHash).toBe("hashed-password");
+    expect(data.passwordHash).not.toBe(registerDto.password);
   });
 
   it("never selects the password column back out of the database", async () => {
@@ -201,7 +201,7 @@ describe("authService.register", () => {
 
 describe("authService.login", () => {
   const loginDto = { email: "user@example.com", password: "Password123!" };
-  const storedUser = { ...createdUser, password: "hashed-password" };
+  const storedUser = { ...createdUser, passwordHash: "hashed-password" };
 
   it("does not compare passwords for an unknown email", async () => {
     prisma.user.findUnique.mockResolvedValue(null);
@@ -243,7 +243,7 @@ describe("authService.login", () => {
 
     const result = await authService.login(loginDto);
 
-    expect(result.user).not.toHaveProperty("password");
+    expect(result.user).not.toHaveProperty("passwordHash");
     expect(result.token).toBe("signed.jwt.token");
     expect(result.refreshToken).toBe("raw-refresh-token");
   });

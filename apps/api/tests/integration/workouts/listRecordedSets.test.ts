@@ -1,20 +1,20 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
   teardownIntegrationTest,
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
-import { getRecordedSets } from "../helpers/requestSender/workoutsRequests";
+import { getRecordedSets } from "../helpers/requestSender/workoutPlansRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("GET /api/workouts/:id/recorded-sets", () => {
+describe("GET /api/workout-plans/:id/recorded-sets", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let exerciseId: number;
@@ -29,8 +29,8 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     return { userId: user.id, token: res.body.data.token as string };
   };
 
-  const newWorkout = (userId: number) =>
-    createWorkoutFixture(prisma, {
+  const newWorkoutPlan = (userId: number) =>
+    createWorkoutPlanFixture(prisma, {
       userId,
       exercises: [{ exerciseId, position: 1 }],
     });
@@ -46,29 +46,29 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("lists recorded sets newest first with status, outcome and band, without formScore", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
-    const older = await prisma.workoutSession.create({
+    const workout = await newWorkoutPlan(userId);
+    const older = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 1,
         performedAt: new Date("2026-11-09T10:00:00Z"),
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
         analysisResult: {
           create: { outcome: "SCORED", formScore: 91 },
         },
       },
       select: { id: true },
     });
-    const newer = await prisma.workoutSession.create({
+    const newer = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 2,
         performedAt: new Date("2026-11-09T10:05:00Z"),
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         analysisStage: "ANALYZING_REPS",
       },
       select: { id: true },
@@ -79,84 +79,84 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.items).toHaveLength(2);
     expect(response.body.data.items[0]).toMatchObject({
-      sessionId: newer.id,
+      recordedSetId: newer.id,
       processingStatus: "PROCESSING",
       analysisStage: "ANALYZING_REPS",
       outcome: null,
       band: null,
     });
     expect(response.body.data.items[1]).toMatchObject({
-      sessionId: older.id,
+      recordedSetId: older.id,
       outcome: "SCORED",
       band: "EXCELLENT",
     });
     expect(JSON.stringify(response.body)).not.toContain("formScore");
   });
 
-  it("filters to one run when workoutLogId is given and exposes workoutLogId", async () => {
+  it("filters to one run when workoutRunId is given and exposes workoutRunId", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
-    const runA = await prisma.workoutLog.create({
-      data: { userId, workoutId: workout.id },
+    const workout = await newWorkoutPlan(userId);
+    const runA = await prisma.workoutRun.create({
+      data: { userId, workoutPlanId: workout.id },
     });
-    const runB = await prisma.workoutLog.create({
-      data: { userId, workoutId: workout.id },
+    const runB = await prisma.workoutRun.create({
+      data: { userId, workoutPlanId: workout.id },
     });
-    const inRunA = await prisma.workoutSession.create({
+    const inRunA = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
-        workoutLogId: runA.id,
+        workoutPlanId: workout.id,
+        workoutRunId: runA.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
       select: { id: true },
     });
-    await prisma.workoutSession.create({
+    await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
-        workoutLogId: runB.id,
+        workoutPlanId: workout.id,
+        workoutRunId: runB.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
     });
 
     const all = await getRecordedSets(app, token, workout.id);
     const filtered = await getRecordedSets(app, token, workout.id, {
-      workoutLogId: runA.id,
+      workoutRunId: runA.id,
     });
 
     expect(all.body.data.items).toHaveLength(2);
     expect(filtered.status).toBe(StatusCodes.OK);
     expect(filtered.body.data.items).toHaveLength(1);
     expect(filtered.body.data.items[0]).toMatchObject({
-      sessionId: inRunA.id,
-      workoutLogId: runA.id,
+      recordedSetId: inRunA.id,
+      workoutRunId: runA.id,
     });
   });
 
-  it("omits PENDING sessions, which never received a capture", async () => {
+  it("omits PENDING recorded sets, which never received a capture", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
-    await prisma.workoutSession.create({
+    const workout = await newWorkoutPlan(userId);
+    await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 1,
-        processingStatus: SessionStatus.PENDING,
+        processingStatus: ProcessingStatus.PENDING,
       },
     });
-    const processing = await prisma.workoutSession.create({
+    const processing = await prisma.recordedSet.create({
       data: {
         userId,
         exerciseId,
-        workoutId: workout.id,
+        workoutPlanId: workout.id,
         setNumber: 2,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
       },
       select: { id: true },
     });
@@ -165,14 +165,14 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
     expect(
       response.body.data.items.map(
-        (set: { sessionId: number }) => set.sessionId,
+        (set: { recordedSetId: number }) => set.recordedSetId,
       ),
     ).toEqual([processing.id]);
   });
 
   it("returns an empty list for a workout with no recorded sets", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
 
     const response = await getRecordedSets(app, token, workout.id);
 
@@ -183,16 +183,16 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("pages with limit and offset and reports hasMore and nextOffset", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
     for (const setNumber of [1, 2, 3]) {
-      await prisma.workoutSession.create({
+      await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
-          workoutId: workout.id,
+          workoutPlanId: workout.id,
           setNumber,
           performedAt: new Date(`2026-11-09T10:0${setNumber}:00Z`),
-          processingStatus: SessionStatus.PROCESSING,
+          processingStatus: ProcessingStatus.PROCESSING,
         },
       });
     }
@@ -218,7 +218,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
 
   it("defaults the page size to 50", async () => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
 
     const response = await getRecordedSets(app, token, workout.id);
 
@@ -231,7 +231,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
     { offset: -1 },
   ])("returns 400 for invalid paging %j", async (query) => {
     const { userId, token } = await newUser();
-    const workout = await newWorkout(userId);
+    const workout = await newWorkoutPlan(userId);
 
     const response = await getRecordedSets(app, token, workout.id, query);
 
@@ -241,7 +241,7 @@ describe("GET /api/workouts/:id/recorded-sets", () => {
   it("returns 404 for another user's workout", async () => {
     const owner = await newUser();
     const other = await newUser();
-    const workout = await newWorkout(owner.userId);
+    const workout = await newWorkoutPlan(owner.userId);
 
     const response = await getRecordedSets(app, other.token, workout.id);
 

@@ -1,4 +1,4 @@
-import { SessionStatus } from "@repo/db";
+import { ProcessingStatus } from "@repo/db";
 import type { AnalysisStatusEvent } from "@repo/common";
 
 import { ConflictError, NotFoundError } from "../../../src/errors";
@@ -8,7 +8,7 @@ import { logger } from "../../../src/lib/logger";
 import analysisStreamService from "../../../src/services/analysisStreamService";
 
 vi.mock("../../../src/services/analysisStateService", () => ({
-  default: { findOwnedSession: vi.fn(), getStatusEvent: vi.fn() },
+  default: { findOwnedRecordedSet: vi.fn(), getStatusEvent: vi.fn() },
 }));
 vi.mock("../../../src/lib/progressBus", () => ({
   subscribeToAnalysisEvents: vi.fn(),
@@ -20,7 +20,7 @@ vi.mock("../../../src/lib/logger", () => ({
 const event = (
   overrides: Partial<AnalysisStatusEvent> = {},
 ): AnalysisStatusEvent => ({
-  sessionId: 7,
+  recordedSetId: 7,
   status: "PROCESSING",
   stage: "ANALYZING_REPS",
   stage_label: "Analyzing reps",
@@ -60,7 +60,7 @@ describe("analysisStreamService", () => {
   });
 
   describe("assertStreamable", () => {
-    const snapshot = (processingStatus: SessionStatus) => ({
+    const snapshot = (processingStatus: ProcessingStatus) => ({
       id: 7,
       processingStatus,
       analysisStage: null,
@@ -71,8 +71,8 @@ describe("analysisStreamService", () => {
     });
 
     it("propagates NotFoundError from the ownership lookup", async () => {
-      vi.mocked(analysisStateService.findOwnedSession).mockRejectedValue(
-        new NotFoundError("Workout session not found"),
+      vi.mocked(analysisStateService.findOwnedRecordedSet).mockRejectedValue(
+        new NotFoundError("Recorded set not found"),
       );
 
       await expect(
@@ -80,25 +80,25 @@ describe("analysisStreamService", () => {
       ).rejects.toBeInstanceOf(NotFoundError);
     });
 
-    it("rejects a PENDING session with ConflictError", async () => {
-      vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
-        snapshot(SessionStatus.PENDING),
+    it("rejects a PENDING recorded set with ConflictError", async () => {
+      vi.mocked(analysisStateService.findOwnedRecordedSet).mockResolvedValue(
+        snapshot(ProcessingStatus.PENDING),
       );
 
       const promise = analysisStreamService.assertStreamable("u", 7);
 
       await expect(promise).rejects.toBeInstanceOf(ConflictError);
       await expect(promise).rejects.toThrow(
-        "No analysis has been started for this session",
+        "No analysis has been started for this recorded set",
       );
     });
 
     it.each([
-      SessionStatus.PROCESSING,
-      SessionStatus.COMPLETED,
-      SessionStatus.FAILED,
-    ])("resolves for a %s session", async (status) => {
-      vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
+      ProcessingStatus.PROCESSING,
+      ProcessingStatus.COMPLETED,
+      ProcessingStatus.FAILED,
+    ])("resolves for a %s recorded set", async (status) => {
+      vi.mocked(analysisStateService.findOwnedRecordedSet).mockResolvedValue(
         snapshot(status),
       );
 
@@ -163,7 +163,7 @@ describe("analysisStreamService", () => {
       expect(sink.close).toHaveBeenCalled();
     });
 
-    it("sends nothing from the snapshot when the session is gone", async () => {
+    it("sends nothing from the snapshot when the recorded set is gone", async () => {
       vi.mocked(analysisStateService.getStatusEvent).mockResolvedValue(null);
       const sink = createSink();
 
@@ -183,7 +183,7 @@ describe("analysisStreamService", () => {
       ).resolves.toBeUndefined();
 
       expect(logger.error).toHaveBeenCalledWith(
-        { err: failure, sessionId: 7 },
+        { err: failure, recordedSetId: 7 },
         expect.any(String),
       );
       expect(sink.close).toHaveBeenCalled();
@@ -199,7 +199,7 @@ describe("analysisStreamService", () => {
       ).resolves.toBeUndefined();
 
       expect(logger.error).toHaveBeenCalledWith(
-        { err: failure, sessionId: 7 },
+        { err: failure, recordedSetId: 7 },
         expect.any(String),
       );
       expect(sink.close).toHaveBeenCalled();
@@ -218,7 +218,7 @@ describe("analysisStreamService", () => {
       await Promise.resolve();
 
       expect(logger.warn).toHaveBeenCalledWith(
-        { err: failure, sessionId: 7 },
+        { err: failure, recordedSetId: 7 },
         expect.any(String),
       );
     });

@@ -1,0 +1,233 @@
+import { z } from "zod";
+
+import { recordedSetsQuerySchema, workoutRunIdParamSchema } from "@repo/common";
+
+import { registry } from "../registry";
+import {
+  CreateWorkoutPlanBody,
+  GenerateWorkoutBody,
+  WorkoutGenerationPreviewResponse,
+  UpdateWorkoutPlanBody,
+  WorkoutPlanResponse,
+  WorkoutRunResponse,
+  RecordedSetSummary,
+  paginatedData,
+  successResponse,
+  errorResponse,
+} from "../schemas";
+
+const bearerAuth = { BearerAuth: [] };
+
+const workoutPlanIdParam = z.object({
+  id: z.number().int().openapi({ example: 1 }),
+});
+
+const paginationQuery = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .optional()
+    .openapi({ description: "Max items to return (1-100)", example: 20 }),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .openapi({ description: "Number of items to skip", example: 0 }),
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workout-plans",
+  tags: ["Workout Plans"],
+  summary: "List workouts for the current user",
+  security: [bearerAuth],
+  request: { query: paginationQuery },
+  responses: {
+    200: successResponse(
+      paginatedData(WorkoutPlanResponse),
+      "Paginated workout list",
+    ),
+    400: errorResponse("Invalid query parameters"),
+    401: errorResponse("Unauthorized"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/workout-plans",
+  tags: ["Workout Plans"],
+  summary: "Create a new workout",
+  security: [bearerAuth],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateWorkoutPlanBody } },
+    },
+  },
+  responses: {
+    201: successResponse(WorkoutPlanResponse, "Workout created"),
+    400: errorResponse("Validation error"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse(
+      "Referenced exercise not found, or generationId does not belong to the user / did not succeed",
+    ),
+    409: errorResponse("generationId already saved (GENERATION_ALREADY_SAVED)"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/workout-plans/generate",
+  tags: ["Workout Plans"],
+  summary: "Generate a workout preview with AI (not saved)",
+  description:
+    "Synchronous. Save the preview via POST /workouts with its generationId.",
+  security: [bearerAuth],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: GenerateWorkoutBody } },
+    },
+  },
+  responses: {
+    200: successResponse(
+      WorkoutGenerationPreviewResponse,
+      "Generated workout preview",
+    ),
+    400: errorResponse("Validation error"),
+    401: errorResponse("Unauthorized"),
+    409: errorResponse("Generation already running (GENERATION_IN_PROGRESS)"),
+    428: errorResponse(
+      "Prerequisite missing (PROFILE_INCOMPLETE | BODY_METRICS_REQUIRED | AI_CONSENT_REQUIRED)",
+    ),
+    429: errorResponse("Daily generation cap reached (DAILY_LIMIT_REACHED)"),
+    503: errorResponse(
+      "Generation unavailable (GENERATION_FAILED | LLM_RATE_LIMITED | LLM_UNAVAILABLE | CATALOG_EMPTY)",
+    ),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workout-plans/{id}",
+  tags: ["Workout Plans"],
+  summary: "Get a workout by ID",
+  security: [bearerAuth],
+  request: { params: workoutPlanIdParam },
+  responses: {
+    200: successResponse(WorkoutPlanResponse, "WorkoutPlan"),
+    400: errorResponse("Invalid workout ID"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/workout-plans/{id}/recorded-sets",
+  tags: ["Workout Plans"],
+  summary: "List the recorded sets of a workout",
+  description:
+    "Newest first, paged by limit (default 50, max 100) and offset; page.hasMore and page.nextOffset say whether earlier sets exist. Includes processing status, stage, outcome and band. The raw score is never returned.",
+  security: [bearerAuth],
+  request: {
+    params: workoutPlanIdParam,
+    query: recordedSetsQuerySchema.extend({
+      workoutRunId: recordedSetsQuerySchema.shape.workoutRunId.openapi({
+        description: "Only the sets recorded during this workout run",
+        example: 1,
+      }),
+    }),
+  },
+  responses: {
+    200: successResponse(paginatedData(RecordedSetSummary), "Recorded sets"),
+    400: errorResponse("Invalid workout ID or paging parameters"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/workout-plans/{id}",
+  tags: ["Workout Plans"],
+  summary: "Update a workout",
+  security: [bearerAuth],
+  request: {
+    params: workoutPlanIdParam,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UpdateWorkoutPlanBody } },
+    },
+  },
+  responses: {
+    200: successResponse(WorkoutPlanResponse, "Updated workout"),
+    400: errorResponse("Validation error"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout or referenced exercise not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "delete",
+  path: "/workout-plans/{id}",
+  tags: ["Workout Plans"],
+  summary: "Delete a workout",
+  security: [bearerAuth],
+  request: { params: workoutPlanIdParam },
+  responses: {
+    204: { description: "Workout deleted" },
+    400: errorResponse("Invalid workout ID"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/workout-plans/{id}/runs",
+  tags: ["Workout Plans"],
+  summary: "Start a workout run",
+  description:
+    "Opens an in-progress run of the workout plan, or resumes this plan's open run started in the last 3 hours. Open runs older than that with no recorded sets are deleted. Recorded sets attach to the run through workoutRunId; complete it with PATCH.",
+  security: [bearerAuth],
+  request: { params: workoutPlanIdParam },
+  responses: {
+    201: successResponse(WorkoutRunResponse, "Workout run started"),
+    400: errorResponse("Invalid workout ID"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout not found"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "patch",
+  path: "/workout-plans/{id}/runs/{runId}",
+  tags: ["Workout Plans"],
+  summary: "Complete a workout run",
+  description:
+    "Stamps completedAt; durationSecs is computed from the run's startedAt. Any request body is ignored.",
+  security: [bearerAuth],
+  request: {
+    params: workoutRunIdParamSchema,
+  },
+  responses: {
+    200: successResponse(WorkoutRunResponse, "Workout run completed"),
+    400: errorResponse("Invalid workout or run ID"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Workout run not found"),
+    409: errorResponse("Workout run is already completed"),
+    500: errorResponse("Internal server error"),
+  },
+});

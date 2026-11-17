@@ -11,7 +11,7 @@ import {
   type RecordedSetsQuery,
   type UntrackableReason,
 } from "@repo/common";
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import { ConflictError, InternalError, NotFoundError } from "../errors";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
@@ -33,20 +33,20 @@ export class AnalysisResultQueryService {
     return getPrismaClient();
   }
 
-  async getSessionAnalysis(
+  async getRecordedSetAnalysis(
     userUuid: string,
-    sessionId: number,
+    recordedSetId: number,
   ): Promise<FormAnalysisResponse> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
-    const session = await this.prisma.workoutSession.findFirst({
-      where: { id: sessionId, userId },
+    const recordedSet = await this.prisma.recordedSet.findFirst({
+      where: { id: recordedSetId, userId },
       select: {
         id: true,
-        workoutId: true,
+        workoutPlanId: true,
         setNumber: true,
         processingStatus: true,
-        workoutLog: { select: { id: true, completedAt: true } },
+        workoutRun: { select: { id: true, completedAt: true } },
         exercise: { select: { code: true, displayName: true } },
         analysisResult: {
           select: {
@@ -74,27 +74,32 @@ export class AnalysisResultQueryService {
       },
     });
 
-    if (!session) {
-      throw new NotFoundError("Workout session not found");
+    if (!recordedSet) {
+      throw new NotFoundError("Recorded set not found");
     }
 
-    const result = session.analysisResult;
-    if (session.processingStatus !== SessionStatus.COMPLETED || !result) {
+    const result = recordedSet.analysisResult;
+    if (
+      recordedSet.processingStatus !== ProcessingStatus.COMPLETED ||
+      !result
+    ) {
       throw new ConflictError(
         "Analysis is not ready yet",
         "ANALYSIS_NOT_READY",
       );
     }
 
-    const exerciseCode = session.exercise.code;
+    const exerciseCode = recordedSet.exercise.code;
     const base = {
-      sessionId: session.id,
-      workoutId: session.workoutId,
-      openWorkoutLogId:
-        session.workoutLog?.completedAt === null ? session.workoutLog.id : null,
-      setNumber: session.setNumber,
+      recordedSetId: recordedSet.id,
+      workoutPlanId: recordedSet.workoutPlanId,
+      openWorkoutRunId:
+        recordedSet.workoutRun?.completedAt === null
+          ? recordedSet.workoutRun.id
+          : null,
+      setNumber: recordedSet.setNumber,
       exerciseCode,
-      exerciseDisplayName: session.exercise.displayName,
+      exerciseDisplayName: recordedSet.exercise.displayName,
       analyzedAt: result.analyzedAt.toISOString(),
     };
 
@@ -162,34 +167,34 @@ export class AnalysisResultQueryService {
 
   async listRecordedSets(
     userUuid: string,
-    workoutId: number,
+    workoutPlanId: number,
     query: RecordedSetsQuery,
   ): Promise<RecordedSetPage> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
-    const workout = await this.prisma.workout.findFirst({
-      where: { id: workoutId, userId },
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
       select: { id: true },
     });
     if (!workout) {
       throw new NotFoundError("Workout not found");
     }
 
-    const sessions = await this.prisma.workoutSession.findMany({
+    const recordedSets = await this.prisma.recordedSet.findMany({
       // PENDING means no capture was accepted, so there is nothing to show.
       where: {
-        workoutId,
+        workoutPlanId,
         userId,
-        workoutLogId: query.workoutLogId,
-        processingStatus: { not: SessionStatus.PENDING },
+        workoutRunId: query.workoutRunId,
+        processingStatus: { not: ProcessingStatus.PENDING },
       },
       orderBy: [{ performedAt: "desc" }, { id: "desc" }],
       skip: query.offset,
       take: lookAheadTake(query.limit),
       select: {
         id: true,
-        workoutId: true,
-        workoutLogId: true,
+        workoutPlanId: true,
+        workoutRunId: true,
         setNumber: true,
         performedAt: true,
         processingStatus: true,
@@ -202,21 +207,21 @@ export class AnalysisResultQueryService {
       },
     });
 
-    const mapped = sessions.map((session) => {
-      const result = session.analysisResult;
+    const mapped = recordedSets.map((recordedSet) => {
+      const result = recordedSet.analysisResult;
       return {
-        sessionId: session.id,
-        workoutId: session.workoutId,
-        workoutLogId: session.workoutLogId,
-        setNumber: session.setNumber,
-        exerciseCode: session.exercise.code,
-        exerciseDisplayName: session.exercise.displayName,
-        performedAt: session.performedAt.toISOString(),
-        processingStatus: session.processingStatus,
-        analysisStage: session.analysisStage,
-        analysisStageProgress: session.analysisStageProgress,
-        failureReason: session.failureReason,
-        bullmqJobId: session.bullmqJobId,
+        recordedSetId: recordedSet.id,
+        workoutPlanId: recordedSet.workoutPlanId,
+        workoutRunId: recordedSet.workoutRunId,
+        setNumber: recordedSet.setNumber,
+        exerciseCode: recordedSet.exercise.code,
+        exerciseDisplayName: recordedSet.exercise.displayName,
+        performedAt: recordedSet.performedAt.toISOString(),
+        processingStatus: recordedSet.processingStatus,
+        analysisStage: recordedSet.analysisStage,
+        analysisStageProgress: recordedSet.analysisStageProgress,
+        failureReason: recordedSet.failureReason,
+        bullmqJobId: recordedSet.bullmqJobId,
         outcome: result?.outcome ?? null,
         band:
           result?.outcome === "SCORED" && result.formScore !== null

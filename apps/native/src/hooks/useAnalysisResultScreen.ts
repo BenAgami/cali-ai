@@ -5,7 +5,7 @@ import type { AnalysisStatusEvent, FormAnalysisResponse } from "@repo/common";
 
 import { ApiError } from "@src/api";
 import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
-import { useSessionAnalysis } from "@src/hooks/queries/useSessionAnalysis";
+import { useRecordedSetAnalysis } from "@src/hooks/queries/useRecordedSetAnalysis";
 import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 
 export type AnalysisResultState =
@@ -24,28 +24,28 @@ interface AnalysisResultScreen {
 }
 
 export const useAnalysisResultScreen = (
-  sessionIdParam: string | undefined,
+  recordedSetIdParam: string | undefined,
 ): AnalysisResultScreen => {
-  const sessionId = parsePositiveIntParam(sessionIdParam) ?? undefined;
-  const { markSeen, statusBySession } = useAnalysisTracker();
-  const { data, error, refetch } = useSessionAnalysis(sessionId);
+  const recordedSetId = parsePositiveIntParam(recordedSetIdParam) ?? undefined;
+  const { markSeen, statusByRecordedSet } = useAnalysisTracker();
+  const { data, error, refetch } = useRecordedSetAnalysis(recordedSetId);
 
   useEffect(() => {
-    if (sessionId !== undefined) markSeen(sessionId);
-  }, [sessionId, markSeen]);
+    if (recordedSetId !== undefined) markSeen(recordedSetId);
+  }, [recordedSetId, markSeen]);
 
   const refetchResult = useCallback(() => {
     void refetch();
   }, [refetch]);
 
   const recordAgain = useCallback(() => {
-    if (data === undefined || data.workoutId === null) return;
+    if (data === undefined || data.workoutPlanId === null) return;
     router.push({
       pathname: "/record-set",
       params: {
-        workoutId: String(data.workoutId),
-        ...(data.openWorkoutLogId !== null && {
-          runId: String(data.openWorkoutLogId),
+        workoutPlanId: String(data.workoutPlanId),
+        ...(data.openWorkoutRunId !== null && {
+          runId: String(data.openWorkoutRunId),
         }),
         ...(data.setNumber !== null && { setNumber: String(data.setNumber) }),
         exerciseCode: data.exerciseCode,
@@ -56,7 +56,9 @@ export const useAnalysisResultScreen = (
   }, [data]);
 
   const liveEvent =
-    sessionId === undefined ? undefined : statusBySession[sessionId];
+    recordedSetId === undefined
+      ? undefined
+      : statusByRecordedSet[recordedSetId];
 
   let state: AnalysisResultState = "loading";
   if (data !== undefined) {
@@ -66,7 +68,7 @@ export const useAnalysisResultScreen = (
       error instanceof ApiError && error.status === Number(StatusCodes.CONFLICT)
         ? "notReady"
         : "error";
-  } else if (sessionId === undefined) {
+  } else if (recordedSetId === undefined) {
     state = "error";
   }
 
@@ -75,6 +77,6 @@ export const useAnalysisResultScreen = (
     analysis: data,
     liveEvent,
     refetch: refetchResult,
-    recordAgain: data?.workoutId === null ? undefined : recordAgain,
+    recordAgain: data?.workoutPlanId === null ? undefined : recordAgain,
   };
 };

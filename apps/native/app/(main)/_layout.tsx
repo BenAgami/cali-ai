@@ -37,7 +37,7 @@ const MainLayout: React.FC = () => {
         />
         <Stack.Screen
           name="workout-detail"
-          options={{ headerShown: true, title: "Workout" }}
+          options={{ headerShown: true, title: "WorkoutPlan" }}
         />
         <Stack.Screen
           name="analysis-result"

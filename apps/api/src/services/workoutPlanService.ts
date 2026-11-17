@@ -1,0 +1,301 @@
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
+import {
+  API_ERROR_CODES,
+  type CreateWorkoutPlanValues,
+  type UpdateWorkoutPlanValues,
+  type WorkoutExerciseInput,
+} from "@repo/common";
+
+import { NotFoundError, BadRequestError, ConflictError } from "../errors";
+import {
+  isPrismaKnownRequestError,
+  PrismaErrorCode,
+} from "../utils/prismaErrorCodes";
+
+import { lookAheadTake, paginate } from "../utils/pagination";
+import { getUserIdByUuid } from "../utils/getUserIdByUuid";
+
+const SECOND_MS = 1000;
+/** A Start within this long of an unfinished run resumes it. */
+const RUN_RESUME_WINDOW_MS = 3 * 60 * 60 * SECOND_MS;
+const WORKOUT_RUN_COMPLETED_MESSAGE = "Workout run is already completed";
+
+type ListWorkoutPlansInput = {
+  userUuid: string;
+  limit: number;
+  offset: number;
+};
+
+const workoutPlanInclude = {
+  exercises: {
+    include: {
+      exercise: {
+        select: {
+          id: true,
+          code: true,
+          displayName: true,
+          exerciseType: true,
+        },
+      },
+    },
+    orderBy: { position: "asc" as const },
+  },
+};
+
+export class WorkoutPlanService {
+  private get prisma() {
+    return getPrismaClient();
+  }
+
+  private validateExerciseInput(input: WorkoutExerciseInput): void {
+    const hasReps = !!input.reps;
+    const hasDuration = !!input.durationSecs;
+    if (hasReps && hasDuration) {
+      throw new BadRequestError("Cannot specify both reps and durationSecs");
+    }
+    if (!hasReps && !hasDuration) {
+      throw new BadRequestError(
+        "Either reps or durationSecs must be specified",
+      );
+    }
+  }
+
+  private async assertExercisesExist(ids: number[]): Promise<void> {
+    const uniqueIds = Array.from(new Set(ids));
+    const found = await this.prisma.exercise.findMany({
+      where: { id: { in: uniqueIds } },
+      select: { id: true },
+    });
+    if (found.length !== uniqueIds.length) {
+      throw new NotFoundError("Exercise not found");
+    }
+  }
+
+  async listWorkoutPlans(input: ListWorkoutPlansInput) {
+    const userId = await getUserIdByUuid(this.prisma, input.userUuid);
+    const workouts = await this.prisma.workoutPlan.findMany({
+      where: { userId },
+      orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
+      skip: input.offset,
+      take: lookAheadTake(input.limit),
+      include: workoutPlanInclude,
+    });
+
+    return paginate(workouts, input.limit, input.offset);
+  }
+
+  async getWorkoutPlanById(userUuid: string, workoutPlanId: number) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
+      include: workoutPlanInclude,
+    });
+    if (!workout) throw new NotFoundError("Workout not found");
+    return workout;
+  }
+
+  async createWorkoutPlan(userUuid: string, data: CreateWorkoutPlanValues) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    data.exercises.forEach((ex) => this.validateExerciseInput(ex));
+    await this.assertExercisesExist(data.exercises.map((ex) => ex.exerciseId));
+
+    let provenance: { aiModel: string; generationId: number } | undefined;
+    if (data.generationId !== undefined) {
+      const generation = await this.prisma.workoutGeneration.findFirst({
+        where: { id: data.generationId, userId, status: "SUCCEEDED" },
+        select: { id: true, model: true },
+      });
+      if (!generation?.model) throw new NotFoundError("Generation not found");
+      provenance = { aiModel: generation.model, generationId: generation.id };
+    }
+
+    try {
+      return await this.prisma.workoutPlan.create({
+        data: {
+          userId,
+          name: data.name,
+          ...(provenance ?? {}),
+          exercises: {
+            create: data.exercises.map((ex, idx) => ({
+              exerciseId: ex.exerciseId,
+              position: idx,
+              sets: ex.sets,
+              reps: ex.reps ?? null,
+              durationSecs: ex.durationSecs ?? null,
+              restSecs: ex.restSecs,
+            })),
+          },
+        },
+        include: workoutPlanInclude,
+      });
+    } catch (error) {
+      if (
+        isPrismaKnownRequestError(error) &&
+        error.code === PrismaErrorCode.UNIQUE_CONSTRAINT_VIOLATION
+      ) {
+        throw new ConflictError(
+          "This generated workout was already saved",
+          "GENERATION_ALREADY_SAVED",
+        );
+      }
+      throw error;
+    }
+  }
+
+  async updateWorkoutPlan(
+    userUuid: string,
+    workoutPlanId: number,
+    data: UpdateWorkoutPlanValues,
+  ) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const existing = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundError("Workout not found");
+
+    if (data.exercises) {
+      data.exercises.forEach((ex) => this.validateExerciseInput(ex));
+      await this.assertExercisesExist(
+        data.exercises.map((ex) => ex.exerciseId),
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (data.name !== undefined) {
+        await tx.workoutPlan.update({
+          where: { id: workoutPlanId },
+          data: { name: data.name },
+        });
+      }
+
+      if (data.exercises) {
+        await tx.workoutExercise.deleteMany({ where: { workoutPlanId } });
+        await tx.workoutExercise.createMany({
+          data: data.exercises.map((ex, idx) => ({
+            workoutPlanId,
+            exerciseId: ex.exerciseId,
+            position: idx,
+            sets: ex.sets,
+            reps: ex.reps ?? null,
+            durationSecs: ex.durationSecs ?? null,
+            restSecs: ex.restSecs,
+          })),
+        });
+      }
+
+      const updated = await tx.workoutPlan.findUnique({
+        where: { id: workoutPlanId },
+        include: workoutPlanInclude,
+      });
+      if (!updated) throw new NotFoundError("Workout not found");
+      return updated;
+    });
+  }
+
+  async deleteWorkoutPlan(
+    userUuid: string,
+    workoutPlanId: number,
+  ): Promise<void> {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const existing = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundError("Workout not found");
+    await this.prisma.workoutPlan.delete({ where: { id: workoutPlanId } });
+  }
+
+  /**
+   * Starting a plan opens a run that stays in progress until completed. A run
+   * left open within the resume window (the user backed out) is resumed rather
+   * than duplicated; an older open run with no recorded sets holds nothing, so
+   * it is deleted instead of piling up. A PENDING recorded set has no accepted
+   * capture, so it does not count as a recorded set.
+   */
+  async startWorkoutRun(userUuid: string, workoutPlanId: number) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const workout = await this.prisma.workoutPlan.findFirst({
+      where: { id: workoutPlanId, userId },
+      select: { id: true },
+    });
+    if (!workout) throw new NotFoundError("Workout not found");
+
+    const resumeCutoff = new Date(Date.now() - RUN_RESUME_WINDOW_MS);
+    const openRun = { userId, workoutPlanId, completedAt: null };
+    await this.prisma.workoutRun.deleteMany({
+      where: {
+        ...openRun,
+        startedAt: { lt: resumeCutoff },
+        recordedSets: {
+          none: { processingStatus: { not: ProcessingStatus.PENDING } },
+        },
+      },
+    });
+    const resumable = await this.prisma.workoutRun.findFirst({
+      where: { ...openRun, startedAt: { gte: resumeCutoff } },
+      orderBy: { startedAt: "desc" },
+    });
+
+    return (
+      resumable ??
+      this.prisma.workoutRun.create({ data: { userId, workoutPlanId } })
+    );
+  }
+
+  /** The run must be the user's, for that workout, and not yet completed. */
+  async assertOpenWorkoutRun(
+    userId: number,
+    workoutPlanId: number,
+    runId: number,
+  ): Promise<{ startedAt: Date }> {
+    const run = await this.prisma.workoutRun.findFirst({
+      where: { id: runId, workoutPlanId, userId },
+      select: { startedAt: true, completedAt: true },
+    });
+    if (!run) throw new NotFoundError("Workout run not found");
+    if (run.completedAt !== null) {
+      throw new ConflictError(
+        WORKOUT_RUN_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_RUN_COMPLETED,
+      );
+    }
+    return { startedAt: run.startedAt };
+  }
+
+  /** The duration is the server's startedAt to completedAt, not a client clock. */
+  async completeWorkoutRun(
+    userUuid: string,
+    workoutPlanId: number,
+    runId: number,
+  ) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const { startedAt } = await this.assertOpenWorkoutRun(
+      userId,
+      workoutPlanId,
+      runId,
+    );
+
+    const completedAt = new Date();
+    const durationSecs = Math.max(
+      0,
+      Math.round((completedAt.getTime() - startedAt.getTime()) / SECOND_MS),
+    );
+
+    // Guarded on completedAt so a concurrent request cannot complete it twice.
+    const { count } = await this.prisma.workoutRun.updateMany({
+      where: { id: runId, completedAt: null },
+      data: { completedAt, durationSecs },
+    });
+    if (count === 0) {
+      throw new ConflictError(
+        WORKOUT_RUN_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_RUN_COMPLETED,
+      );
+    }
+
+    return this.prisma.workoutRun.findUniqueOrThrow({ where: { id: runId } });
+  }
+}
+
+export default new WorkoutPlanService();

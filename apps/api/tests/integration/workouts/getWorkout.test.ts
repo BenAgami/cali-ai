@@ -9,11 +9,11 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { getWorkout } from "../helpers/requestSender/workoutsRequests";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { getWorkoutPlan } from "../helpers/requestSender/workoutPlansRequests";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("GET /api/workouts/:id", () => {
+describe("GET /api/workout-plans/:id", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -38,7 +38,7 @@ describe("GET /api/workouts/:id", () => {
     const ex2 = await createExercise(prisma);
     const ex3 = await createExercise(prisma);
 
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Ordered Workout",
       exercises: [
@@ -48,7 +48,7 @@ describe("GET /api/workouts/:id", () => {
       ],
     });
 
-    const response = await getWorkout(app, token, workout.id);
+    const response = await getWorkoutPlan(app, token, workout.id);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.exercises).toHaveLength(3);
@@ -77,13 +77,13 @@ describe("GET /api/workouts/:id", () => {
     const tokenB = userBRes.body.data.token;
 
     const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUserA!.id,
       name: "User A Workout",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await getWorkout(app, tokenB, workout.id);
+    const response = await getWorkoutPlan(app, tokenB, workout.id);
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
@@ -93,13 +93,13 @@ describe("GET /api/workouts/:id", () => {
     const registerRes = await registerUser(app, registerUserDto);
     const token = registerRes.body.data.token;
 
-    const response = await getWorkout(app, token, 999999);
+    const response = await getWorkoutPlan(app, token, 999999);
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
 
   it("should return 401 without auth token", async () => {
-    const response = await getWorkout(app, undefined, 1);
+    const response = await getWorkoutPlan(app, undefined, 1);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });

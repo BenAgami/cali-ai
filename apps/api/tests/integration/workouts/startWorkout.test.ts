@@ -1,7 +1,7 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { type getPrismaClient, SessionStatus } from "@repo/db";
+import { type getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -12,11 +12,11 @@ import { createExercise } from "../helpers/db/exerciseHelper";
 import {
   completeWorkout,
   startWorkout,
-} from "../helpers/requestSender/workoutsRequests";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+} from "../helpers/requestSender/workoutPlansRequests";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
+describe("workout runs: POST/PATCH /api/workout-plans/:id/runs", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
   let exerciseId: number;
@@ -31,8 +31,8 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
     return { userId: user.id, token: res.body.data.token as string };
   };
 
-  const newWorkout = (userId: number) =>
-    createWorkoutFixture(prisma, {
+  const newWorkoutPlan = (userId: number) =>
+    createWorkoutPlanFixture(prisma, {
       userId,
       name: "My Workout",
       exercises: [{ exerciseId, position: 0 }],
@@ -50,25 +50,25 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
   describe("POST (start a run)", () => {
     it("creates an in-progress run linked to the workout", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
 
       const response = await startWorkout(app, token, workout.id);
 
       expect(response.status).toBe(StatusCodes.CREATED);
-      expect(response.body.data.workoutId).toBe(workout.id);
+      expect(response.body.data.workoutPlanId).toBe(workout.id);
       expect(typeof response.body.data.startedAt).toBe("string");
       expect(response.body.data.completedAt).toBeNull();
       expect(response.body.data.durationSecs).toBeNull();
 
-      const dbLog = await prisma.workoutLog.findUniqueOrThrow({
+      const dbRun = await prisma.workoutRun.findUniqueOrThrow({
         where: { id: response.body.data.id },
       });
-      expect(dbLog.completedAt).toBeNull();
+      expect(dbRun.completedAt).toBeNull();
     });
 
     it("resumes the open run when the plan is started again", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
 
       const first = await startWorkout(app, token, workout.id);
       const second = await startWorkout(app, token, workout.id);
@@ -79,7 +79,7 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
 
     it("opens a new run once the previous one is completed", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
       const first = await startWorkout(app, token, workout.id);
       await completeWorkout(app, token, workout.id, first.body.data.id, {});
 
@@ -90,21 +90,21 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
 
     it("drops a stale open run with no sets and keeps one with a processing set", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
       const stale = new Date(Date.now() - 4 * 60 * 60 * 1000);
-      const empty = await prisma.workoutLog.create({
-        data: { userId, workoutId: workout.id, startedAt: stale },
+      const empty = await prisma.workoutRun.create({
+        data: { userId, workoutPlanId: workout.id, startedAt: stale },
       });
-      const withSet = await prisma.workoutLog.create({
-        data: { userId, workoutId: workout.id, startedAt: stale },
+      const withSet = await prisma.workoutRun.create({
+        data: { userId, workoutPlanId: workout.id, startedAt: stale },
       });
-      await prisma.workoutSession.create({
+      await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
-          workoutId: workout.id,
-          workoutLogId: withSet.id,
-          processingStatus: SessionStatus.PROCESSING,
+          workoutPlanId: workout.id,
+          workoutRunId: withSet.id,
+          processingStatus: ProcessingStatus.PROCESSING,
         },
       });
 
@@ -112,29 +112,29 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
 
       expect(response.body.data.id).not.toBe(withSet.id);
       expect(
-        await prisma.workoutLog.findUnique({ where: { id: empty.id } }),
+        await prisma.workoutRun.findUnique({ where: { id: empty.id } }),
       ).toBeNull();
       expect(
-        await prisma.workoutLog.findUnique({ where: { id: withSet.id } }),
+        await prisma.workoutRun.findUnique({ where: { id: withSet.id } }),
       ).not.toBeNull();
     });
 
-    it("drops a stale open run whose only session never had a capture accepted", async () => {
+    it("drops a stale open run whose only recorded set never had a capture accepted", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
-      const run = await prisma.workoutLog.create({
-        data: { userId, workoutId: workout.id },
+      const workout = await newWorkoutPlan(userId);
+      const run = await prisma.workoutRun.create({
+        data: { userId, workoutPlanId: workout.id },
       });
-      const session = await prisma.workoutSession.create({
+      const recordedSet = await prisma.recordedSet.create({
         data: {
           userId,
           exerciseId,
-          workoutId: workout.id,
-          workoutLogId: run.id,
-          processingStatus: SessionStatus.PENDING,
+          workoutPlanId: workout.id,
+          workoutRunId: run.id,
+          processingStatus: ProcessingStatus.PENDING,
         },
       });
-      await prisma.workoutLog.update({
+      await prisma.workoutRun.update({
         where: { id: run.id },
         data: { startedAt: new Date(Date.now() - 4 * 60 * 60 * 1000) },
       });
@@ -142,18 +142,18 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
       await startWorkout(app, token, workout.id);
 
       expect(
-        await prisma.workoutLog.findUnique({ where: { id: run.id } }),
+        await prisma.workoutRun.findUnique({ where: { id: run.id } }),
       ).toBeNull();
-      const detached = await prisma.workoutSession.findUniqueOrThrow({
-        where: { id: session.id },
+      const detached = await prisma.recordedSet.findUniqueOrThrow({
+        where: { id: recordedSet.id },
       });
-      expect(detached.workoutLogId).toBeNull();
+      expect(detached.workoutRunId).toBeNull();
     });
 
     it("returns 404 for another user's workout", async () => {
       const owner = await newUser();
       const other = await newUser();
-      const workout = await newWorkout(owner.userId);
+      const workout = await newWorkoutPlan(owner.userId);
 
       const response = await startWorkout(app, other.token, workout.id);
 
@@ -178,11 +178,11 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
   describe("PATCH (complete a run)", () => {
     it("records the completion time and a duration from startedAt", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
-      const run = await prisma.workoutLog.create({
+      const workout = await newWorkoutPlan(userId);
+      const run = await prisma.workoutRun.create({
         data: {
           userId,
-          workoutId: workout.id,
+          workoutPlanId: workout.id,
           startedAt: new Date(Date.now() - 30 * 60 * 1000),
         },
       });
@@ -200,25 +200,25 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
 
     it("returns 409 when the run is already completed", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
       const started = await startWorkout(app, token, workout.id);
-      const logId = started.body.data.id;
-      await completeWorkout(app, token, workout.id, logId, {});
+      const runId = started.body.data.id;
+      await completeWorkout(app, token, workout.id, runId, {});
 
-      const response = await completeWorkout(app, token, workout.id, logId, {});
+      const response = await completeWorkout(app, token, workout.id, runId, {});
 
       expect(response.status).toBe(StatusCodes.CONFLICT);
     });
 
     it("completes a run only once when two requests race", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
       const started = await startWorkout(app, token, workout.id);
-      const logId = started.body.data.id;
+      const runId = started.body.data.id;
 
       const responses = await Promise.all([
-        completeWorkout(app, token, workout.id, logId, {}),
-        completeWorkout(app, token, workout.id, logId, {}),
+        completeWorkout(app, token, workout.id, runId, {}),
+        completeWorkout(app, token, workout.id, runId, {}),
       ]);
 
       expect(responses.map((response) => response.status).sort()).toEqual([
@@ -226,16 +226,16 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
         StatusCodes.CONFLICT,
       ]);
       const winner = responses.find((response) => response.body.success)!;
-      const dbLog = await prisma.workoutLog.findUniqueOrThrow({
-        where: { id: logId },
+      const dbRun = await prisma.workoutRun.findUniqueOrThrow({
+        where: { id: runId },
       });
-      expect(dbLog.durationSecs).toBe(winner.body.data.durationSecs);
+      expect(dbRun.durationSecs).toBe(winner.body.data.durationSecs);
     });
 
     it("returns 404 for another user's run", async () => {
       const owner = await newUser();
       const other = await newUser();
-      const workout = await newWorkout(owner.userId);
+      const workout = await newWorkoutPlan(owner.userId);
       const started = await startWorkout(app, owner.token, workout.id);
 
       const response = await completeWorkout(
@@ -251,14 +251,14 @@ describe("workout runs: POST/PATCH /api/workouts/:id/logs", () => {
 
     it("returns 404 when the run belongs to a different workout", async () => {
       const { userId, token } = await newUser();
-      const workout = await newWorkout(userId);
-      const otherWorkout = await newWorkout(userId);
+      const workout = await newWorkoutPlan(userId);
+      const otherWorkoutPlan = await newWorkoutPlan(userId);
       const started = await startWorkout(app, token, workout.id);
 
       const response = await completeWorkout(
         app,
         token,
-        otherWorkout.id,
+        otherWorkoutPlan.id,
         started.body.data.id,
         {},
       );

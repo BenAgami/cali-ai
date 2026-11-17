@@ -1,0 +1,42 @@
+model RecordedSet {
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @map("user_id")
+
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId Int      @map("exercise_id")
+
+  workoutPlan   WorkoutPlan? @relation(fields: [workoutPlanId], references: [id], onDelete: SetNull)
+  workoutPlanId Int?         @map("workout_plan_id")
+  setNumber     Int?         @map("set_number") @db.SmallInt
+
+  workoutRun   WorkoutRun? @relation(fields: [workoutRunId], references: [id], onDelete: SetNull)
+  workoutRunId Int?        @map("workout_run_id")
+
+  processingStatus ProcessingStatus @default(PENDING) @map("processing_status")
+  notes            String?
+  performedAt      DateTime         @default(now()) @map("performed_at")
+
+  processingStartedAt   DateTime?      @map("processing_started_at")
+  processingFinishedAt  DateTime?      @map("processing_finished_at")
+  failureReason         String?        @map("failure_reason")
+  analysisStage         AnalysisStage? @map("analysis_stage")
+  analysisStageProgress Float?         @map("analysis_stage_progress") @db.Real
+  bullmqJobId           String?        @map("bullmq_job_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  analysisResult  AnalysisResult?
+  analysisRetries AnalysisRetry[]
+  poseCapture     PoseCapture?
+  userMilestones  UserMilestone[]
+
+  @@index([userId, performedAt(sort: Desc)], map: "idx_recorded_sets_user_performed_at_desc")
+  @@index([userId, exerciseId, performedAt(sort: Desc)], map: "idx_recorded_sets_user_exercise_performed_at_desc")
+  @@index([workoutPlanId, performedAt(sort: Desc)], map: "idx_recorded_sets_workout_plan_performed_at_desc")
+  @@index([workoutRunId], map: "idx_recorded_sets_workout_run_id")
+  @@index([processingStatus], map: "idx_recorded_sets_processing_status")
+  @@map("recorded_sets")
+}

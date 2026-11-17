@@ -17,8 +17,8 @@ const CHEVRON_SIZE = 20;
 
 interface RecordedSetCardProps {
   item: WorkoutRecordedSet;
-  onOpen: (sessionId: number) => void;
-  onRetry: (sessionId: number) => void;
+  onOpen: (recordedSetId: number) => void;
+  onRetry: (recordedSetId: number) => void;
   isRetrying: boolean;
 }
 
@@ -39,7 +39,7 @@ const RecordedSetCard: React.FC<RecordedSetCardProps> = ({
         status={effectiveStatus}
         event={item.liveEvent}
         failureReason={item.failureReason}
-        onRetry={() => onRetry(item.sessionId)}
+        onRetry={() => onRetry(item.recordedSetId)}
         isRetrying={isRetrying}
         retryIssue={item.retryIssue}
       />
@@ -50,7 +50,7 @@ const RecordedSetCard: React.FC<RecordedSetCardProps> = ({
 
   return (
     <Pressable
-      onPress={() => onOpen(item.sessionId)}
+      onPress={() => onOpen(item.recordedSetId)}
       accessibilityRole="button"
       accessibilityLabel={`${VIEW_FEEDBACK}: ${item.exerciseDisplayName}`}
       style={({ pressed }) => [

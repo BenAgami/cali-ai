@@ -4,14 +4,14 @@ import {
   FORM_VIEW_HINTS,
   formAnalysisResponseSchema,
   isFormAnalysisExercise,
-  recordedSetSchema,
+  recordedSetSummarySchema,
   UNTRACKABLE_ADVICE,
 } from "@repo/common";
 
 const base = {
-  sessionId: 1,
-  workoutId: 2,
-  openWorkoutLogId: null,
+  recordedSetId: 1,
+  workoutPlanId: 2,
+  openWorkoutRunId: null,
   setNumber: 1,
   exerciseCode: "push_up",
   exerciseDisplayName: "Push-up",
@@ -138,13 +138,13 @@ describe("formAnalysisResponseSchema", () => {
   });
 });
 
-describe("recordedSetSchema", () => {
+describe("recordedSetSummarySchema", () => {
   it("parses a set that is still processing", () => {
     expect(
-      recordedSetSchema.safeParse({
-        sessionId: 1,
-        workoutId: 2,
-        workoutLogId: null,
+      recordedSetSummarySchema.safeParse({
+        recordedSetId: 1,
+        workoutPlanId: 2,
+        workoutRunId: null,
         setNumber: 1,
         exerciseCode: "squat",
         exerciseDisplayName: "Squat",

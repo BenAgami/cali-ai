@@ -15,7 +15,7 @@ export const createAdminUserWithToken = async (
       email: `admin-${suffix}@example.com`,
       fullName: "Admin User",
       username: `admin_${suffix}`,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
       role: Role.ADMIN,
     },
   });

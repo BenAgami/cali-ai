@@ -1,0 +1,85 @@
+import { z } from "zod";
+
+import { ANALYSIS_STAGES, PROCESSING_STATUSES } from "./analysis";
+import { ANALYSIS_OUTCOMES, FORM_ANALYSIS_EXERCISES } from "./formAnalysis";
+import { EXERCISE_TYPES } from "./exercise";
+import { paginatedSchema } from "./pagination";
+
+export const createRecordedSetSchema = z
+  .object({
+    exerciseCode: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(z.enum(FORM_ANALYSIS_EXERCISES)),
+    notes: z.string().trim().max(2000).optional(),
+    performedAt: z.iso.datetime().optional(),
+    workoutPlanId: z.number().int().positive().optional(),
+    setNumber: z.number().int().min(1).max(50).optional(),
+    workoutRunId: z.number().int().positive().optional(),
+  })
+  .refine(
+    (value) =>
+      value.setNumber === undefined || value.workoutPlanId !== undefined,
+    {
+      message: "setNumber requires workoutPlanId",
+      path: ["setNumber"],
+    },
+  )
+  .refine(
+    (value) =>
+      value.workoutRunId === undefined || value.workoutPlanId !== undefined,
+    {
+      message: "workoutRunId requires workoutPlanId",
+      path: ["workoutRunId"],
+    },
+  );
+
+export type CreateRecordedSetValues = z.infer<typeof createRecordedSetSchema>;
+
+export const recordedSetResponseSchema = z.object({
+  id: z.number().int(),
+  userId: z.number().int(),
+  exerciseId: z.number().int(),
+  processingStatus: z.enum(PROCESSING_STATUSES),
+  workoutPlanId: z.number().int().nullable(),
+  workoutRunId: z.number().int().nullable(),
+  setNumber: z.number().int().nullable(),
+  notes: z.string().nullable(),
+  performedAt: z.string(),
+  processingStartedAt: z.string().nullable(),
+  processingFinishedAt: z.string().nullable(),
+  failureReason: z.string().nullable(),
+  analysisStage: z.enum(ANALYSIS_STAGES).nullable(),
+  analysisStageProgress: z.number().nullable(),
+  bullmqJobId: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  exercise: z.object({
+    code: z.string(),
+    displayName: z.string(),
+    exerciseType: z.enum(EXERCISE_TYPES),
+  }),
+});
+
+export type RecordedSetResponse = z.infer<typeof recordedSetResponseSchema>;
+
+export const recordedSetListItemSchema = recordedSetResponseSchema.extend({
+  analysisResult: z
+    .object({
+      outcome: z.enum(ANALYSIS_OUTCOMES),
+      analyzedAt: z.string(),
+      summaryFeedback: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export type RecordedSetListItem = z.infer<typeof recordedSetListItemSchema>;
+
+export const recordedSetListResponseSchema = paginatedSchema(
+  recordedSetListItemSchema,
+);
+
+export type RecordedSetListResponse = z.infer<
+  typeof recordedSetListResponseSchema
+>;

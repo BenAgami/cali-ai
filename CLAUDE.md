@@ -26,7 +26,7 @@ Package manager: Yarn Classic 1.22.19. Task runner: Turborepo.
 
 **Zod validation at boundaries.** Validate all request bodies in middleware before they reach controllers. Schemas live in `packages/common/src/validations/`.
 
-**Response shapes are shared, not duplicated.** Server response shapes used by `apps/native` (e.g. `WorkoutWithExercises`, `ExerciseSummary`) and by `apps/api/src/openapi/schemas.ts` are defined once in `packages/common/src/validations/` and imported by both — never hand-rolled a second time in `apps/native/src/types/` or the OpenAPI registry. `@repo/common` schemas stay framework-agnostic (no `.openapi()` calls) since `apps/native` also consumes them; add OpenAPI-only presentation metadata at the registration site in `apps/api/src/openapi/schemas.ts` instead. `apps/native/src/types/` is for local-only UI/form-state shapes that never cross the API boundary.
+**Response shapes are shared, not duplicated.** Server response shapes used by `apps/native` (e.g. `WorkoutPlanWithExercises`, `ExerciseSummary`) and by `apps/api/src/openapi/schemas.ts` are defined once in `packages/common/src/validations/` and imported by both — never hand-rolled a second time in `apps/native/src/types/` or the OpenAPI registry. `@repo/common` schemas stay framework-agnostic (no `.openapi()` calls) since `apps/native` also consumes them; add OpenAPI-only presentation metadata at the registration site in `apps/api/src/openapi/schemas.ts` instead. `apps/native/src/types/` is for local-only UI/form-state shapes that never cross the API boundary.
 
 **HTTP error hierarchy** is in `apps/api/src/errors/`. Throw typed errors (e.g. `NotFoundError`, `UnauthorizedError`) — the error handler catches them.
 
@@ -36,7 +36,7 @@ Package manager: Yarn Classic 1.22.19. Task runner: Turborepo.
 
 **Form metrics.** `apps/api/src/metrics/` is pure — no I/O, no logger. Rubric values come from `05-RUBRICS.md` and change only with a `RUBRIC_VERSION` bump (calibration evidence lives in `05-CALIBRATION.md`). Score, band and findings are computed deterministically; the LLM only phrases the server-selected findings and never scores. `formScore` is stored but never appears in a response shape (clients get the band).
 
-**Logging** goes through the structured `pino` logger (`apps/api/src/lib/logger.ts`) — never `console.log`/`console.error` in `apps/api/src`. 5xx errors are always logged regardless of `NODE_ENV`. `pino-http` is the only HTTP request logger — it is mounted in every environment, with `autoLogging` disabled under `test` to keep Vitest output clean; dev readability comes from the logger's `pino-pretty` transport, which stays a devDependency since production sets `transport: undefined`. Every log line carries `service`/`env` via the logger's `base` config, and `Error` objects passed as `err` are run through `pino.stdSerializers.err` — always log errors as `{ err: error }`, never interpolate `error.message`/`error.stack` into the message string yourself. `catch (error)` bindings and rejection handlers are typed `unknown` — never pass one straight to `logger`; normalize it first with `toError` from `apps/api/src/utils/toError.ts` (e.g. `logger.error({ err: toError(error) }, "message")`), since a non-`Error` value passed bare to pino silently replaces your log message with the thrown value. Outside HTTP request context (e.g. the BullMQ worker), derive a `logger.child({ jobId, sessionId })` once per job and log through that child so job logs stay correlated — don't log through the bare `logger` singleton from within job processing.
+**Logging** goes through the structured `pino` logger (`apps/api/src/lib/logger.ts`) — never `console.log`/`console.error` in `apps/api/src`. 5xx errors are always logged regardless of `NODE_ENV`. `pino-http` is the only HTTP request logger — it is mounted in every environment, with `autoLogging` disabled under `test` to keep Vitest output clean; dev readability comes from the logger's `pino-pretty` transport, which stays a devDependency since production sets `transport: undefined`. Every log line carries `service`/`env` via the logger's `base` config, and `Error` objects passed as `err` are run through `pino.stdSerializers.err` — always log errors as `{ err: error }`, never interpolate `error.message`/`error.stack` into the message string yourself. `catch (error)` bindings and rejection handlers are typed `unknown` — never pass one straight to `logger`; normalize it first with `toError` from `apps/api/src/utils/toError.ts` (e.g. `logger.error({ err: toError(error) }, "message")`), since a non-`Error` value passed bare to pino silently replaces your log message with the thrown value. Outside HTTP request context (e.g. the BullMQ worker), derive a `logger.child({ jobId, recordedSetId })` once per job and log through that child so job logs stay correlated — don't log through the bare `logger` singleton from within job processing.
 
 ## Naming
 
@@ -56,10 +56,10 @@ syncpack (`.syncpackrc.json` at the root) is enforced in CI via `yarn deps:lint`
 
 What Phase 1 is building:
 
-- **Async keypoint capture**: `POST /api/sessions/:id/capture` (on-device pose keypoints, no video) returns 202 + job ID immediately
+- **Async keypoint capture**: `POST /api/recorded-sets/:id/capture` (on-device pose keypoints, no video) returns 202 + job ID immediately
 - **BullMQ job queue** (Redis-backed): worker computes metrics from the keypoints and calls the LLM off the request thread
-- **SSE endpoint**: `GET /api/sessions/:id/status` streams job progress events to the client
-- **State machine**: `WorkoutSession.processingStatus` transitions PENDING → PROCESSING → COMPLETED | FAILED; stuck PROCESSING jobs auto-fail after 3 minutes
+- **SSE endpoint**: `GET /api/recorded-sets/:id/status` streams job progress events to the client
+- **State machine**: `RecordedSet.processingStatus` transitions PENDING → PROCESSING → COMPLETED | FAILED; stuck PROCESSING jobs auto-fail after 3 minutes
 - **Custom Expo dev build**: `react-native-vision-camera` + `react-native-fast-tflite` configured in `apps/native`
 
 ## Database
@@ -88,7 +88,7 @@ Layout mirrors `src/`: `tests/unit/{utils,errors,config,middlewares,services,con
 - `globals: true` — never import `describe`/`it`/`expect`/`vi`.
 - Arrow functions everywhere, including helpers and factories.
 - Assert HTTP status via `http-status-codes` `StatusCodes`, never raw numbers.
-- Mock Prisma with `createPrismaMock()` from `tests/unit/helpers/prismaMock.ts`, wired in a `beforeEach` via `vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma))`. `vi.mock("@repo/db", ...)` must be a **partial** mock via `importOriginal` — the package also re-exports the generated Prisma enums (`Role`, `SessionStatus`) that the code needs. Services read Prisma through the lazy `private get prisma()` getter, so the mock resolves per call and per-test rewiring works.
+- Mock Prisma with `createPrismaMock()` from `tests/unit/helpers/prismaMock.ts`, wired in a `beforeEach` via `vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma))`. `vi.mock("@repo/db", ...)` must be a **partial** mock via `importOriginal` — the package also re-exports the generated Prisma enums (`Role`, `ProcessingStatus`) that the code needs. Services read Prisma through the lazy `private get prisma()` getter, so the mock resolves per call and per-test rewiring works.
 - Build fake `req`/`res`/`next` with `tests/unit/helpers/expressMocks.ts`. Controllers are plain `async` functions — `await` the call directly before asserting.
 - Test private helpers **through their public caller** with mocked collaborators. Do not add an `export` purely so a test can reach an internal function.
 - Prefer real `zod` schemas and a real `jsonwebtoken` over mocking them — only mock at true I/O boundaries (Prisma, bcrypt, AWS SDK, pino, `config/env`).

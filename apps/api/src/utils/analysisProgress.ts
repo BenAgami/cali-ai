@@ -1,5 +1,5 @@
 import type { AnalysisStage, AnalysisStatusEvent } from "@repo/common";
-import { SessionStatus } from "@repo/db";
+import { ProcessingStatus } from "@repo/db";
 
 const STAGE_PERCENT_RANGES: Record<AnalysisStage, readonly [number, number]> = {
   QUEUED: [0, 10],
@@ -19,7 +19,7 @@ const MAX_IN_PROGRESS_PERCENT = 99;
 
 export type AnalysisSnapshot = {
   id: number;
-  processingStatus: SessionStatus;
+  processingStatus: ProcessingStatus;
   analysisStage: AnalysisStage | null;
   analysisStageProgress: number | null;
   failureReason: string | null;
@@ -48,11 +48,11 @@ export const toStatusEvent = (
 ): AnalysisStatusEvent | null => {
   const { processingStatus } = snapshot;
 
-  if (processingStatus === SessionStatus.PENDING) return null;
+  if (processingStatus === ProcessingStatus.PENDING) return null;
 
-  const base = { sessionId: snapshot.id };
+  const base = { recordedSetId: snapshot.id };
 
-  if (processingStatus === SessionStatus.COMPLETED) {
+  if (processingStatus === ProcessingStatus.COMPLETED) {
     return {
       ...base,
       status: "COMPLETED",
@@ -66,7 +66,7 @@ export const toStatusEvent = (
   const stage = snapshot.analysisStage ?? "QUEUED";
   const percent = progressPercent(stage, snapshot.analysisStageProgress);
 
-  if (processingStatus === SessionStatus.FAILED) {
+  if (processingStatus === ProcessingStatus.FAILED) {
     return {
       ...base,
       status: "FAILED",

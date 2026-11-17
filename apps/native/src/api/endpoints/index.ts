@@ -1,5 +1,5 @@
 export { authApi } from "./auth";
 export { userApi } from "./user";
-export { workoutApi } from "./workouts";
+export { workoutPlanApi } from "./workoutPlans";
 export { exerciseApi } from "./exercises";
-export { sessionsApi } from "./sessions";
+export { recordedSetsApi } from "./recordedSets";

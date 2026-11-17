@@ -1,4 +1,4 @@
-import { getPrismaClient, SessionStatus, type Prisma } from "@repo/db";
+import { getPrismaClient, ProcessingStatus, type Prisma } from "@repo/db";
 import {
   ANALYSIS_LIMIT_MESSAGES,
   API_ERROR_CODES,
@@ -38,9 +38,9 @@ export type CaptureInsert = {
 };
 
 export const ANALYSIS_ALREADY_STARTED_MESSAGE =
-  "Analysis already started for this session";
+  "Analysis already started for this recorded set";
 
-export type SessionSnapshot = AnalysisSnapshot & {
+export type RecordedSetSnapshot = AnalysisSnapshot & {
   bullmqJobId: string | null;
 };
 
@@ -72,7 +72,7 @@ export class AnalysisStateService {
 
   private runResetData(jobId: string) {
     return {
-      processingStatus: SessionStatus.PROCESSING,
+      processingStatus: ProcessingStatus.PROCESSING,
       analysisStage: "QUEUED" as const,
       analysisStageProgress: null,
       processingStartedAt: new Date(),
@@ -82,10 +82,10 @@ export class AnalysisStateService {
     };
   }
 
-  private runGuard(sessionId: number, jobId: string) {
+  private runGuard(recordedSetId: number, jobId: string) {
     return {
-      id: sessionId,
-      processingStatus: SessionStatus.PROCESSING,
+      id: recordedSetId,
+      processingStatus: ProcessingStatus.PROCESSING,
       bullmqJobId: jobId,
     };
   }
@@ -102,26 +102,26 @@ export class AnalysisStateService {
     await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
   }
 
-  async findOwnedSession(
+  async findOwnedRecordedSet(
     userUuid: string,
-    sessionId: number,
-  ): Promise<SessionSnapshot & { userId: number }> {
+    recordedSetId: number,
+  ): Promise<RecordedSetSnapshot & { userId: number }> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
-    const session = await this.prisma.workoutSession.findFirst({
-      where: { id: sessionId, userId },
+    const recordedSet = await this.prisma.recordedSet.findFirst({
+      where: { id: recordedSetId, userId },
       select: SNAPSHOT_SELECT,
     });
 
-    if (!session) {
-      throw new NotFoundError("Workout session not found");
+    if (!recordedSet) {
+      throw new NotFoundError("Recorded set not found");
     }
 
-    return { ...session, userId };
+    return { ...recordedSet, userId };
   }
 
   async startRunWithCapture(
-    sessionId: number,
+    recordedSetId: number,
     capture: CaptureInsert,
     jobId: string,
     userId: number,
@@ -130,7 +130,7 @@ export class AnalysisStateService {
       await this.lockUserQuota(tx, userId);
 
       const acceptedCount = await tx.poseCapture.count({
-        where: { session: { userId }, createdAt: { gte: dayAgo() } },
+        where: { recordedSet: { userId }, createdAt: { gte: dayAgo() } },
       });
       if (acceptedCount >= env.formAnalysis.dailyCap) {
         throw new TooManyRequestsError(
@@ -139,8 +139,11 @@ export class AnalysisStateService {
         );
       }
 
-      const { count } = await tx.workoutSession.updateMany({
-        where: { id: sessionId, processingStatus: SessionStatus.PENDING },
+      const { count } = await tx.recordedSet.updateMany({
+        where: {
+          id: recordedSetId,
+          processingStatus: ProcessingStatus.PENDING,
+        },
         data: this.runResetData(jobId),
       });
 
@@ -151,7 +154,7 @@ export class AnalysisStateService {
       try {
         const created = await tx.poseCapture.create({
           data: {
-            sessionId,
+            recordedSetId,
             ...capture,
             keypoints: new Uint8Array(capture.keypoints),
           },
@@ -169,30 +172,32 @@ export class AnalysisStateService {
       }
     });
 
-    await this.publishSnapshot(sessionId, logger);
+    await this.publishSnapshot(recordedSetId, logger);
 
     return { captureId };
   }
 
   async restartRun(
-    sessionId: number,
+    recordedSetId: number,
     jobId: string,
     userId: number,
   ): Promise<{ captureId: number }> {
     const stored = await this.prisma.poseCapture.findFirst({
-      where: { sessionId, keypoints: { not: null } },
+      where: { recordedSetId, keypoints: { not: null } },
       select: { id: true },
     });
 
     if (!stored) {
-      throw new ConflictError("No stored capture to retry for this session");
+      throw new ConflictError(
+        "No stored capture to retry for this recorded set",
+      );
     }
 
     await this.prisma.$transaction(async (tx) => {
       await this.lockUserQuota(tx, userId);
 
       const acceptedRetryCount = await tx.analysisRetry.count({
-        where: { session: { userId }, createdAt: { gte: dayAgo() } },
+        where: { recordedSet: { userId }, createdAt: { gte: dayAgo() } },
       });
       if (acceptedRetryCount >= env.formAnalysis.dailyRetryCap) {
         throw new TooManyRequestsError(
@@ -201,8 +206,8 @@ export class AnalysisStateService {
         );
       }
 
-      const { count } = await tx.workoutSession.updateMany({
-        where: { id: sessionId, processingStatus: SessionStatus.FAILED },
+      const { count } = await tx.recordedSet.updateMany({
+        where: { id: recordedSetId, processingStatus: ProcessingStatus.FAILED },
         data: this.runResetData(jobId),
       });
       if (count === 0) {
@@ -210,23 +215,23 @@ export class AnalysisStateService {
       }
 
       // Last, so a refused retry rolls back without being recorded.
-      await tx.analysisRetry.create({ data: { sessionId } });
+      await tx.analysisRetry.create({ data: { recordedSetId } });
     });
 
-    await this.publishSnapshot(sessionId, logger);
+    await this.publishSnapshot(recordedSetId, logger);
 
     return { captureId: stored.id };
   }
 
   async advanceStage(
-    sessionId: number,
+    recordedSetId: number,
     jobId: string,
     stage: WorkerStage,
     subProgress?: number,
     log: Logger = logger,
   ): Promise<boolean> {
-    const current = await this.prisma.workoutSession.findFirst({
-      where: this.runGuard(sessionId, jobId),
+    const current = await this.prisma.recordedSet.findFirst({
+      where: this.runGuard(recordedSetId, jobId),
       select: { analysisStage: true, analysisStageProgress: true },
     });
 
@@ -238,8 +243,8 @@ export class AnalysisStateService {
     );
     if (progressPercent(stage, subProgress) < currentPercent) return false;
 
-    const { count } = await this.prisma.workoutSession.updateMany({
-      where: this.runGuard(sessionId, jobId),
+    const { count } = await this.prisma.recordedSet.updateMany({
+      where: this.runGuard(recordedSetId, jobId),
       data: {
         analysisStage: stage,
         analysisStageProgress: subProgress ?? null,
@@ -248,26 +253,26 @@ export class AnalysisStateService {
 
     if (count === 0) return false;
 
-    await this.publishSnapshot(sessionId, log);
+    await this.publishSnapshot(recordedSetId, log);
     return true;
   }
 
   /**
    * Completes the run and writes its result atomically; false (and no write)
-   * when this job no longer owns a PROCESSING session. The guarded update runs
+   * when this job no longer owns a PROCESSING recorded set. The guarded update runs
    * first so its row lock also serializes with failRun and the reaper.
    */
   async completeRunWithResult(
-    sessionId: number,
+    recordedSetId: number,
     jobId: string,
     write: (tx: Prisma.TransactionClient) => Promise<void>,
     log: Logger = logger,
   ): Promise<boolean> {
     const isCompleted = await this.prisma.$transaction(async (tx) => {
-      const { count } = await tx.workoutSession.updateMany({
-        where: this.runGuard(sessionId, jobId),
+      const { count } = await tx.recordedSet.updateMany({
+        where: this.runGuard(recordedSetId, jobId),
         data: {
-          processingStatus: SessionStatus.COMPLETED,
+          processingStatus: ProcessingStatus.COMPLETED,
           analysisStage: "COMPLETED",
           analysisStageProgress: null,
           processingFinishedAt: new Date(),
@@ -280,20 +285,20 @@ export class AnalysisStateService {
       return true;
     });
 
-    if (isCompleted) await this.publishSnapshot(sessionId, log);
+    if (isCompleted) await this.publishSnapshot(recordedSetId, log);
     return isCompleted;
   }
 
   async failRun(
-    sessionId: number,
+    recordedSetId: number,
     jobId: string,
     reason: AnalysisFailureReason,
     log: Logger = logger,
   ): Promise<boolean> {
-    const { count } = await this.prisma.workoutSession.updateMany({
-      where: this.runGuard(sessionId, jobId),
+    const { count } = await this.prisma.recordedSet.updateMany({
+      where: this.runGuard(recordedSetId, jobId),
       data: {
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         processingFinishedAt: new Date(),
         failureReason: reason,
       },
@@ -301,7 +306,7 @@ export class AnalysisStateService {
 
     if (count === 0) return false;
 
-    await this.publishSnapshot(sessionId, log);
+    await this.publishSnapshot(recordedSetId, log);
     return true;
   }
 
@@ -311,9 +316,9 @@ export class AnalysisStateService {
   ): Promise<number[]> {
     const cutoff = new Date(now.getTime() - env.analysis.stuckTimeoutMs);
 
-    const stuck = await this.prisma.workoutSession.findMany({
+    const stuck = await this.prisma.recordedSet.findMany({
       where: {
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         processingStartedAt: { lt: cutoff },
       },
       select: { id: true },
@@ -323,14 +328,14 @@ export class AnalysisStateService {
 
     const ids = stuck.map((s) => s.id);
 
-    await this.prisma.workoutSession.updateMany({
+    await this.prisma.recordedSet.updateMany({
       where: {
         id: { in: ids },
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         processingStartedAt: { lt: cutoff },
       },
       data: {
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         failureReason: "TIMEOUT",
         processingFinishedAt: now,
       },
@@ -341,10 +346,10 @@ export class AnalysisStateService {
       const snapshot = await this.publishSnapshot(
         id,
         log,
-        (s) => s.processingStatus === SessionStatus.FAILED,
+        (s) => s.processingStatus === ProcessingStatus.FAILED,
       );
       if (
-        snapshot?.processingStatus === SessionStatus.FAILED &&
+        snapshot?.processingStatus === ProcessingStatus.FAILED &&
         snapshot.failureReason === "TIMEOUT"
       ) {
         reaped.push(id);
@@ -355,7 +360,7 @@ export class AnalysisStateService {
   }
 
   async getCaptureForJob(
-    sessionId: number,
+    recordedSetId: number,
     captureId: number,
   ): Promise<{
     id: number;
@@ -363,36 +368,38 @@ export class AnalysisStateService {
     keypointsFormat: string;
   } | null> {
     return this.prisma.poseCapture.findFirst({
-      where: { id: captureId, sessionId },
+      where: { id: captureId, recordedSetId },
       select: { id: true, keypoints: true, keypointsFormat: true },
     });
   }
 
-  async getAnalysisJobContext(sessionId: number): Promise<{
+  async getAnalysisJobContext(recordedSetId: number): Promise<{
     userId: number;
     exerciseCode: string;
     exerciseDisplayName: string;
   } | null> {
-    const session = await this.prisma.workoutSession.findUnique({
-      where: { id: sessionId },
+    const recordedSet = await this.prisma.recordedSet.findUnique({
+      where: { id: recordedSetId },
       select: {
         userId: true,
         exercise: { select: { code: true, displayName: true } },
       },
     });
 
-    if (!session) return null;
+    if (!recordedSet) return null;
 
     return {
-      userId: session.userId,
-      exerciseCode: session.exercise.code,
-      exerciseDisplayName: session.exercise.displayName,
+      userId: recordedSet.userId,
+      exerciseCode: recordedSet.exercise.code,
+      exerciseDisplayName: recordedSet.exercise.displayName,
     };
   }
 
-  async getStatusEvent(sessionId: number): Promise<AnalysisStatusEvent | null> {
-    const snapshot = await this.prisma.workoutSession.findUnique({
-      where: { id: sessionId },
+  async getStatusEvent(
+    recordedSetId: number,
+  ): Promise<AnalysisStatusEvent | null> {
+    const snapshot = await this.prisma.recordedSet.findUnique({
+      where: { id: recordedSetId },
       select: SNAPSHOT_SELECT,
     });
 
@@ -400,18 +407,18 @@ export class AnalysisStateService {
   }
 
   /**
-   * Publishes the session's status event after a successful write. Never
+   * Publishes the recorded set's status event after a successful write. Never
    * throws and never awaits the publish: `IORedis` queues commands while Redis
    * is down, so awaiting would hang the caller. Queued publishes stay in order.
    */
   private async publishSnapshot(
-    sessionId: number,
+    recordedSetId: number,
     log: Logger,
-    shouldPublish: (snapshot: SessionSnapshot) => boolean = () => true,
-  ): Promise<SessionSnapshot | null> {
+    shouldPublish: (snapshot: RecordedSetSnapshot) => boolean = () => true,
+  ): Promise<RecordedSetSnapshot | null> {
     try {
-      const snapshot = await this.prisma.workoutSession.findUnique({
-        where: { id: sessionId },
+      const snapshot = await this.prisma.recordedSet.findUnique({
+        where: { id: recordedSetId },
         select: SNAPSHOT_SELECT,
       });
       if (!snapshot) return null;
@@ -420,7 +427,7 @@ export class AnalysisStateService {
       if (event) {
         publishAnalysisEvent(event).catch((error: unknown) => {
           log.warn(
-            { err: toError(error), sessionId },
+            { err: toError(error), recordedSetId },
             "Failed to publish analysis status event",
           );
         });
@@ -429,7 +436,7 @@ export class AnalysisStateService {
       return snapshot;
     } catch (error) {
       log.warn(
-        { err: toError(error), sessionId },
+        { err: toError(error), recordedSetId },
         "Failed to publish analysis status event",
       );
       return null;

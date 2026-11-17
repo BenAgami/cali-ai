@@ -9,11 +9,11 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { updateWorkout } from "../helpers/requestSender/workoutsRequests";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { updateWorkoutPlan } from "../helpers/requestSender/workoutPlansRequests";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("PATCH /api/workouts/:id", () => {
+describe("PATCH /api/workout-plans/:id", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -35,7 +35,7 @@ describe("PATCH /api/workouts/:id", () => {
     });
 
     const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Old Name",
       exercises: [
@@ -49,7 +49,7 @@ describe("PATCH /api/workouts/:id", () => {
       ],
     });
 
-    const response = await updateWorkout(app, token, workout.id, {
+    const response = await updateWorkoutPlan(app, token, workout.id, {
       name: "New Name",
     });
 
@@ -72,9 +72,9 @@ describe("PATCH /api/workouts/:id", () => {
     const ex3 = await createExercise(prisma);
     const newEx = await createExercise(prisma);
 
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
-      name: "Workout",
+      name: "WorkoutPlan",
       exercises: [
         { exerciseId: ex1.id, position: 0 },
         { exerciseId: ex2.id, position: 1 },
@@ -82,7 +82,7 @@ describe("PATCH /api/workouts/:id", () => {
       ],
     });
 
-    const response = await updateWorkout(app, token, workout.id, {
+    const response = await updateWorkoutPlan(app, token, workout.id, {
       exercises: [{ exerciseId: newEx.id, sets: 4, reps: 8, restSecs: 90 }],
     });
 
@@ -91,7 +91,7 @@ describe("PATCH /api/workouts/:id", () => {
     expect(response.body.data.exercises[0].sets).toBe(4);
 
     const dbCount = await prisma.workoutExercise.count({
-      where: { workoutId: workout.id },
+      where: { workoutPlanId: workout.id },
     });
     expect(dbCount).toBe(1);
   });
@@ -109,9 +109,9 @@ describe("PATCH /api/workouts/:id", () => {
     const ex2 = await createExercise(prisma);
     const ex3 = await createExercise(prisma);
 
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
-      name: "Workout",
+      name: "WorkoutPlan",
       exercises: [
         { exerciseId: ex1.id, position: 0 },
         { exerciseId: ex2.id, position: 1 },
@@ -119,7 +119,7 @@ describe("PATCH /api/workouts/:id", () => {
       ],
     });
 
-    const response = await updateWorkout(app, token, workout.id, {
+    const response = await updateWorkoutPlan(app, token, workout.id, {
       exercises: [
         { exerciseId: ex3.id, sets: 3, reps: 10, restSecs: 60 },
         { exerciseId: ex1.id, sets: 3, reps: 10, restSecs: 60 },
@@ -146,13 +146,13 @@ describe("PATCH /api/workouts/:id", () => {
     const tokenB = userBRes.body.data.token;
 
     const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUserA!.id,
       name: "User A Workout",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await updateWorkout(app, tokenB, workout.id, {
+    const response = await updateWorkoutPlan(app, tokenB, workout.id, {
       name: "Hacked",
     });
 
@@ -160,7 +160,7 @@ describe("PATCH /api/workouts/:id", () => {
   });
 
   it("should return 401 without auth token", async () => {
-    const response = await updateWorkout(app, undefined, 1, { name: "X" });
+    const response = await updateWorkoutPlan(app, undefined, 1, { name: "X" });
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
@@ -175,13 +175,13 @@ describe("PATCH /api/workouts/:id", () => {
     });
 
     const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
-      name: "Workout",
+      name: "WorkoutPlan",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await updateWorkout(app, token, workout.id, {
+    const response = await updateWorkoutPlan(app, token, workout.id, {
       exercises: [],
     });
 

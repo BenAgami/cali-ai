@@ -17,14 +17,14 @@ import {
   exitEdgeOf,
   FORM_CAPTURE_SETUP,
   SETUP_WINDOW_FRAMES,
-  type CreateWorkoutSessionValues,
+  type CreateRecordedSetValues,
   type FormAnalysisExercise,
   type PoseCapturePayload,
   type SetupCheckResult,
   type SetupIssue,
 } from "@repo/common";
 
-import { ApiError, sessionsApi } from "@src/api";
+import { ApiError, recordedSetsApi } from "@src/api";
 import {
   SETUP_ISSUE_MESSAGES,
   SPOKEN_ISSUE_MESSAGES,
@@ -108,39 +108,39 @@ const toUploadErrorCode = (error: unknown): UploadErrorCode => {
 };
 
 // A run completed elsewhere (e.g. Done on another screen) refuses new sets with
-// WORKOUT_LOG_COMPLETED; record the set outside the run instead of losing it.
-const createSessionForSet = async (input: CreateWorkoutSessionValues) => {
+// WORKOUT_RUN_COMPLETED; record the set outside the run instead of losing it.
+const createRecordedSetForSet = async (input: CreateRecordedSetValues) => {
   try {
-    return await sessionsApi.create(input);
+    return await recordedSetsApi.create(input);
   } catch (error) {
     if (
-      input.workoutLogId !== undefined &&
+      input.workoutRunId !== undefined &&
       error instanceof ApiError &&
       error.status === Number(StatusCodes.CONFLICT) &&
-      error.code === API_ERROR_CODES.WORKOUT_LOG_COMPLETED
+      error.code === API_ERROR_CODES.WORKOUT_RUN_COMPLETED
     ) {
-      return sessionsApi.create({ ...input, workoutLogId: undefined });
+      return recordedSetsApi.create({ ...input, workoutRunId: undefined });
     }
     throw error;
   }
 };
 
-// A failed queue add leaves the stored capture on a FAILED session, which the
+// A failed queue add leaves the stored capture on a FAILED recorded set, which the
 // capture route refuses with ANALYSIS_FAILED; only the retry route can restart
 // it. A capture that already started a run is answered with that run.
 const submitOrRestart = async (
-  sessionId: number,
+  recordedSetId: number,
   payload: PoseCapturePayload,
 ) => {
   try {
-    return await sessionsApi.submitCapture(sessionId, payload);
+    return await recordedSetsApi.submitCapture(recordedSetId, payload);
   } catch (error) {
     if (
       error instanceof ApiError &&
       error.status === Number(StatusCodes.CONFLICT) &&
       error.code === API_ERROR_CODES.ANALYSIS_FAILED
     ) {
-      return sessionsApi.retryAnalysis(sessionId);
+      return recordedSetsApi.retryAnalysis(recordedSetId);
     }
     throw error;
   }
@@ -151,8 +151,8 @@ interface UseRecordedSetParams {
     status: AiPrerequisiteStatus;
     refetchStatus: () => Promise<AiPrerequisiteStatus>;
   };
-  workoutId: number | null;
-  workoutLogId: number | null;
+  workoutPlanId: number | null;
+  workoutRunId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
   exerciseDisplayName: string;
@@ -163,8 +163,8 @@ interface UseRecordedSetParams {
 export const useRecordedSet = (params: UseRecordedSetParams) => {
   const {
     prerequisites,
-    workoutId,
-    workoutLogId,
+    workoutPlanId,
+    workoutRunId,
     setNumber,
     exerciseCode,
     exerciseDisplayName,
@@ -209,7 +209,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
   const lastFrameAtRef = useRef(0);
   const aspectRatioRef = useRef(DEFAULT_ASPECT_RATIO);
   const payloadRef = useRef<PoseCapturePayload | null>(null);
-  const sessionIdRef = useRef<number | null>(null);
+  const recordedSetIdRef = useRef<number | null>(null);
   const recordingStartedAtRef = useRef(0);
 
   // Frame callback: touches refs only, never state (it runs ~30 times a second).
@@ -368,26 +368,30 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     setUploadErrorCode(null);
     setStage("uploading");
     try {
-      sessionIdRef.current ??= (
-        await createSessionForSet({
+      recordedSetIdRef.current ??= (
+        await createRecordedSetForSet({
           exerciseCode,
-          workoutId: workoutId ?? undefined,
-          workoutLogId: workoutLogId ?? undefined,
+          workoutPlanId: workoutPlanId ?? undefined,
+          workoutRunId: workoutRunId ?? undefined,
           setNumber: setNumber ?? undefined,
         })
       ).id;
-      const sessionId = sessionIdRef.current;
-      const accepted = await submitOrRestart(sessionId, payload);
+      const recordedSetId = recordedSetIdRef.current;
+      const accepted = await submitOrRestart(recordedSetId, payload);
       track({
-        sessionId,
+        recordedSetId,
         jobId: accepted.jobId,
-        workoutId,
+        workoutPlanId,
         setNumber,
         exerciseCode,
         exerciseDisplayName,
       });
-      if (source === "execute" && workoutId !== null && setNumber !== null) {
-        markRecordedSetDone({ workoutId, setNumber });
+      if (
+        source === "execute" &&
+        workoutPlanId !== null &&
+        setNumber !== null
+      ) {
+        markRecordedSetDone({ workoutPlanId, setNumber });
       }
       payloadRef.current = null;
       setHasHeldUpload(false);
@@ -406,7 +410,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
           setStage("uploadError");
           return;
         }
-        // payloadRef and sessionIdRef are kept for the resume effect below.
+        // payloadRef and recordedSetIdRef are kept for the resume effect below.
         setHasHeldUpload(true);
         setStage("setup");
         return;
@@ -420,8 +424,8 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
     setNumber,
     source,
     track,
-    workoutId,
-    workoutLogId,
+    workoutPlanId,
+    workoutRunId,
   ]);
 
   // keepCount drops the idle tail after the set (see evaluateSetEnd).
@@ -505,7 +509,7 @@ export const useRecordedSet = (params: UseRecordedSetParams) => {
 
   const discard = useCallback(() => {
     payloadRef.current = null;
-    sessionIdRef.current = null;
+    recordedSetIdRef.current = null;
     bufferRef.current = [];
     isRecordingRef.current = false;
     setHasHeldUpload(false);

@@ -2,15 +2,15 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Alert } from "react-native";
 
 import type {
-  CreateWorkoutValues,
-  WorkoutWithExercises,
+  CreateWorkoutPlanValues,
+  WorkoutPlanWithExercises,
   ExerciseType,
 } from "@repo/common";
 import type { DraftExerciseValues } from "@src/components/WorkoutExerciseRow";
 
-import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
-import { useCreateWorkout } from "@src/hooks/mutations/useCreateWorkout";
-import { useUpdateWorkout } from "@src/hooks/mutations/useUpdateWorkout";
+import { useWorkoutPlanDetail } from "@src/hooks/queries/useWorkoutPlanDetail";
+import { useCreateWorkoutPlan } from "@src/hooks/mutations/useCreateWorkoutPlan";
+import { useUpdateWorkoutPlan } from "@src/hooks/mutations/useUpdateWorkoutPlan";
 import { consumeGeneratedPlan } from "@src/state/generatedPlanStore";
 
 export interface DraftExercise extends DraftExerciseValues {
@@ -24,7 +24,7 @@ export interface DraftExercise extends DraftExerciseValues {
 const makeLocalId = (): string =>
   `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-const draftFromServer = (workout: WorkoutWithExercises): DraftExercise[] =>
+const draftFromServer = (workout: WorkoutPlanWithExercises): DraftExercise[] =>
   workout.exercises.map((ex) => ({
     localId: makeLocalId(),
     exerciseId: ex.exerciseId,
@@ -38,15 +38,15 @@ const draftFromServer = (workout: WorkoutWithExercises): DraftExercise[] =>
   }));
 
 export interface UseWorkoutBuilderOptions {
-  workoutId?: number;
+  workoutPlanId?: number;
   isFromGeneration?: boolean;
 }
 
 export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
-  const isEdit = options.workoutId != null;
-  const detailQuery = useWorkoutDetail(options.workoutId);
-  const createMutation = useCreateWorkout();
-  const updateMutation = useUpdateWorkout();
+  const isEdit = options.workoutPlanId != null;
+  const detailQuery = useWorkoutPlanDetail(options.workoutPlanId);
+  const createMutation = useCreateWorkoutPlan();
+  const updateMutation = useUpdateWorkoutPlan();
 
   const [name, setName] = useState("");
   const [exercises, setExercises] = useState<DraftExercise[]>([]);
@@ -158,7 +158,7 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
     return { isValid: true } as const;
   }, [name, exercises]);
 
-  const buildPayload = useCallback((): CreateWorkoutValues => {
+  const buildPayload = useCallback((): CreateWorkoutPlanValues => {
     return {
       name: name.trim(),
       exercises: exercises.map((ex) => ({
@@ -175,8 +175,8 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
 
   const save = useCallback(
     async (
-      onCreated: (workoutId: number) => void,
-      onUpdated: (workoutId: number) => void,
+      onCreated: (workoutPlanId: number) => void,
+      onUpdated: (workoutPlanId: number) => void,
     ) => {
       if (!validation.isValid) {
         Alert.alert("Cannot save", validation.message ?? "Invalid workout");
@@ -184,9 +184,9 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
       }
       const payload = buildPayload();
       try {
-        if (isEdit && options.workoutId != null) {
+        if (isEdit && options.workoutPlanId != null) {
           const updated = await updateMutation.mutateAsync({
-            id: options.workoutId,
+            id: options.workoutPlanId,
             data: payload,
           });
           onUpdated(updated.id);
@@ -202,7 +202,7 @@ export const useWorkoutBuilder = (options: UseWorkoutBuilderOptions) => {
       validation,
       buildPayload,
       isEdit,
-      options.workoutId,
+      options.workoutPlanId,
       createMutation,
       updateMutation,
     ],

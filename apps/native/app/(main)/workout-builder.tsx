@@ -36,10 +36,10 @@ const CATALOG_PATH = "/exercise-catalog";
 const WorkoutBuilderScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<BuilderParams>();
-  const workoutId = params.id ? Number(params.id) : undefined;
+  const workoutPlanId = params.id ? Number(params.id) : undefined;
 
   const builder = useWorkoutBuilder({
-    workoutId,
+    workoutPlanId,
     isFromGeneration: params.fromGeneration === "1",
   });
 

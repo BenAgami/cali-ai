@@ -1,8 +1,8 @@
 model AnalysisResult {
   id Int @id @default(autoincrement())
 
-  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  sessionId Int            @unique @map("session_id")
+  recordedSet   RecordedSet @relation(fields: [recordedSetId], references: [id], onDelete: Cascade)
+  recordedSetId Int         @unique @map("recorded_set_id")
 
   outcome            AnalysisOutcome @default(SCORED)
   formScore          Int?            @map("form_score") @db.SmallInt

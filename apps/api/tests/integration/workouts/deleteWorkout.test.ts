@@ -9,11 +9,11 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { deleteWorkout } from "../helpers/requestSender/workoutsRequests";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { deleteWorkoutPlan } from "../helpers/requestSender/workoutPlansRequests";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("DELETE /api/workouts/:id", () => {
+describe("DELETE /api/workout-plans/:id", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -37,7 +37,7 @@ describe("DELETE /api/workouts/:id", () => {
     const ex1 = await createExercise(prisma);
     const ex2 = await createExercise(prisma);
 
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "To Delete",
       exercises: [
@@ -46,17 +46,17 @@ describe("DELETE /api/workouts/:id", () => {
       ],
     });
 
-    const response = await deleteWorkout(app, token, workout.id);
+    const response = await deleteWorkoutPlan(app, token, workout.id);
 
     expect(response.status).toBe(StatusCodes.NO_CONTENT);
 
-    const deletedWorkout = await prisma.workout.findUnique({
+    const deletedWorkoutPlan = await prisma.workoutPlan.findUnique({
       where: { id: workout.id },
     });
-    expect(deletedWorkout).toBeNull();
+    expect(deletedWorkoutPlan).toBeNull();
 
     const exerciseCount = await prisma.workoutExercise.count({
-      where: { workoutId: workout.id },
+      where: { workoutPlanId: workout.id },
     });
     expect(exerciseCount).toBe(0);
   });
@@ -70,35 +70,35 @@ describe("DELETE /api/workouts/:id", () => {
       select: { id: true },
     });
     const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUser.id,
       name: "Started",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
-    const run = await prisma.workoutLog.create({
-      data: { userId: dbUser.id, workoutId: workout.id },
+    const run = await prisma.workoutRun.create({
+      data: { userId: dbUser.id, workoutPlanId: workout.id },
     });
-    const session = await prisma.workoutSession.create({
+    const recordedSet = await prisma.recordedSet.create({
       data: {
         userId: dbUser.id,
         exerciseId: exercise.id,
-        workoutId: workout.id,
-        workoutLogId: run.id,
+        workoutPlanId: workout.id,
+        workoutRunId: run.id,
       },
     });
 
-    const response = await deleteWorkout(app, token, workout.id);
+    const response = await deleteWorkoutPlan(app, token, workout.id);
 
     expect(response.status).toBe(StatusCodes.NO_CONTENT);
-    const keptRun = await prisma.workoutLog.findUniqueOrThrow({
+    const keptRun = await prisma.workoutRun.findUniqueOrThrow({
       where: { id: run.id },
     });
-    expect(keptRun.workoutId).toBeNull();
-    const kept = await prisma.workoutSession.findUniqueOrThrow({
-      where: { id: session.id },
+    expect(keptRun.workoutPlanId).toBeNull();
+    const kept = await prisma.recordedSet.findUniqueOrThrow({
+      where: { id: recordedSet.id },
     });
-    expect(kept.workoutId).toBeNull();
-    expect(kept.workoutLogId).toBe(run.id);
+    expect(kept.workoutPlanId).toBeNull();
+    expect(kept.workoutRunId).toBe(run.id);
   });
 
   it("should return 404 for another user's workout", async () => {
@@ -114,13 +114,13 @@ describe("DELETE /api/workouts/:id", () => {
     const tokenB = userBRes.body.data.token;
 
     const exercise = await createExercise(prisma);
-    const workout = await createWorkoutFixture(prisma, {
+    const workout = await createWorkoutPlanFixture(prisma, {
       userId: dbUserA!.id,
       name: "User A Workout",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await deleteWorkout(app, tokenB, workout.id);
+    const response = await deleteWorkoutPlan(app, tokenB, workout.id);
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
@@ -130,13 +130,13 @@ describe("DELETE /api/workouts/:id", () => {
     const registerRes = await registerUser(app, registerUserDto);
     const token = registerRes.body.data.token;
 
-    const response = await deleteWorkout(app, token, 999999);
+    const response = await deleteWorkoutPlan(app, token, 999999);
 
     expect(response.status).toBe(StatusCodes.NOT_FOUND);
   });
 
   it("should return 401 without auth token", async () => {
-    const response = await deleteWorkout(app, undefined, 1);
+    const response = await deleteWorkoutPlan(app, undefined, 1);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });

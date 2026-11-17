@@ -57,10 +57,10 @@ Requires a custom Expo dev build (`expo-dev-client`); it does not run in Expo Go
 
 Three tiers: route → controller → service → Prisma.
 
-- Authentication, sessions, workouts, profile
-- `POST /api/sessions/:id/capture`: validates and stores the keypoints,
+- Authentication, recorded sets, workouts, profile
+- `POST /api/recorded-sets/:id/capture`: validates and stores the keypoints,
   enqueues an analysis job, returns 202 with a job ID
-- `GET /api/sessions/:id/status`: SSE stream of job progress
+- `GET /api/recorded-sets/:id/status`: SSE stream of job progress
 
 ## 2.3 Analysis Worker
 
@@ -89,7 +89,7 @@ Versions stored with every result: `metrics-v1` (metrics pipeline),
 
 ## 2.4 Database (Postgres)
 
-Stores users, exercises, workout sessions, pose captures, analysis results,
+Stores users, exercises, recorded sets, pose captures, analysis results,
 findings, form labels and training consent. See `data-model.md`.
 
 ## 2.5 Object Storage (Cloudflare R2)
@@ -105,15 +105,15 @@ Used for user avatars only. No video or frames are stored.
 2. If they accept, the camera opens. The phone runs pose estimation on live
    frames and buffers keypoints.
 3. The set ends. The phone compresses the keypoints and calls
-   `POST /api/sessions/:id/capture`.
-4. The API validates (Zod), stores a `PoseCapture`, sets the session to
+   `POST /api/recorded-sets/:id/capture`.
+4. The API validates (Zod), stores a `PoseCapture`, sets the recorded set to
    `PROCESSING`, enqueues the job and returns 202.
 5. The phone subscribes to the SSE status stream.
 6. The worker analyzes the capture and stores the result.
-7. The session becomes `COMPLETED` (or `FAILED`); the phone receives the event
+7. The recorded set becomes `COMPLETED` (or `FAILED`); the phone receives the event
    and shows the feedback.
 
-Sessions stuck in `PROCESSING` for more than 3 minutes are failed
+Recorded sets stuck in `PROCESSING` for more than 3 minutes are failed
 automatically.
 
 ---
@@ -161,7 +161,7 @@ The rubric (deterministic metrics) is the scorer at launch; the LLM only writes 
 
 # 6a. AI Workout Generation
 
-- Synchronous `POST /api/workouts/generate` (no queue); returns a draft plan the client previews, then saves through the normal workout endpoint.
+- Synchronous `POST /api/workout-plans/generate` (no queue); returns a draft plan the client previews, then saves through the normal workout endpoint.
 - Shared gate `aiPrerequisitesService.assertAiPrerequisites` checks profile completeness, AI consent and catalog; Phase 5 reuses it.
 - `LlmProvider` interface with `AnthropicProvider`: structured outputs, a per-request exercise-code enum (no exercise outside the catalog), `maxRetries: 0`, `AbortSignal` for timeouts (no `withTimeout`).
 - Attempt ladder: Haiku, then Haiku with validation feedback, then Sonnet.

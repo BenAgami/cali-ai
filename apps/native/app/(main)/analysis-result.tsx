@@ -25,13 +25,13 @@ import {
 } from "@src/constants/formMessages";
 import { baseColors } from "@src/theme/colors";
 
-type ResultParams = { sessionId?: string };
+type ResultParams = { recordedSetId?: string };
 
 const AnalysisResultScreen: React.FC = () => {
   const { colors } = useTheme();
-  const { sessionId } = useLocalSearchParams<ResultParams>();
+  const { recordedSetId } = useLocalSearchParams<ResultParams>();
   const { state, analysis, liveEvent, refetch, recordAgain } =
-    useAnalysisResultScreen(sessionId);
+    useAnalysisResultScreen(recordedSetId);
 
   return (
     <SafeAreaView

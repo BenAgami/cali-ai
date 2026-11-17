@@ -1,4 +1,4 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import { API_ERROR_CODES } from "@repo/common";
 
@@ -53,7 +53,7 @@ const capture = {
 
 const snapshot = (overrides: Record<string, unknown> = {}) => ({
   id: 5,
-  processingStatus: SessionStatus.PROCESSING,
+  processingStatus: ProcessingStatus.PROCESSING,
   analysisStage: "QUEUED",
   analysisStageProgress: null,
   failureReason: null,
@@ -62,7 +62,7 @@ const snapshot = (overrides: Record<string, unknown> = {}) => ({
 });
 
 const RUN_RESET = {
-  processingStatus: SessionStatus.PROCESSING,
+  processingStatus: ProcessingStatus.PROCESSING,
   analysisStage: "QUEUED",
   analysisStageProgress: null,
   processingStartedAt: NOW,
@@ -88,16 +88,16 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("AnalysisStateService.findOwnedSession", () => {
-  it("looks the session up by id and owner", async () => {
+describe("AnalysisStateService.findOwnedRecordedSet", () => {
+  it("looks the recorded set up by id and owner", async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
-    prisma.workoutSession.findFirst.mockResolvedValue(snapshot());
+    prisma.recordedSet.findFirst.mockResolvedValue(snapshot());
 
-    await expect(service.findOwnedSession("uuid-1", 5)).resolves.toEqual({
+    await expect(service.findOwnedRecordedSet("uuid-1", 5)).resolves.toEqual({
       ...snapshot(),
       userId: 42,
     });
-    expect(prisma.workoutSession.findFirst).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.findFirst).toHaveBeenCalledWith({
       where: { id: 5, userId: 42 },
       select: {
         id: true,
@@ -110,12 +110,12 @@ describe("AnalysisStateService.findOwnedSession", () => {
     });
   });
 
-  it("throws NotFoundError for a missing session", async () => {
+  it("throws NotFoundError for a missing recorded set", async () => {
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
-    prisma.workoutSession.findFirst.mockResolvedValue(null);
+    prisma.recordedSet.findFirst.mockResolvedValue(null);
 
-    await expect(service.findOwnedSession("uuid-1", 5)).rejects.toThrow(
-      new NotFoundError("Workout session not found"),
+    await expect(service.findOwnedRecordedSet("uuid-1", 5)).rejects.toThrow(
+      new NotFoundError("Recorded set not found"),
     );
   });
 });
@@ -126,9 +126,9 @@ describe("AnalysisStateService.startRunWithCapture", () => {
   });
 
   it("locks the user before counting the last 24 hours of captures", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockResolvedValue({ id: 9 });
-    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+    prisma.recordedSet.findUnique.mockResolvedValue(snapshot());
 
     await service.startRunWithCapture(5, capture, JOB, USER_ID);
 
@@ -137,7 +137,7 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     );
     expect(prisma.poseCapture.count).toHaveBeenCalledWith({
       where: {
-        session: { userId: USER_ID },
+        recordedSet: { userId: USER_ID },
         createdAt: { gte: new Date("2026-10-21T12:00:00Z") },
       },
     });
@@ -154,47 +154,47 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     expect((error as TooManyRequestsError).code).toBe(
       API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
     );
-    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.updateMany).not.toHaveBeenCalled();
     expect(prisma.poseCapture.create).not.toHaveBeenCalled();
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });
 
   it("guards on PENDING, then stores the capture and publishes QUEUED", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockResolvedValue({ id: 9 });
-    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+    prisma.recordedSet.findUnique.mockResolvedValue(snapshot());
 
     await expect(
       service.startRunWithCapture(5, capture, JOB, USER_ID),
     ).resolves.toEqual({ captureId: 9 });
 
-    expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
-      where: { id: 5, processingStatus: SessionStatus.PENDING },
+    expect(prisma.recordedSet.updateMany).toHaveBeenCalledWith({
+      where: { id: 5, processingStatus: ProcessingStatus.PENDING },
       data: RUN_RESET,
     });
     expect(prisma.poseCapture.create).toHaveBeenCalledWith({
-      data: { sessionId: 5, ...capture },
+      data: { recordedSetId: 5, ...capture },
       select: { id: true },
     });
     expect(publishAnalysisEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: 5, status: "QUEUED" }),
+      expect.objectContaining({ recordedSetId: 5, status: "QUEUED" }),
     );
   });
 
   it("throws ConflictError and does not create a capture when the PENDING guard matches nothing", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
       service.startRunWithCapture(5, capture, JOB, USER_ID),
     ).rejects.toThrow(
-      new ConflictError("Analysis already started for this session"),
+      new ConflictError("Analysis already started for this recorded set"),
     );
     expect(prisma.poseCapture.create).not.toHaveBeenCalled();
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });
 
   it("maps a unique violation on the capture to ConflictError", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockRejectedValue(prismaError("P2002"));
 
     await expect(
@@ -204,7 +204,7 @@ describe("AnalysisStateService.startRunWithCapture", () => {
 
   it("rethrows other capture errors untouched", async () => {
     const boom = new Error("boom");
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockRejectedValue(boom);
 
     await expect(
@@ -223,18 +223,18 @@ describe("AnalysisStateService.restartRun", () => {
     prisma.poseCapture.findFirst.mockResolvedValue(null);
 
     await expect(service.restartRun(5, JOB, USER_ID)).rejects.toThrow(
-      new ConflictError("No stored capture to retry for this session"),
+      new ConflictError("No stored capture to retry for this recorded set"),
     );
     expect(prisma.poseCapture.findFirst).toHaveBeenCalledWith({
-      where: { sessionId: 5, keypoints: { not: null } },
+      where: { recordedSetId: 5, keypoints: { not: null } },
       select: { id: true },
     });
-    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.updateMany).not.toHaveBeenCalled();
   });
 
   it("locks the user before counting the last 24 hours of retries", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(snapshot());
 
     await service.restartRun(5, JOB, USER_ID);
 
@@ -243,7 +243,7 @@ describe("AnalysisStateService.restartRun", () => {
     );
     expect(prisma.analysisRetry.count).toHaveBeenCalledWith({
       where: {
-        session: { userId: USER_ID },
+        recordedSet: { userId: USER_ID },
         createdAt: { gte: new Date("2026-10-21T12:00:00Z") },
       },
     });
@@ -262,13 +262,13 @@ describe("AnalysisStateService.restartRun", () => {
     expect((error as TooManyRequestsError).code).toBe(
       API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED,
     );
-    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.updateMany).not.toHaveBeenCalled();
     expect(prisma.analysisRetry.create).not.toHaveBeenCalled();
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });
 
-  it("rejects when the session is not FAILED and records no retry", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+  it("rejects when the recorded set is not FAILED and records no retry", async () => {
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(service.restartRun(5, JOB, USER_ID)).rejects.toThrow(
       new ConflictError("Only failed analyses can be retried"),
@@ -277,46 +277,46 @@ describe("AnalysisStateService.restartRun", () => {
   });
 
   it("resets the run from FAILED, records the retry and publishes", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(snapshot());
 
     await expect(service.restartRun(5, JOB, USER_ID)).resolves.toEqual({
       captureId: 9,
     });
-    expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
-      where: { id: 5, processingStatus: SessionStatus.FAILED },
+    expect(prisma.recordedSet.updateMany).toHaveBeenCalledWith({
+      where: { id: 5, processingStatus: ProcessingStatus.FAILED },
       data: RUN_RESET,
     });
     expect(prisma.analysisRetry.create).toHaveBeenCalledWith({
-      data: { sessionId: 5 },
+      data: { recordedSetId: 5 },
     });
     expect(
-      prisma.workoutSession.updateMany.mock.invocationCallOrder[0],
+      prisma.recordedSet.updateMany.mock.invocationCallOrder[0],
     ).toBeLessThan(prisma.analysisRetry.create.mock.invocationCallOrder[0]);
     expect(publishAnalysisEvent).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("AnalysisStateService.advanceStage", () => {
-  it("returns false for a stale job or non-PROCESSING session", async () => {
-    prisma.workoutSession.findFirst.mockResolvedValue(null);
+  it("returns false for a stale job or non-PROCESSING recorded set", async () => {
+    prisma.recordedSet.findFirst.mockResolvedValue(null);
 
     await expect(
       service.advanceStage(5, "old", "ANALYZING_REPS"),
     ).resolves.toBe(false);
-    expect(prisma.workoutSession.findFirst).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.findFirst).toHaveBeenCalledWith({
       where: {
         id: 5,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         bullmqJobId: "old",
       },
       select: { analysisStage: true, analysisStageProgress: true },
     });
-    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.updateMany).not.toHaveBeenCalled();
   });
 
   it("never moves progress backwards", async () => {
-    prisma.workoutSession.findFirst.mockResolvedValue({
+    prisma.recordedSet.findFirst.mockResolvedValue({
       analysisStage: "WRITING_FEEDBACK",
       analysisStageProgress: null,
     });
@@ -324,26 +324,26 @@ describe("AnalysisStateService.advanceStage", () => {
     await expect(
       service.advanceStage(5, JOB, "ANALYZING_REPS", 0.9),
     ).resolves.toBe(false);
-    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.updateMany).not.toHaveBeenCalled();
   });
 
   it("writes the stage under the job guard and publishes", async () => {
-    prisma.workoutSession.findFirst.mockResolvedValue({
+    prisma.recordedSet.findFirst.mockResolvedValue({
       analysisStage: "QUEUED",
       analysisStageProgress: null,
     });
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(
       snapshot({ analysisStage: "ANALYZING_REPS", analysisStageProgress: 0.5 }),
     );
 
     await expect(
       service.advanceStage(5, JOB, "ANALYZING_REPS", 0.5),
     ).resolves.toBe(true);
-    expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.updateMany).toHaveBeenCalledWith({
       where: {
         id: 5,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         bullmqJobId: JOB,
       },
       data: { analysisStage: "ANALYZING_REPS", analysisStageProgress: 0.5 },
@@ -352,16 +352,16 @@ describe("AnalysisStateService.advanceStage", () => {
   });
 
   it("stores null sub-progress when none is given", async () => {
-    prisma.workoutSession.findFirst.mockResolvedValue({
+    prisma.recordedSet.findFirst.mockResolvedValue({
       analysisStage: "QUEUED",
       analysisStageProgress: null,
     });
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(
       service.advanceStage(5, JOB, "WRITING_FEEDBACK"),
     ).resolves.toBe(false);
-    expect(prisma.workoutSession.updateMany.mock.calls[0][0].data).toEqual({
+    expect(prisma.recordedSet.updateMany.mock.calls[0][0].data).toEqual({
       analysisStage: "WRITING_FEEDBACK",
       analysisStageProgress: null,
     });
@@ -371,9 +371,9 @@ describe("AnalysisStateService.advanceStage", () => {
 
 describe("AnalysisStateService.completeRunWithResult", () => {
   it("completes under the job guard, writes after the guard, then publishes", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(
-      snapshot({ processingStatus: SessionStatus.COMPLETED }),
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(
+      snapshot({ processingStatus: ProcessingStatus.COMPLETED }),
     );
     const write = vi.fn().mockResolvedValue(undefined);
 
@@ -381,14 +381,14 @@ describe("AnalysisStateService.completeRunWithResult", () => {
       true,
     );
 
-    expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.updateMany).toHaveBeenCalledWith({
       where: {
         id: 5,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         bullmqJobId: JOB,
       },
       data: {
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
         analysisStage: "COMPLETED",
         analysisStageProgress: null,
         processingFinishedAt: NOW,
@@ -397,7 +397,7 @@ describe("AnalysisStateService.completeRunWithResult", () => {
     });
     expect(write).toHaveBeenCalledWith(prisma);
     expect(
-      prisma.workoutSession.updateMany.mock.invocationCallOrder[0],
+      prisma.recordedSet.updateMany.mock.invocationCallOrder[0],
     ).toBeLessThan(write.mock.invocationCallOrder[0]);
     expect(publishAnalysisEvent).toHaveBeenCalledWith(
       expect.objectContaining({ status: "COMPLETED", progress_percent: 100 }),
@@ -405,7 +405,7 @@ describe("AnalysisStateService.completeRunWithResult", () => {
   });
 
   it("discards a late write without writing or publishing", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 0 });
     const write = vi.fn();
 
     await expect(service.completeRunWithResult(5, JOB, write)).resolves.toBe(
@@ -416,7 +416,7 @@ describe("AnalysisStateService.completeRunWithResult", () => {
   });
 
   it("rethrows a failing write and does not publish", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
     const boom = new Error("write failed");
 
     await expect(
@@ -428,23 +428,23 @@ describe("AnalysisStateService.completeRunWithResult", () => {
 
 describe("AnalysisStateService.failRun", () => {
   it("fails under the job guard without touching analysisStage", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(
       snapshot({
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         failureReason: "ANALYSIS_ERROR",
       }),
     );
 
     await expect(service.failRun(5, JOB, "ANALYSIS_ERROR")).resolves.toBe(true);
-    expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.updateMany).toHaveBeenCalledWith({
       where: {
         id: 5,
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         bullmqJobId: JOB,
       },
       data: {
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         processingFinishedAt: NOW,
         failureReason: "ANALYSIS_ERROR",
       },
@@ -455,7 +455,7 @@ describe("AnalysisStateService.failRun", () => {
   });
 
   it("returns false when nothing matched", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 0 });
 
     await expect(service.failRun(5, JOB, "TIMEOUT")).resolves.toBe(false);
   });
@@ -465,41 +465,41 @@ describe("AnalysisStateService.reapStuck", () => {
   const CUTOFF = new Date("2026-10-22T11:57:30Z");
 
   it("does nothing when no run is stuck", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue([]);
+    prisma.recordedSet.findMany.mockResolvedValue([]);
 
     await expect(service.reapStuck(NOW)).resolves.toEqual([]);
-    expect(prisma.workoutSession.findMany).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.findMany).toHaveBeenCalledWith({
       where: {
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         processingStartedAt: { lt: CUTOFF },
       },
       select: { id: true },
     });
-    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.recordedSet.updateMany).not.toHaveBeenCalled();
   });
 
   it("fails stuck runs with TIMEOUT and returns the ids actually failed", async () => {
-    prisma.workoutSession.findMany.mockResolvedValue([{ id: 5 }, { id: 6 }]);
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique
+    prisma.recordedSet.findMany.mockResolvedValue([{ id: 5 }, { id: 6 }]);
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique
       .mockResolvedValueOnce(
         snapshot({
           id: 5,
-          processingStatus: SessionStatus.FAILED,
+          processingStatus: ProcessingStatus.FAILED,
           failureReason: "TIMEOUT",
         }),
       )
       .mockResolvedValueOnce(snapshot({ id: 6 }));
 
     await expect(service.reapStuck(NOW)).resolves.toEqual([5]);
-    expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.updateMany).toHaveBeenCalledWith({
       where: {
         id: { in: [5, 6] },
-        processingStatus: SessionStatus.PROCESSING,
+        processingStatus: ProcessingStatus.PROCESSING,
         processingStartedAt: { lt: CUTOFF },
       },
       data: {
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         failureReason: "TIMEOUT",
         processingFinishedAt: NOW,
       },
@@ -509,19 +509,19 @@ describe("AnalysisStateService.reapStuck", () => {
 });
 
 describe("AnalysisStateService reads", () => {
-  it("getCaptureForJob selects by capture and session", async () => {
+  it("getCaptureForJob selects by capture and recorded set", async () => {
     prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
 
     await service.getCaptureForJob(5, 9);
 
     expect(prisma.poseCapture.findFirst).toHaveBeenCalledWith({
-      where: { id: 9, sessionId: 5 },
+      where: { id: 9, recordedSetId: 5 },
       select: { id: true, keypoints: true, keypointsFormat: true },
     });
   });
 
   it("getAnalysisJobContext flattens the job context, or null when missing", async () => {
-    prisma.workoutSession.findUnique.mockResolvedValueOnce({
+    prisma.recordedSet.findUnique.mockResolvedValueOnce({
       userId: 3,
       exercise: { code: "push_up", displayName: "Push-up" },
     });
@@ -530,7 +530,7 @@ describe("AnalysisStateService reads", () => {
       exerciseCode: "push_up",
       exerciseDisplayName: "Push-up",
     });
-    expect(prisma.workoutSession.findUnique).toHaveBeenCalledWith({
+    expect(prisma.recordedSet.findUnique).toHaveBeenCalledWith({
       where: { id: 5 },
       select: {
         userId: true,
@@ -538,30 +538,30 @@ describe("AnalysisStateService reads", () => {
       },
     });
 
-    prisma.workoutSession.findUnique.mockResolvedValueOnce(null);
+    prisma.recordedSet.findUnique.mockResolvedValueOnce(null);
     await expect(service.getAnalysisJobContext(5)).resolves.toBeNull();
   });
 
-  it("getStatusEvent derives the event, or null for a missing session", async () => {
-    prisma.workoutSession.findUnique.mockResolvedValueOnce(
+  it("getStatusEvent derives the event, or null for a missing recorded set", async () => {
+    prisma.recordedSet.findUnique.mockResolvedValueOnce(
       snapshot({ analysisStage: "WRITING_FEEDBACK" }),
     );
     await expect(service.getStatusEvent(5)).resolves.toMatchObject({
-      sessionId: 5,
+      recordedSetId: 5,
       status: "PROCESSING",
       progress_percent: 60,
     });
 
-    prisma.workoutSession.findUnique.mockResolvedValueOnce(null);
+    prisma.recordedSet.findUnique.mockResolvedValueOnce(null);
     await expect(service.getStatusEvent(5)).resolves.toBeNull();
   });
 });
 
 describe("AnalysisStateService publishing", () => {
   it("logs a rejected publish as a warning and still succeeds", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(
-      snapshot({ processingStatus: SessionStatus.COMPLETED }),
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(
+      snapshot({ processingStatus: ProcessingStatus.COMPLETED }),
     );
     vi.mocked(publishAnalysisEvent).mockRejectedValue(new Error("redis down"));
 
@@ -571,15 +571,15 @@ describe("AnalysisStateService publishing", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     expect(logger.warn).toHaveBeenCalledWith(
-      expect.objectContaining({ sessionId: 5 }),
+      expect.objectContaining({ recordedSetId: 5 }),
       "Failed to publish analysis status event",
     );
   });
 
   it("does not block on a publish that never settles", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockResolvedValue(
-      snapshot({ processingStatus: SessionStatus.COMPLETED }),
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockResolvedValue(
+      snapshot({ processingStatus: ProcessingStatus.COMPLETED }),
     );
     vi.mocked(publishAnalysisEvent).mockReturnValue(new Promise(() => {}));
 
@@ -589,8 +589,8 @@ describe("AnalysisStateService publishing", () => {
   });
 
   it("logs a failing snapshot read and still succeeds", async () => {
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
-    prisma.workoutSession.findUnique.mockRejectedValue(new Error("db"));
+    prisma.recordedSet.updateMany.mockResolvedValue({ count: 1 });
+    prisma.recordedSet.findUnique.mockRejectedValue(new Error("db"));
 
     await expect(
       service.completeRunWithResult(5, JOB, async () => {}),

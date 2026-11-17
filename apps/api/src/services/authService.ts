@@ -70,7 +70,7 @@ class AuthService {
       const user = await this.prisma.user.create({
         data: {
           email: normalizedEmail,
-          password: hashedPassword,
+          passwordHash: hashedPassword,
           fullName: name,
           username,
         },
@@ -116,7 +116,7 @@ class AuthService {
       throw new UnauthorizedError(AuthService.INVALID_CREDENTIALS_MESSAGE);
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
       throw new UnauthorizedError(AuthService.INVALID_CREDENTIALS_MESSAGE);
@@ -125,7 +125,7 @@ class AuthService {
     const token = generateJwtToken({ uuid: user.uuid, role: user.role });
     const refreshToken = await refreshTokenService.createRefreshToken(user.id);
 
-    const { password: _, ...userWithoutPassword } = user;
+    const { passwordHash: _, ...userWithoutPassword } = user;
 
     return { user: userWithoutPassword, token, refreshToken };
   }

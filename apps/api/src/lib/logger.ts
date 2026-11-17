@@ -8,6 +8,8 @@ const REDACT_PATHS = [
   'res.headers["set-cookie"]',
   "password",
   "*.password",
+  "passwordHash",
+  "*.passwordHash",
   "token",
   "*.token",
   "refreshToken",

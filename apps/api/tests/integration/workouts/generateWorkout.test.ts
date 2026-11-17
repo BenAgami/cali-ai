@@ -16,10 +16,10 @@ import {
   postMyGoal,
 } from "../helpers/requestSender/usersRequests";
 import {
-  createWorkout,
-  getWorkout,
+  createWorkoutPlan,
+  getWorkoutPlan,
   postGenerateWorkout,
-} from "../helpers/requestSender/workoutsRequests";
+} from "../helpers/requestSender/workoutPlansRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
@@ -76,7 +76,7 @@ const invalidResult = () => {
   return result;
 };
 
-describe("POST /api/workouts/generate", () => {
+describe("POST /api/workout-plans/generate", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -245,20 +245,20 @@ describe("POST /api/workouts/generate", () => {
       ),
     };
 
-    const saved = await createWorkout(app, token, body);
+    const saved = await createWorkoutPlan(app, token, body);
     expect(saved.status).toBe(StatusCodes.CREATED);
     expect(saved.body.data.aiModel).toBe(MODEL);
     expect(saved.body.data.generationId).toBe(preview.generationId);
 
-    const detail = await getWorkout(app, token, saved.body.data.id);
+    const detail = await getWorkoutPlan(app, token, saved.body.data.id);
     expect(detail.body.data.aiModel).toBe(MODEL);
 
-    const again = await createWorkout(app, token, body);
+    const again = await createWorkoutPlan(app, token, body);
     expect(again.status).toBe(StatusCodes.CONFLICT);
     expect(again.body.code).toBe("GENERATION_ALREADY_SAVED");
 
     const other = await registerFresh();
-    const foreign = await createWorkout(app, other.token, body);
+    const foreign = await createWorkoutPlan(app, other.token, body);
     expect(foreign.status).toBe(StatusCodes.NOT_FOUND);
   });
 });

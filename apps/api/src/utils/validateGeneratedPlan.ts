@@ -1,5 +1,5 @@
 import {
-  createWorkoutSchema,
+  createWorkoutPlanSchema,
   type ExerciseSummary,
   type ExperienceLevel,
 } from "@repo/common";
@@ -129,7 +129,7 @@ export const validateGeneratedPlan = (
 
   if (issues.length > 0) return { isValid: false, issues };
 
-  const parsed = createWorkoutSchema.safeParse({
+  const parsed = createWorkoutPlanSchema.safeParse({
     name,
     exercises: exercises.map((e) => ({
       exerciseId: e.exerciseId,

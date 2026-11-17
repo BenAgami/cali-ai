@@ -34,7 +34,7 @@ import { baseColors } from "@src/theme/colors";
 import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
 
 type RecordSetParams = {
-  workoutId?: string;
+  workoutPlanId?: string;
   runId?: string;
   setNumber?: string;
   exerciseCode?: string;
@@ -83,8 +83,8 @@ const OrientationDebug: React.FC<{ cameraPosition: string }> = ({
 };
 
 interface RecorderProps {
-  workoutId: number | null;
-  workoutLogId: number | null;
+  workoutPlanId: number | null;
+  workoutRunId: number | null;
   setNumber: number | null;
   exerciseCode: FormAnalysisExercise;
   exerciseDisplayName: string;
@@ -92,8 +92,8 @@ interface RecorderProps {
 }
 
 const Recorder: React.FC<RecorderProps> = ({
-  workoutId,
-  workoutLogId,
+  workoutPlanId,
+  workoutRunId,
   setNumber,
   exerciseCode,
   exerciseDisplayName,
@@ -106,8 +106,8 @@ const Recorder: React.FC<RecorderProps> = ({
       status: prerequisites.status,
       refetchStatus: prerequisites.refetchStatus,
     },
-    workoutId,
-    workoutLogId,
+    workoutPlanId,
+    workoutRunId,
     setNumber,
     exerciseCode,
     exerciseDisplayName,
@@ -394,17 +394,17 @@ const RecordSetScreen: React.FC = () => {
     );
   }
 
-  const workoutId = parsePositiveIntParam(params.workoutId);
-  // The API rejects a setNumber or run without a workoutId.
+  const workoutPlanId = parsePositiveIntParam(params.workoutPlanId);
+  // The API rejects a setNumber or run without a workoutPlanId.
   const setNumber =
-    workoutId === null ? null : parsePositiveIntParam(params.setNumber);
-  const workoutLogId =
-    workoutId === null ? null : parsePositiveIntParam(params.runId);
+    workoutPlanId === null ? null : parsePositiveIntParam(params.setNumber);
+  const workoutRunId =
+    workoutPlanId === null ? null : parsePositiveIntParam(params.runId);
 
   return (
     <Recorder
-      workoutId={workoutId}
-      workoutLogId={workoutLogId}
+      workoutPlanId={workoutPlanId}
+      workoutRunId={workoutRunId}
       setNumber={setNumber}
       exerciseCode={exerciseCode}
       exerciseDisplayName={params.exerciseDisplayName ?? exerciseCode}

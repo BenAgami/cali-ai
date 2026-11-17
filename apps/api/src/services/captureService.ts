@@ -6,7 +6,7 @@ import {
   type captureAcceptedResponseSchema,
   type PoseCapturePayload,
 } from "@repo/common";
-import { getPrismaClient, SessionStatus } from "@repo/db";
+import { getPrismaClient, ProcessingStatus } from "@repo/db";
 
 import { ConflictError, ServiceUnavailableError } from "../errors";
 import { logger } from "../lib/logger";
@@ -20,7 +20,7 @@ import aiPrerequisitesService from "./aiPrerequisitesService";
 import analysisStateService, {
   ANALYSIS_ALREADY_STARTED_MESSAGE,
   ONLY_FAILED_RETRYABLE_MESSAGE,
-  type SessionSnapshot,
+  type RecordedSetSnapshot,
 } from "./analysisStateService";
 
 type CaptureAcceptedData = z.infer<typeof captureAcceptedResponseSchema>;
@@ -40,30 +40,30 @@ export class CaptureService {
 
   async submitCapture(
     userUuid: string,
-    sessionId: number,
+    recordedSetId: number,
     payload: PoseCapturePayload,
   ): Promise<CaptureAcceptedData> {
-    const session = await analysisStateService.findOwnedSession(
+    const recordedSet = await analysisStateService.findOwnedRecordedSet(
       userUuid,
-      sessionId,
+      recordedSetId,
     );
 
-    if (session.processingStatus === SessionStatus.FAILED) {
+    if (recordedSet.processingStatus === ProcessingStatus.FAILED) {
       throw new ConflictError(
         "Analysis failed; retry the analysis",
         API_ERROR_CODES.ANALYSIS_FAILED,
       );
     }
-    if (session.processingStatus !== SessionStatus.PENDING) {
-      return this.acceptedRun(session);
+    if (recordedSet.processingStatus !== ProcessingStatus.PENDING) {
+      return this.acceptedRun(recordedSet);
     }
 
-    await aiPrerequisitesService.assertAiPrerequisites(session.userId);
+    await aiPrerequisitesService.assertAiPrerequisites(recordedSet.userId);
 
     const keypoints = await encodeCapture(payload);
     const jobId = newJobId();
     const { captureId } = await analysisStateService.startRunWithCapture(
-      sessionId,
+      recordedSetId,
       {
         keypoints,
         keypointsFormat: KEYPOINTS_FORMAT,
@@ -77,36 +77,36 @@ export class CaptureService {
         appVersion: payload.appVersion ?? null,
       },
       jobId,
-      session.userId,
+      recordedSet.userId,
     );
 
-    await this.enqueue(sessionId, captureId, jobId);
-    return { sessionId, captureId, jobId, status: "QUEUED" };
+    await this.enqueue(recordedSetId, captureId, jobId);
+    return { recordedSetId, captureId, jobId, status: "QUEUED" };
   }
 
   async retryAnalysis(
     userUuid: string,
-    sessionId: number,
+    recordedSetId: number,
   ): Promise<CaptureAcceptedData> {
-    const session = await analysisStateService.findOwnedSession(
+    const recordedSet = await analysisStateService.findOwnedRecordedSet(
       userUuid,
-      sessionId,
+      recordedSetId,
     );
-    if (session.processingStatus !== SessionStatus.FAILED) {
+    if (recordedSet.processingStatus !== ProcessingStatus.FAILED) {
       throw new ConflictError(ONLY_FAILED_RETRYABLE_MESSAGE);
     }
 
-    await aiPrerequisitesService.assertAiPrerequisites(session.userId);
+    await aiPrerequisitesService.assertAiPrerequisites(recordedSet.userId);
 
     const jobId = newJobId();
     const { captureId } = await analysisStateService.restartRun(
-      sessionId,
+      recordedSetId,
       jobId,
-      session.userId,
+      recordedSet.userId,
     );
 
-    await this.enqueue(sessionId, captureId, jobId);
-    return { sessionId, captureId, jobId, status: "QUEUED" };
+    await this.enqueue(recordedSetId, captureId, jobId);
+    return { recordedSetId, captureId, jobId, status: "QUEUED" };
   }
 
   /**
@@ -115,20 +115,20 @@ export class CaptureService {
    * can follow that run. The resent body is not stored or counted again.
    */
   private async acceptedRun(
-    session: SessionSnapshot,
+    recordedSet: RecordedSetSnapshot,
   ): Promise<CaptureAcceptedData> {
     const stored = await this.prisma.poseCapture.findUnique({
-      where: { sessionId: session.id },
+      where: { recordedSetId: recordedSet.id },
       select: { id: true },
     });
-    const event = toStatusEvent(session);
-    if (!stored || session.bullmqJobId === null || event === null) {
+    const event = toStatusEvent(recordedSet);
+    if (!stored || recordedSet.bullmqJobId === null || event === null) {
       throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
     }
     return {
-      sessionId: session.id,
+      recordedSetId: recordedSet.id,
       captureId: stored.id,
-      jobId: session.bullmqJobId,
+      jobId: recordedSet.bullmqJobId,
       status: event.status,
     };
   }
@@ -136,10 +136,10 @@ export class CaptureService {
   /**
    * `IORedis` with `maxRetriesPerRequest: null` queues commands forever while
    * Redis is down, so the add is bounded; on failure the run is failed so the
-   * session never sits in PROCESSING with no job.
+   * recorded set never sits in PROCESSING with no job.
    */
   private async enqueue(
-    sessionId: number,
+    recordedSetId: number,
     captureId: number,
     jobId: string,
   ): Promise<void> {
@@ -147,7 +147,7 @@ export class CaptureService {
       await withTimeout(
         formAnalysisQueue.add(
           ANALYSIS_JOB_NAME,
-          { sessionId, captureId },
+          { recordedSetId, captureId },
           { jobId },
         ),
         ENQUEUE_TIMEOUT_MS,
@@ -155,10 +155,14 @@ export class CaptureService {
       );
     } catch (error) {
       logger.error(
-        { err: toError(error), sessionId, jobId },
+        { err: toError(error), recordedSetId, jobId },
         "Failed to enqueue analysis job",
       );
-      await analysisStateService.failRun(sessionId, jobId, "ENQUEUE_FAILED");
+      await analysisStateService.failRun(
+        recordedSetId,
+        jobId,
+        "ENQUEUE_FAILED",
+      );
       throw new ServiceUnavailableError(
         "Analysis queue is unavailable, please retry shortly",
       );

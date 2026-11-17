@@ -9,22 +9,22 @@ import {
   logoutSchema,
   updateProfileSchema,
   upsertGoalSchema,
-  createWorkoutSchema,
-  updateWorkoutSchema,
-  createWorkoutSessionSchema,
+  createWorkoutPlanSchema,
+  updateWorkoutPlanSchema,
+  createRecordedSetSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
   exerciseDetailSchema,
-  workoutWithExercisesSchema,
-  workoutLogResponseSchema,
+  workoutPlanWithExercisesSchema,
+  workoutRunResponseSchema,
   pageMetaSchema,
   poseCapturePayloadSchema,
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
   formAnalysisResponseSchema,
-  recordedSetSchema,
-  workoutSessionResponseSchema,
-  workoutSessionListItemSchema,
+  recordedSetSummarySchema,
+  recordedSetResponseSchema,
+  recordedSetListItemSchema,
   bodyMetricInputSchema,
   aiConsentSchema,
   saveBodyMetricResponseSchema,
@@ -80,21 +80,21 @@ export const AiConsentBody = registry.register(
   "AiConsentBody",
   aiConsentSchema,
 );
-export const CreateWorkoutBody = registry.register(
-  "CreateWorkoutBody",
-  createWorkoutSchema,
+export const CreateWorkoutPlanBody = registry.register(
+  "CreateWorkoutPlanBody",
+  createWorkoutPlanSchema,
 );
-export const UpdateWorkoutBody = registry.register(
-  "UpdateWorkoutBody",
-  updateWorkoutSchema,
+export const UpdateWorkoutPlanBody = registry.register(
+  "UpdateWorkoutPlanBody",
+  updateWorkoutPlanSchema,
 );
 export const GenerateWorkoutBody = registry.register(
   "GenerateWorkoutBody",
   generateWorkoutSchema,
 );
-export const CreateWorkoutSessionBody = registry.register(
-  "CreateWorkoutSessionBody",
-  createWorkoutSessionSchema,
+export const CreateRecordedSetBody = registry.register(
+  "CreateRecordedSetBody",
+  createRecordedSetSchema,
 );
 registry.register("PoseCaptureBody", poseCapturePayloadSchema);
 
@@ -298,9 +298,9 @@ export const ExerciseResponse = registry.register(
 
 // ── Workout responses ─────────────────────────────────────────────────────────
 
-export const WorkoutResponse = registry.register(
-  "Workout",
-  workoutWithExercisesSchema,
+export const WorkoutPlanResponse = registry.register(
+  "WorkoutPlan",
+  workoutPlanWithExercisesSchema,
 );
 
 export const WorkoutGenerationPreviewResponse = registry.register(
@@ -308,21 +308,21 @@ export const WorkoutGenerationPreviewResponse = registry.register(
   workoutGenerationPreviewSchema,
 );
 
-export const WorkoutLogResponse = registry.register(
-  "WorkoutLog",
-  workoutLogResponseSchema,
+export const WorkoutRunResponse = registry.register(
+  "WorkoutRun",
+  workoutRunResponseSchema,
 );
 
-// ── Workout session responses ─────────────────────────────────────────────────
+// ── Recorded set responses ─────────────────────────────────────────────────
 
-export const WorkoutSessionResponse = registry.register(
-  "WorkoutSession",
-  workoutSessionResponseSchema,
+export const RecordedSetResponse = registry.register(
+  "RecordedSet",
+  recordedSetResponseSchema,
 );
 
-export const WorkoutSessionListItem = registry.register(
-  "WorkoutSessionListItem",
-  workoutSessionListItemSchema,
+export const RecordedSetListItem = registry.register(
+  "RecordedSetListItem",
+  recordedSetListItemSchema,
 );
 
 export const CaptureAccepted = registry.register(
@@ -337,4 +337,7 @@ export const FormAnalysisResponse = registry.register(
   formAnalysisResponseSchema,
 );
 
-export const RecordedSet = registry.register("RecordedSet", recordedSetSchema);
+export const RecordedSetSummary = registry.register(
+  "RecordedSetSummary",
+  recordedSetSummarySchema,
+);

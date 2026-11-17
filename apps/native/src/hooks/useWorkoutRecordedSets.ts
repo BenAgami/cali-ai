@@ -4,7 +4,7 @@ import { StatusCodes } from "http-status-codes";
 import {
   API_ERROR_CODES,
   type AnalysisStatusEvent,
-  type RecordedSet,
+  type RecordedSetSummary,
 } from "@repo/common";
 
 import { ApiError } from "@src/api";
@@ -13,25 +13,25 @@ import { useAnalysisTracker } from "@src/context/AnalysisTrackerContext";
 import { useRecordedSets } from "@src/hooks/queries/useRecordedSets";
 import type { RetryIssue } from "@src/constants/formMessages";
 
-type SessionStatus = RecordedSet["processingStatus"];
+type ProcessingStatus = RecordedSetSummary["processingStatus"];
 
-export type WorkoutRecordedSet = RecordedSet & {
+export type WorkoutRecordedSet = RecordedSetSummary & {
   liveEvent?: AnalysisStatusEvent;
-  effectiveStatus: SessionStatus;
+  effectiveStatus: ProcessingStatus;
   isUnseen: boolean;
   retryIssue: RetryIssue | null;
 };
 
 const toEffectiveStatus = (
-  recorded: RecordedSet,
+  recorded: RecordedSetSummary,
   event: AnalysisStatusEvent | undefined,
-): SessionStatus => {
+): ProcessingStatus => {
   if (event === undefined) return recorded.processingStatus;
   return event.status === "QUEUED" ? "PROCESSING" : event.status;
 };
 
 const toRetryIssue = (
-  status: SessionStatus,
+  status: ProcessingStatus,
   isLimitReached: boolean,
   hasRetryFailed: boolean,
 ): RetryIssue | null => {
@@ -41,7 +41,7 @@ const toRetryIssue = (
 };
 
 export const useWorkoutRecordedSets = (
-  workoutId: number | undefined,
+  workoutPlanId: number | undefined,
   runId?: number,
 ) => {
   const {
@@ -52,12 +52,12 @@ export const useWorkoutRecordedSets = (
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useRecordedSets(workoutId, runId);
+  } = useRecordedSets(workoutPlanId, runId);
   const recordedSets = useMemo(
     () => data?.pages.flatMap((page) => page.items) ?? [],
     [data],
   );
-  const { tracked, statusBySession, unseenSessionIds, track, retry } =
+  const { tracked, statusByRecordedSet, unseenRecordedSetIds, track, retry } =
     useAnalysisTracker();
   const [retryingIds, setRetryingIds] = useState<ReadonlySet<number>>(
     () => new Set(),
@@ -79,21 +79,21 @@ export const useWorkoutRecordedSets = (
   useEffect(() => {
     for (const recorded of recordedSets) {
       const isTracked = tracked.some(
-        (entry) => entry.sessionId === recorded.sessionId,
+        (entry) => entry.recordedSetId === recorded.recordedSetId,
       );
       if (
         recorded.processingStatus !== "PROCESSING" ||
         recorded.bullmqJobId === null ||
         isTracked ||
-        hasRequestedTrack.current.has(recorded.sessionId)
+        hasRequestedTrack.current.has(recorded.recordedSetId)
       ) {
         continue;
       }
-      hasRequestedTrack.current.add(recorded.sessionId);
+      hasRequestedTrack.current.add(recorded.recordedSetId);
       track({
-        sessionId: recorded.sessionId,
+        recordedSetId: recorded.recordedSetId,
         jobId: recorded.bullmqJobId,
-        workoutId: recorded.workoutId,
+        workoutPlanId: recorded.workoutPlanId,
         setNumber: recorded.setNumber,
         exerciseCode: recorded.exerciseCode,
         exerciseDisplayName: recorded.exerciseDisplayName,
@@ -104,37 +104,37 @@ export const useWorkoutRecordedSets = (
   const items = useMemo<WorkoutRecordedSet[]>(
     () =>
       recordedSets.map((recorded) => {
-        const liveEvent = statusBySession[recorded.sessionId];
+        const liveEvent = statusByRecordedSet[recorded.recordedSetId];
         const effectiveStatus = toEffectiveStatus(recorded, liveEvent);
         return {
           ...recorded,
           liveEvent,
           effectiveStatus,
-          isUnseen: unseenSessionIds.has(recorded.sessionId),
+          isUnseen: unseenRecordedSetIds.has(recorded.recordedSetId),
           retryIssue: toRetryIssue(
             effectiveStatus,
             isRetryLimitReached,
-            retryFailedIds.has(recorded.sessionId),
+            retryFailedIds.has(recorded.recordedSetId),
           ),
         };
       }),
     [
       recordedSets,
-      statusBySession,
-      unseenSessionIds,
+      statusByRecordedSet,
+      unseenRecordedSetIds,
       isRetryLimitReached,
       retryFailedIds,
     ],
   );
 
   const retrySet = useCallback(
-    async (sessionId: number) => {
-      setRetryingIds((current) => new Set(current).add(sessionId));
+    async (recordedSetId: number) => {
+      setRetryingIds((current) => new Set(current).add(recordedSetId));
       try {
-        await retry(sessionId);
+        await retry(recordedSetId);
         setRetryFailedIds((current) => {
           const next = new Set(current);
-          next.delete(sessionId);
+          next.delete(recordedSetId);
           return next;
         });
         await refetch();
@@ -147,12 +147,12 @@ export const useWorkoutRecordedSets = (
           setIsRetryLimitReached(true);
         } else {
           // The row stays FAILED, so the Retry button remains available.
-          setRetryFailedIds((current) => new Set(current).add(sessionId));
+          setRetryFailedIds((current) => new Set(current).add(recordedSetId));
         }
       } finally {
         setRetryingIds((current) => {
           const next = new Set(current);
-          next.delete(sessionId);
+          next.delete(recordedSetId);
           return next;
         });
       }

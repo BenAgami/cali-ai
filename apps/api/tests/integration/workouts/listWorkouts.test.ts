@@ -9,11 +9,11 @@ import {
 } from "../helpers/testSetup";
 import { registerUser } from "../helpers/requestSender/authRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
-import { listWorkouts } from "../helpers/requestSender/workoutsRequests";
-import { createWorkoutFixture } from "../helpers/db/workoutHelper";
+import { listWorkoutPlans } from "../helpers/requestSender/workoutPlansRequests";
+import { createWorkoutPlanFixture } from "../helpers/db/workoutPlanHelper";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
 
-describe("GET /api/workouts", () => {
+describe("GET /api/workout-plans", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
@@ -30,7 +30,7 @@ describe("GET /api/workouts", () => {
     const registerRes = await registerUser(app, registerUserDto);
     const token = registerRes.body.data.token;
 
-    const response = await listWorkouts(app, token);
+    const response = await listWorkoutPlans(app, token);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.items).toEqual([]);
@@ -50,13 +50,13 @@ describe("GET /api/workouts", () => {
     });
 
     const exercise = await createExercise(prisma);
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUserB!.id,
       name: "User B Workout",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await listWorkouts(app, tokenA);
+    const response = await listWorkoutPlans(app, tokenA);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.items).toHaveLength(0);
@@ -76,30 +76,30 @@ describe("GET /api/workouts", () => {
 
     const exercise = await createExercise(prisma);
 
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "First",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Second",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Third",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await listWorkouts(app, token);
+    const response = await listWorkoutPlans(app, token);
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.items[0].name).toBe("Third");
   });
 
   it("should return 401 without auth token", async () => {
-    const response = await listWorkouts(app, undefined);
+    const response = await listWorkoutPlans(app, undefined);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
   });
@@ -115,23 +115,23 @@ describe("GET /api/workouts", () => {
 
     const exercise = await createExercise(prisma);
 
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Workout 1",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Workout 2",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
-    await createWorkoutFixture(prisma, {
+    await createWorkoutPlanFixture(prisma, {
       userId: dbUser!.id,
       name: "Workout 3",
       exercises: [{ exerciseId: exercise.id, position: 0 }],
     });
 
-    const response = await listWorkouts(app, token, { limit: 2 });
+    const response = await listWorkoutPlans(app, token, { limit: 2 });
 
     expect(response.status).toBe(StatusCodes.OK);
     expect(response.body.data.items).toHaveLength(2);

@@ -1,0 +1,129 @@
+import { z } from "zod";
+
+import { registry } from "../registry";
+import {
+  CaptureAccepted,
+  FormAnalysisResponse,
+  successResponse,
+  errorResponse,
+} from "../schemas";
+
+const bearerAuth = { BearerAuth: [] };
+
+const recordedSetIdParams = z.object({
+  id: z.number().int().positive().openapi({ description: "Recorded set id" }),
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/recorded-sets/{id}/capture",
+  tags: ["Recorded Set Analysis"],
+  summary: "Submit on-device pose keypoints for analysis",
+  security: [bearerAuth],
+  request: {
+    params: recordedSetIdParams,
+    body: {
+      required: true,
+      description:
+        "Pose keypoints for one set. Send the JSON body gzip-compressed with `Content-Type: application/gzip` (the compressed size cap is 1 MiB, the decompressed cap 10 MiB).",
+      content: {
+        "application/gzip": {
+          schema: z.string().openapi({
+            format: "binary",
+            description: "Gzip-compressed JSON matching PoseCaptureBody.",
+          }),
+        },
+      },
+    },
+  },
+  responses: {
+    202: successResponse(
+      CaptureAccepted,
+      "Capture accepted and queued (status QUEUED). Resending to a recorded set whose analysis already started returns that run with its current status; the resent body is not stored.",
+    ),
+    400: errorResponse(
+      "Validation error, or the body is not gzip (any other content type is rejected)",
+    ),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Recorded set not found"),
+    409: errorResponse(
+      "Analysis failed; use the retry route (ANALYSIS_FAILED), or analysis already started by a concurrent request for this recorded set",
+    ),
+    413: errorResponse("Compressed body exceeds 1 MiB"),
+    428: errorResponse("AI prerequisites missing"),
+    429: errorResponse(
+      "Daily form-analysis limit reached (DAILY_ANALYSIS_LIMIT_REACHED)",
+    ),
+    503: errorResponse("Queue unavailable"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/recorded-sets/{id}/analysis/retry",
+  tags: ["Recorded Set Analysis"],
+  summary: "Retry a failed analysis from its stored capture",
+  description:
+    "Retries are capped per user over a rolling 24 h (FORM_ANALYSIS_DAILY_RETRY_CAP); only accepted retries count, and they do not count toward the daily capture cap.",
+  security: [bearerAuth],
+  request: { params: recordedSetIdParams },
+  responses: {
+    202: successResponse(CaptureAccepted, "Analysis re-queued"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Recorded set not found"),
+    409: errorResponse("Recorded set is not FAILED or has no stored capture"),
+    428: errorResponse("AI prerequisites missing"),
+    429: errorResponse(
+      "Daily analysis retry limit reached (DAILY_RETRY_LIMIT_REACHED)",
+    ),
+    503: errorResponse("Queue unavailable"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/recorded-sets/{id}/analysis",
+  tags: ["Recorded Set Analysis"],
+  summary: "Get the form analysis result for a completed set",
+  description:
+    "SCORED results carry a band, three dimension chips, positives first and at most 2 corrections; UNTRACKABLE results carry reasons and advice. The raw score is never returned.",
+  security: [bearerAuth],
+  request: { params: recordedSetIdParams },
+  responses: {
+    200: successResponse(FormAnalysisResponse, "Analysis retrieved"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Recorded set not found"),
+    409: errorResponse("Analysis not ready (ANALYSIS_NOT_READY)"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/recorded-sets/{id}/status",
+  tags: ["Recorded Set Analysis"],
+  summary: "Stream analysis progress (Server-Sent Events)",
+  description:
+    "The current state is sent first, then live transitions. Each `event: status` message carries JSON matching the AnalysisStatusEvent schema.",
+  security: [bearerAuth],
+  request: { params: recordedSetIdParams },
+  responses: {
+    200: {
+      description: "Event stream",
+      content: {
+        "text/event-stream": {
+          schema: z.string().openapi({
+            description:
+              "Stream of `event: status` messages; each `data:` line is JSON matching AnalysisStatusEvent. The stream closes after a COMPLETED or FAILED event. Heartbeat comments every 15 s.",
+          }),
+        },
+      },
+    },
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Recorded set not found"),
+    409: errorResponse("No analysis started"),
+    500: errorResponse("Internal server error"),
+  },
+});

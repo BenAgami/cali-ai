@@ -1,5 +1,5 @@
 import { ANALYSIS_STAGES, analysisStatusEventSchema } from "@repo/common";
-import { SessionStatus } from "@repo/db";
+import { ProcessingStatus } from "@repo/db";
 
 import {
   progressPercent,
@@ -9,7 +9,7 @@ import {
 
 const snapshot = (overrides: Partial<AnalysisSnapshot>): AnalysisSnapshot => ({
   id: 7,
-  processingStatus: SessionStatus.PROCESSING,
+  processingStatus: ProcessingStatus.PROCESSING,
   analysisStage: null,
   analysisStageProgress: null,
   failureReason: null,
@@ -58,9 +58,9 @@ describe("progressPercent", () => {
 });
 
 describe("toStatusEvent", () => {
-  it("returns null for a PENDING session", () => {
+  it("returns null for a PENDING recorded set", () => {
     expect(
-      toStatusEvent(snapshot({ processingStatus: SessionStatus.PENDING })),
+      toStatusEvent(snapshot({ processingStatus: ProcessingStatus.PENDING })),
     ).toBeNull();
   });
 
@@ -83,7 +83,7 @@ describe("toStatusEvent", () => {
     );
 
     expect(event).toMatchObject({
-      sessionId: 7,
+      recordedSetId: 7,
       status: "PROCESSING",
       progress_percent: 35,
       stage_label: "analyzing reps",
@@ -94,7 +94,7 @@ describe("toStatusEvent", () => {
   it("maps COMPLETED to 100 percent", () => {
     const event = toStatusEvent(
       snapshot({
-        processingStatus: SessionStatus.COMPLETED,
+        processingStatus: ProcessingStatus.COMPLETED,
         analysisStage: "WRITING_FEEDBACK",
       }),
     );
@@ -111,7 +111,7 @@ describe("toStatusEvent", () => {
   it("keeps the last reached stage and percent when FAILED", () => {
     const event = toStatusEvent(
       snapshot({
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         analysisStage: "WRITING_FEEDBACK",
         failureReason: "TIMEOUT",
       }),
@@ -128,7 +128,7 @@ describe("toStatusEvent", () => {
   it("caps percent at 99 when FAILED carries a COMPLETED stage", () => {
     const event = toStatusEvent(
       snapshot({
-        processingStatus: SessionStatus.FAILED,
+        processingStatus: ProcessingStatus.FAILED,
         analysisStage: "COMPLETED",
         failureReason: "X",
       }),
@@ -140,9 +140,9 @@ describe("toStatusEvent", () => {
   it.for([
     snapshot({ analysisStage: "QUEUED" }),
     snapshot({ analysisStage: "ANALYZING_REPS", analysisStageProgress: 0.3 }),
-    snapshot({ processingStatus: SessionStatus.COMPLETED }),
+    snapshot({ processingStatus: ProcessingStatus.COMPLETED }),
     snapshot({
-      processingStatus: SessionStatus.FAILED,
+      processingStatus: ProcessingStatus.FAILED,
       failureReason: "LLM_ERROR",
     }),
   ])("produces an event that satisfies the shared schema (%#)", (snap) => {

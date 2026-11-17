@@ -17,20 +17,20 @@ export const EXERCISE_ROUTES = {
   byCode: (code: string) => `/api/exercises/${encodeURIComponent(code)}`,
 } as const;
 
-export const WORKOUT_ROUTES = {
-  list: "/api/workouts",
-  generate: "/api/workouts/generate",
-  detail: (id: number) => `/api/workouts/${id}`,
-  logs: (id: number) => `/api/workouts/${id}/logs`,
-  log: (id: number, logId: number) => `/api/workouts/${id}/logs/${logId}`,
-  recordedSets: (id: number) => `/api/workouts/${id}/recorded-sets`,
+export const WORKOUT_PLAN_ROUTES = {
+  list: "/api/workout-plans",
+  generate: "/api/workout-plans/generate",
+  detail: (id: number) => `/api/workout-plans/${id}`,
+  runs: (id: number) => `/api/workout-plans/${id}/runs`,
+  run: (id: number, runId: number) => `/api/workout-plans/${id}/runs/${runId}`,
+  recordedSets: (id: number) => `/api/workout-plans/${id}/recorded-sets`,
 } as const;
 
-export const SESSION_ROUTES = {
-  list: "/api/workout-sessions",
-  create: "/api/workout-sessions",
-  capture: (id: number) => `/api/sessions/${id}/capture`,
-  status: (id: number) => `/api/sessions/${id}/status`,
-  analysis: (id: number) => `/api/sessions/${id}/analysis`,
-  retry: (id: number) => `/api/sessions/${id}/analysis/retry`,
+export const RECORDED_SET_ROUTES = {
+  list: "/api/recorded-sets",
+  create: "/api/recorded-sets",
+  capture: (id: number) => `/api/recorded-sets/${id}/capture`,
+  status: (id: number) => `/api/recorded-sets/${id}/status`,
+  analysis: (id: number) => `/api/recorded-sets/${id}/analysis`,
+  retry: (id: number) => `/api/recorded-sets/${id}/analysis/retry`,
 } as const;

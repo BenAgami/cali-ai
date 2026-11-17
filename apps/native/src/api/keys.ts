@@ -4,20 +4,21 @@ export const userKeys = {
   byId: (id: string) => ["user", id] as const,
 };
 
-export const workoutKeys = {
-  all: ["workouts"] as const,
-  lists: () => ["workouts", "list"] as const,
-  detail: (id: number) => ["workouts", id] as const,
+export const workoutPlanKeys = {
+  all: ["workoutPlans"] as const,
+  lists: () => ["workoutPlans", "list"] as const,
+  detail: (id: number) => ["workoutPlans", id] as const,
 };
 
 export const analysisKeys = {
   all: ["analysis"] as const,
-  session: (sessionId: number) => ["analysis", "session", sessionId] as const,
-  /** A run key extends recordedSets(workoutId), so invalidating that key covers every run of the workout. */
-  recordedSets: (workoutId: number, runId?: number) =>
+  recordedSet: (recordedSetId: number) =>
+    ["analysis", "recorded set", recordedSetId] as const,
+  /** A run key extends recordedSets(workoutPlanId), so invalidating that key covers every run of the workout. */
+  recordedSets: (workoutPlanId: number, runId?: number) =>
     runId === undefined
-      ? (["analysis", "recordedSets", workoutId] as const)
-      : (["analysis", "recordedSets", workoutId, runId] as const),
+      ? (["analysis", "recordedSets", workoutPlanId] as const)
+      : (["analysis", "recordedSets", workoutPlanId, runId] as const),
 };
 
 export const exerciseKeys = {

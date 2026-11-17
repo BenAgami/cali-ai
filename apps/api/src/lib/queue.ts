@@ -9,7 +9,7 @@ export const ANALYSIS_MAINTENANCE_QUEUE_NAME = "analysis-maintenance";
 export const REAP_STUCK_JOB_NAME = "reap-stuck-analyses";
 
 export type AnalysisJobData = {
-  sessionId: number;
+  recordedSetId: number;
   captureId: number;
 };
 

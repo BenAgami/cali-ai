@@ -11,20 +11,20 @@ export type RecordedSetRun<T> = {
  * outside any run always come last, wherever their newest set falls.
  */
 export const groupRecordedSetsByRun = <
-  T extends { workoutLogId: number | null; performedAt: string },
+  T extends { workoutRunId: number | null; performedAt: string },
 >(
   items: T[],
 ): RecordedSetRun<T>[] => {
   const groups = new Map<number | null, RecordedSetRun<T>>();
   for (const item of items) {
-    const group = groups.get(item.workoutLogId);
+    const group = groups.get(item.workoutRunId);
     if (group) {
       group.items.push(item);
       // Items arrive newest first, so the last one seen is the run's first.
       group.firstPerformedAt = item.performedAt;
     } else {
-      groups.set(item.workoutLogId, {
-        runId: item.workoutLogId,
+      groups.set(item.workoutRunId, {
+        runId: item.workoutRunId,
         firstPerformedAt: item.performedAt,
         items: [item],
       });
