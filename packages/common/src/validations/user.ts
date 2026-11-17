@@ -27,7 +27,6 @@ export const updateProfileSchema = z
   .refine((obj) => Object.keys(obj).length > 0, {
     message: "At least one field required",
   });
-
 export type UpdateProfileValues = z.infer<typeof updateProfileSchema>;
 
 export const upsertGoalSchema = z.object({
@@ -36,7 +35,6 @@ export const upsertGoalSchema = z.object({
   targetValue: z.number().positive().optional(),
   targetUnit: z.string().trim().max(30).optional(),
 });
-
 export type UpsertGoalValues = z.infer<typeof upsertGoalSchema>;
 
 export const goalSchema = z.object({
@@ -45,7 +43,6 @@ export const goalSchema = z.object({
   targetValue: z.number().nullable(),
   targetUnit: z.string().nullable(),
 });
-
 export type Goal = z.infer<typeof goalSchema>;
 
 export const userProfileSchema = z.object({
@@ -60,5 +57,4 @@ export const userProfileSchema = z.object({
   aiConsentVersion: z.string().nullable(),
   aiConsentAt: z.string().nullable(),
 });
-
 export type UserProfile = z.infer<typeof userProfileSchema>;

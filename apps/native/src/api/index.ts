@@ -6,4 +6,4 @@ export {
   exerciseApi,
   sessionsApi,
 } from "./endpoints";
-export { userKeys, workoutKeys, exerciseKeys } from "./keys";
+export { userKeys, workoutKeys, exerciseKeys, analysisKeys } from "./keys";

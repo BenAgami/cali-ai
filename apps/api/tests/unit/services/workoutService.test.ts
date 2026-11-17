@@ -1,4 +1,5 @@
-import { getPrismaClient } from "@repo/db";
+import { getPrismaClient, SessionStatus } from "@repo/db";
+import { API_ERROR_CODES } from "@repo/common";
 
 import {
   NotFoundError,
@@ -21,6 +22,7 @@ const { WorkoutService } = await import("../../../src/services/workoutService");
 
 const USER_UUID = "uuid-1";
 const WORKOUT_ID = 5;
+const LOG_ID = 11;
 
 const exerciseInput = (overrides: Record<string, unknown> = {}) => ({
   exerciseId: 1,
@@ -76,10 +78,11 @@ describe("WorkoutService propagates getUserIdByUuid failures", () => {
     ],
     [
       "startWorkoutLog",
-      () =>
-        workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID, {
-          durationSecs: 300,
-        }),
+      () => workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID),
+    ],
+    [
+      "completeWorkoutLog",
+      () => workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID),
     ],
   ])("%s rejects an unknown user uuid", async ([_name, call]) => {
     prisma.user.findUnique.mockResolvedValue(null);
@@ -423,51 +426,129 @@ describe("WorkoutService.deleteWorkout", () => {
 });
 
 describe("WorkoutService.startWorkoutLog", () => {
+  const NOW = new Date("2026-11-12T10:00:00.000Z");
+  const RESUME_CUTOFF = new Date("2026-11-12T07:00:00.000Z");
+  const OPEN_RUN = { userId: 42, workoutId: WORKOUT_ID, completedAt: null };
+
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
     prisma.workout.findFirst.mockResolvedValue({ id: WORKOUT_ID });
-    prisma.workoutLog.create.mockResolvedValue({ id: 1 });
+    prisma.workoutLog.deleteMany.mockResolvedValue({ count: 0 });
+    prisma.workoutLog.findFirst.mockResolvedValue(null);
+    prisma.workoutLog.create.mockResolvedValue({ id: LOG_ID });
   });
 
-  it("rejects an unowned workout without creating a log", async () => {
-    prisma.workout.findFirst.mockResolvedValue(null);
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    await expect(
-      workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID, {
-        durationSecs: 300,
-      }),
-    ).rejects.toThrow(new NotFoundError("Workout not found"));
+  it("deletes open runs older than 3 hours whose sessions are all PENDING", async () => {
+    await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID);
 
+    expect(prisma.workoutLog.deleteMany).toHaveBeenCalledWith({
+      where: {
+        ...OPEN_RUN,
+        startedAt: { lt: RESUME_CUTOFF },
+        sessions: {
+          none: { processingStatus: { not: SessionStatus.PENDING } },
+        },
+      },
+    });
+  });
+
+  it("creates an in-progress log when no recent run is open", async () => {
+    const result = await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID);
+
+    expect(prisma.workoutLog.findFirst).toHaveBeenCalledWith({
+      where: { ...OPEN_RUN, startedAt: { gte: RESUME_CUTOFF } },
+      orderBy: { startedAt: "desc" },
+    });
+    expect(prisma.workoutLog.create).toHaveBeenCalledWith({
+      data: { userId: 42, workoutId: WORKOUT_ID },
+    });
+    expect(result).toEqual({ id: LOG_ID });
+  });
+
+  it("resumes the open run started within 3 hours", async () => {
+    prisma.workoutLog.findFirst.mockResolvedValue({ id: 77 });
+
+    const result = await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID);
+
+    expect(result).toEqual({ id: 77 });
     expect(prisma.workoutLog.create).not.toHaveBeenCalled();
   });
+});
 
-  it("rejects an unparsable completedAt", async () => {
+describe("WorkoutService.completeWorkoutLog", () => {
+  const STARTED_AT = new Date("2026-11-12T09:30:00.000Z");
+
+  beforeEach(() => {
+    prisma.user.findUnique.mockResolvedValue({ id: 42 });
+    prisma.workoutLog.findFirst.mockResolvedValue({
+      startedAt: STARTED_AT,
+      completedAt: null,
+    });
+    prisma.workoutLog.updateMany.mockResolvedValue({ count: 1 });
+    prisma.workoutLog.findUniqueOrThrow.mockResolvedValue({ id: LOG_ID });
+  });
+
+  it("looks the log up by owner, workout and id", async () => {
+    await workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID);
+
+    expect(prisma.workoutLog.findFirst).toHaveBeenCalledWith({
+      where: { id: LOG_ID, workoutId: WORKOUT_ID, userId: 42 },
+      select: { startedAt: true, completedAt: true },
+    });
+  });
+
+  it("stamps completedAt and derives the duration from startedAt", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-12T10:00:00.000Z"));
+    try {
+      await workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID);
+
+      expect(prisma.workoutLog.updateMany).toHaveBeenCalledWith({
+        where: { id: LOG_ID, completedAt: null },
+        data: {
+          completedAt: new Date("2026-11-12T10:00:00.000Z"),
+          durationSecs: 1800,
+        },
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rejects with a conflict when another request completed it first", async () => {
+    prisma.workoutLog.updateMany.mockResolvedValue({ count: 0 });
+
     await expect(
-      workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID, {
-        durationSecs: 300,
-        completedAt: "not-a-date",
-      }),
-    ).rejects.toThrow(new BadRequestError("Invalid completedAt value"));
+      workoutService.completeWorkoutLog(USER_UUID, WORKOUT_ID, LOG_ID),
+    ).rejects.toMatchObject({
+      message: "Workout log is already completed",
+      code: API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+    });
+    expect(prisma.workoutLog.findUniqueOrThrow).not.toHaveBeenCalled();
   });
 
-  it("passes a valid completedAt through as a Date", async () => {
-    await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID, {
-      durationSecs: 300,
-      completedAt: "2026-01-01T00:00:00.000Z",
+  it("rejects an already completed log with the completed-run code", async () => {
+    prisma.workoutLog.findFirst.mockResolvedValue({
+      startedAt: STARTED_AT,
+      completedAt: new Date("2026-11-12T09:45:00.000Z"),
     });
 
-    expect(prisma.workoutLog.create.mock.calls[0][0].data.completedAt).toEqual(
-      new Date("2026-01-01T00:00:00.000Z"),
+    const result = workoutService.completeWorkoutLog(
+      USER_UUID,
+      WORKOUT_ID,
+      LOG_ID,
     );
-  });
 
-  it("omits the completedAt key entirely when not supplied", async () => {
-    await workoutService.startWorkoutLog(USER_UUID, WORKOUT_ID, {
-      durationSecs: 300,
+    await expect(result).rejects.toBeInstanceOf(ConflictError);
+    await expect(result).rejects.toMatchObject({
+      code: API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
     });
-
-    expect(prisma.workoutLog.create.mock.calls[0][0].data).not.toHaveProperty(
-      "completedAt",
-    );
+    expect(prisma.workoutLog.updateMany).not.toHaveBeenCalled();
   });
 });

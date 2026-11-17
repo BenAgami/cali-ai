@@ -1,6 +1,13 @@
 import { getPrismaClient, SessionStatus } from "@repo/db";
 
-import { ConflictError, NotFoundError } from "../../../src/errors";
+import { API_ERROR_CODES } from "@repo/common";
+
+import { env } from "../../../src/config/env";
+import {
+  ConflictError,
+  NotFoundError,
+  TooManyRequestsError,
+} from "../../../src/errors";
 
 import {
   asPrismaClient,
@@ -29,6 +36,7 @@ const { logger } = await import("../../../src/lib/logger");
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const JOB = "job-1";
+const USER_ID = 42;
 
 const capture = {
   keypoints: new Uint8Array([1, 2, 3]),
@@ -85,9 +93,10 @@ describe("AnalysisStateService.findOwnedSession", () => {
     prisma.user.findUnique.mockResolvedValue({ id: 42 });
     prisma.workoutSession.findFirst.mockResolvedValue(snapshot());
 
-    await expect(service.findOwnedSession("uuid-1", 5)).resolves.toEqual(
-      snapshot(),
-    );
+    await expect(service.findOwnedSession("uuid-1", 5)).resolves.toEqual({
+      ...snapshot(),
+      userId: 42,
+    });
     expect(prisma.workoutSession.findFirst).toHaveBeenCalledWith({
       where: { id: 5, userId: 42 },
       select: {
@@ -112,14 +121,52 @@ describe("AnalysisStateService.findOwnedSession", () => {
 });
 
 describe("AnalysisStateService.startRunWithCapture", () => {
+  beforeEach(() => {
+    prisma.poseCapture.count.mockResolvedValue(0);
+  });
+
+  it("locks the user before counting the last 24 hours of captures", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.poseCapture.create.mockResolvedValue({ id: 9 });
+    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+
+    await service.startRunWithCapture(5, capture, JOB, USER_ID);
+
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.poseCapture.count.mock.invocationCallOrder[0],
+    );
+    expect(prisma.poseCapture.count).toHaveBeenCalledWith({
+      where: {
+        session: { userId: USER_ID },
+        createdAt: { gte: new Date("2026-10-21T12:00:00Z") },
+      },
+    });
+  });
+
+  it("rejects at the daily cap and writes and publishes nothing", async () => {
+    prisma.poseCapture.count.mockResolvedValue(env.formAnalysis.dailyCap);
+
+    const error: unknown = await service
+      .startRunWithCapture(5, capture, JOB, USER_ID)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(TooManyRequestsError);
+    expect((error as TooManyRequestsError).code).toBe(
+      API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
+    );
+    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.poseCapture.create).not.toHaveBeenCalled();
+    expect(publishAnalysisEvent).not.toHaveBeenCalled();
+  });
+
   it("guards on PENDING, then stores the capture and publishes QUEUED", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockResolvedValue({ id: 9 });
     prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
 
-    await expect(service.startRunWithCapture(5, capture, JOB)).resolves.toEqual(
-      { captureId: 9 },
-    );
+    await expect(
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
+    ).resolves.toEqual({ captureId: 9 });
 
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: { id: 5, processingStatus: SessionStatus.PENDING },
@@ -137,7 +184,9 @@ describe("AnalysisStateService.startRunWithCapture", () => {
   it("throws ConflictError and does not create a capture when the PENDING guard matches nothing", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
 
-    await expect(service.startRunWithCapture(5, capture, JOB)).rejects.toThrow(
+    await expect(
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
+    ).rejects.toThrow(
       new ConflictError("Analysis already started for this session"),
     );
     expect(prisma.poseCapture.create).not.toHaveBeenCalled();
@@ -149,7 +198,7 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     prisma.poseCapture.create.mockRejectedValue(prismaError("P2002"));
 
     await expect(
-      service.startRunWithCapture(5, capture, JOB),
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
     ).rejects.toBeInstanceOf(ConflictError);
   });
 
@@ -158,17 +207,22 @@ describe("AnalysisStateService.startRunWithCapture", () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.poseCapture.create.mockRejectedValue(boom);
 
-    await expect(service.startRunWithCapture(5, capture, JOB)).rejects.toBe(
-      boom,
-    );
+    await expect(
+      service.startRunWithCapture(5, capture, JOB, USER_ID),
+    ).rejects.toBe(boom);
   });
 });
 
 describe("AnalysisStateService.restartRun", () => {
+  beforeEach(() => {
+    prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
+    prisma.analysisRetry.count.mockResolvedValue(0);
+  });
+
   it("requires a stored capture", async () => {
     prisma.poseCapture.findFirst.mockResolvedValue(null);
 
-    await expect(service.restartRun(5, JOB)).rejects.toThrow(
+    await expect(service.restartRun(5, JOB, USER_ID)).rejects.toThrow(
       new ConflictError("No stored capture to retry for this session"),
     );
     expect(prisma.poseCapture.findFirst).toHaveBeenCalledWith({
@@ -178,25 +232,67 @@ describe("AnalysisStateService.restartRun", () => {
     expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
   });
 
-  it("rejects when the session is not FAILED", async () => {
-    prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
-    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
-
-    await expect(service.restartRun(5, JOB)).rejects.toThrow(
-      new ConflictError("Only failed analyses can be retried"),
-    );
-  });
-
-  it("resets the run from FAILED and publishes", async () => {
-    prisma.poseCapture.findFirst.mockResolvedValue({ id: 9 });
+  it("locks the user before counting the last 24 hours of retries", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
 
-    await expect(service.restartRun(5, JOB)).resolves.toEqual({ captureId: 9 });
+    await service.restartRun(5, JOB, USER_ID);
+
+    expect(prisma.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.analysisRetry.count.mock.invocationCallOrder[0],
+    );
+    expect(prisma.analysisRetry.count).toHaveBeenCalledWith({
+      where: {
+        session: { userId: USER_ID },
+        createdAt: { gte: new Date("2026-10-21T12:00:00Z") },
+      },
+    });
+  });
+
+  it("rejects at the retry cap and writes and publishes nothing", async () => {
+    prisma.analysisRetry.count.mockResolvedValue(
+      env.formAnalysis.dailyRetryCap,
+    );
+
+    const error: unknown = await service
+      .restartRun(5, JOB, USER_ID)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(TooManyRequestsError);
+    expect((error as TooManyRequestsError).code).toBe(
+      API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED,
+    );
+    expect(prisma.workoutSession.updateMany).not.toHaveBeenCalled();
+    expect(prisma.analysisRetry.create).not.toHaveBeenCalled();
+    expect(publishAnalysisEvent).not.toHaveBeenCalled();
+  });
+
+  it("rejects when the session is not FAILED and records no retry", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(service.restartRun(5, JOB, USER_ID)).rejects.toThrow(
+      new ConflictError("Only failed analyses can be retried"),
+    );
+    expect(prisma.analysisRetry.create).not.toHaveBeenCalled();
+  });
+
+  it("resets the run from FAILED, records the retry and publishes", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    prisma.workoutSession.findUnique.mockResolvedValue(snapshot());
+
+    await expect(service.restartRun(5, JOB, USER_ID)).resolves.toEqual({
+      captureId: 9,
+    });
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: { id: 5, processingStatus: SessionStatus.FAILED },
       data: RUN_RESET,
     });
+    expect(prisma.analysisRetry.create).toHaveBeenCalledWith({
+      data: { sessionId: 5 },
+    });
+    expect(
+      prisma.workoutSession.updateMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.analysisRetry.create.mock.invocationCallOrder[0]);
     expect(publishAnalysisEvent).toHaveBeenCalledTimes(1);
   });
 });
@@ -273,14 +369,18 @@ describe("AnalysisStateService.advanceStage", () => {
   });
 });
 
-describe("AnalysisStateService.completeRun", () => {
-  it("completes under the job guard", async () => {
+describe("AnalysisStateService.completeRunWithResult", () => {
+  it("completes under the job guard, writes after the guard, then publishes", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.workoutSession.findUnique.mockResolvedValue(
       snapshot({ processingStatus: SessionStatus.COMPLETED }),
     );
+    const write = vi.fn().mockResolvedValue(undefined);
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(service.completeRunWithResult(5, JOB, write)).resolves.toBe(
+      true,
+    );
+
     expect(prisma.workoutSession.updateMany).toHaveBeenCalledWith({
       where: {
         id: 5,
@@ -295,15 +395,33 @@ describe("AnalysisStateService.completeRun", () => {
         failureReason: null,
       },
     });
+    expect(write).toHaveBeenCalledWith(prisma);
+    expect(
+      prisma.workoutSession.updateMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(write.mock.invocationCallOrder[0]);
     expect(publishAnalysisEvent).toHaveBeenCalledWith(
       expect.objectContaining({ status: "COMPLETED", progress_percent: 100 }),
     );
   });
 
-  it("discards a late write", async () => {
+  it("discards a late write without writing or publishing", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 0 });
+    const write = vi.fn();
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(false);
+    await expect(service.completeRunWithResult(5, JOB, write)).resolves.toBe(
+      false,
+    );
+    expect(write).not.toHaveBeenCalled();
+    expect(publishAnalysisEvent).not.toHaveBeenCalled();
+  });
+
+  it("rethrows a failing write and does not publish", async () => {
+    prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
+    const boom = new Error("write failed");
+
+    await expect(
+      service.completeRunWithResult(5, JOB, () => Promise.reject(boom)),
+    ).rejects.toBe(boom);
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });
 });
@@ -402,6 +520,28 @@ describe("AnalysisStateService reads", () => {
     });
   });
 
+  it("getAnalysisJobContext flattens the job context, or null when missing", async () => {
+    prisma.workoutSession.findUnique.mockResolvedValueOnce({
+      userId: 3,
+      exercise: { code: "push_up", displayName: "Push-up" },
+    });
+    await expect(service.getAnalysisJobContext(5)).resolves.toEqual({
+      userId: 3,
+      exerciseCode: "push_up",
+      exerciseDisplayName: "Push-up",
+    });
+    expect(prisma.workoutSession.findUnique).toHaveBeenCalledWith({
+      where: { id: 5 },
+      select: {
+        userId: true,
+        exercise: { select: { code: true, displayName: true } },
+      },
+    });
+
+    prisma.workoutSession.findUnique.mockResolvedValueOnce(null);
+    await expect(service.getAnalysisJobContext(5)).resolves.toBeNull();
+  });
+
   it("getStatusEvent derives the event, or null for a missing session", async () => {
     prisma.workoutSession.findUnique.mockResolvedValueOnce(
       snapshot({ analysisStage: "WRITING_FEEDBACK" }),
@@ -425,7 +565,9 @@ describe("AnalysisStateService publishing", () => {
     );
     vi.mocked(publishAnalysisEvent).mockRejectedValue(new Error("redis down"));
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(5, JOB, async () => {}),
+    ).resolves.toBe(true);
     await vi.advanceTimersByTimeAsync(0);
 
     expect(logger.warn).toHaveBeenCalledWith(
@@ -441,14 +583,18 @@ describe("AnalysisStateService publishing", () => {
     );
     vi.mocked(publishAnalysisEvent).mockReturnValue(new Promise(() => {}));
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(5, JOB, async () => {}),
+    ).resolves.toBe(true);
   });
 
   it("logs a failing snapshot read and still succeeds", async () => {
     prisma.workoutSession.updateMany.mockResolvedValue({ count: 1 });
     prisma.workoutSession.findUnique.mockRejectedValue(new Error("db"));
 
-    await expect(service.completeRun(5, JOB)).resolves.toBe(true);
+    await expect(
+      service.completeRunWithResult(5, JOB, async () => {}),
+    ).resolves.toBe(true);
     expect(logger.warn).toHaveBeenCalled();
     expect(publishAnalysisEvent).not.toHaveBeenCalled();
   });

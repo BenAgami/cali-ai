@@ -9,7 +9,7 @@ type PipelinePhase = "idle" | "creating" | "uploading" | "watching" | "error";
 const EXERCISE_CODE = "push_up";
 const SYNTHETIC_FPS = 15;
 const SYNTHETIC_FRAME_COUNT = 60;
-const SYNTHETIC_KEYPOINTS = 17;
+const SYNTHETIC_KEYPOINTS = 33;
 const SYNTHETIC_DURATION_SEC = 4;
 const FALLBACK_ERROR = "Something went wrong. Please try again.";
 
@@ -47,7 +47,7 @@ export const usePipelineCheck = () => {
     setSessionId(null);
     try {
       setPhase("creating");
-      const session = await sessionsApi.create(EXERCISE_CODE);
+      const session = await sessionsApi.create({ exerciseCode: EXERCISE_CODE });
       setPhase("uploading");
       const accepted = await sessionsApi.submitCapture(
         session.id,

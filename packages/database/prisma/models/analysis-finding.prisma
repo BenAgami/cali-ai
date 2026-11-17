@@ -13,9 +13,10 @@ model AnalysisFinding {
   correction  String?
   bodyPart    String? @map("body_part") @db.VarChar(60)
 
-  startSec  Decimal? @map("start_sec") @db.Decimal(6, 2)
-  endSec    Decimal? @map("end_sec") @db.Decimal(6, 2)
-  sortOrder Int      @default(0) @map("sort_order") @db.SmallInt
+  startSec   Decimal? @map("start_sec") @db.Decimal(6, 2)
+  endSec     Decimal? @map("end_sec") @db.Decimal(6, 2)
+  sortOrder  Int      @default(0) @map("sort_order") @db.SmallInt
+  repNumbers Int[]    @default([]) @map("rep_numbers")
 
   createdAt DateTime @default(now()) @map("created_at")
 

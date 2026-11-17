@@ -1,8 +1,7 @@
 import type { Application } from "express";
-import { randomUUID } from "crypto";
 import { StatusCodes } from "http-status-codes";
 
-import type { getPrismaClient } from "@repo/db";
+import { ExerciseType, SessionStatus, type getPrismaClient } from "@repo/db";
 
 import {
   setupIntegrationTest,
@@ -14,6 +13,7 @@ import {
   createWorkoutSession,
 } from "../helpers/requestSender/workoutSessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { WorkoutSessionBuilder } from "../builders/workoutSessionBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
@@ -22,8 +22,29 @@ describe("GET /api/workout-sessions", () => {
   let app: Application;
   let prisma: ReturnType<typeof getPrismaClient>;
 
+  const registerReadyUser = async () => {
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
+    return { token: res.body.data.token as string, userId: user.id };
+  };
+
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
+    for (const [code, displayName] of [
+      ["push_up", "Push Up"],
+      ["squat", "Squat"],
+    ]) {
+      await createExercise(prisma, {
+        code,
+        displayName,
+        exerciseType: ExerciseType.DYNAMIC,
+      });
+    }
   });
 
   afterAll(async () => {
@@ -31,11 +52,9 @@ describe("GET /api/workout-sessions", () => {
   });
 
   it("should list workout sessions with pagination", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+    const { token } = await registerReadyUser();
 
-    const exercise = await createExercise(prisma);
+    const exercise = { code: "push_up" };
     const now = new Date();
 
     await createWorkoutSession(
@@ -82,11 +101,9 @@ describe("GET /api/workout-sessions", () => {
   });
 
   it("should return remaining sessions when using offset", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+    const { token } = await registerReadyUser();
 
-    const exercise = await createExercise(prisma);
+    const exercise = { code: "push_up" };
     const now = new Date();
 
     await createWorkoutSession(
@@ -126,14 +143,12 @@ describe("GET /api/workout-sessions", () => {
   });
 
   it("should filter sessions by exerciseCode", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+    const { token } = await registerReadyUser();
 
-    const exerciseCodeA = `push_up_${randomUUID().split("-")[0]}`;
-    const exerciseCodeB = `squat_${randomUUID().split("-")[0]}`;
-    const exerciseA = await createExercise(prisma, { code: exerciseCodeA });
-    const exerciseB = await createExercise(prisma, { code: exerciseCodeB });
+    const exerciseCodeA = "push_up";
+    const exerciseCodeB = "squat";
+    const exerciseA = { code: exerciseCodeA };
+    const exerciseB = { code: exerciseCodeB };
 
     await createWorkoutSession(
       app,
@@ -155,6 +170,84 @@ describe("GET /api/workout-sessions", () => {
     expect(response.body.data.items[0].exercise.code).toBe(exerciseCodeA);
   });
 
+  it("should filter by processingStatus and expose workout link, job id and no formScore", async () => {
+    const { token, userId } = await registerReadyUser();
+    const other = await registerReadyUser();
+    const exercise = await prisma.exercise.findUniqueOrThrow({
+      where: { code: "push_up" },
+    });
+    const workout = await prisma.workout.create({
+      data: { userId, name: "W" },
+    });
+
+    const processing = await prisma.workoutSession.create({
+      data: {
+        userId,
+        exerciseId: exercise.id,
+        workoutId: workout.id,
+        setNumber: 1,
+        processingStatus: SessionStatus.PROCESSING,
+        bullmqJobId: "analysis-1",
+      },
+    });
+    const completed = await prisma.workoutSession.create({
+      data: {
+        userId,
+        exerciseId: exercise.id,
+        processingStatus: SessionStatus.COMPLETED,
+      },
+    });
+    await prisma.workoutSession.create({
+      data: {
+        userId: other.userId,
+        exerciseId: exercise.id,
+        processingStatus: SessionStatus.PROCESSING,
+      },
+    });
+    await prisma.analysisResult.create({
+      data: {
+        sessionId: completed.id,
+        outcome: "SCORED",
+        formScore: 88,
+        summaryFeedback: "Nice",
+      },
+    });
+
+    const filtered = await listWorkoutSessions(app, token, {
+      processingStatus: "PROCESSING",
+    });
+
+    expect(filtered.status).toBe(StatusCodes.OK);
+    expect(filtered.body.data.items).toHaveLength(1);
+    expect(filtered.body.data.items[0]).toMatchObject({
+      id: processing.id,
+      workoutId: workout.id,
+      setNumber: 1,
+      bullmqJobId: "analysis-1",
+      analysisResult: null,
+    });
+
+    const all = await listWorkoutSessions(app, token);
+    const completedItem = all.body.data.items.find(
+      (item: { id: number }) => item.id === completed.id,
+    );
+    expect(completedItem.analysisResult).toMatchObject({
+      outcome: "SCORED",
+      summaryFeedback: "Nice",
+    });
+    expect(JSON.stringify(all.body)).not.toContain("formScore");
+  });
+
+  it("should return 400 for an invalid processingStatus", async () => {
+    const { token } = await registerReadyUser();
+
+    const response = await listWorkoutSessions(app, token, {
+      processingStatus: "BOGUS",
+    });
+
+    expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+  });
+
   it("should return 401 if no token is provided", async () => {
     const response = await listWorkoutSessions(app, undefined);
 
@@ -165,9 +258,7 @@ describe("GET /api/workout-sessions", () => {
   });
 
   it("should return 400 for invalid limit query", async () => {
-    const registerUserDto = new RegisterUserBuilder().build();
-    const registerRes = await registerUser(app, registerUserDto);
-    const token = registerRes.body.data.token;
+    const { token } = await registerReadyUser();
 
     const response = await listWorkoutSessions(app, token, {
       limit: 0,

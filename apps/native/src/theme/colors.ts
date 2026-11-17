@@ -18,6 +18,5 @@ export const themes = {
     surface: baseColors.grayDark,
   },
 } as const;
-
 export type ThemeNames = keyof typeof themes;
 export type ThemeColors = (typeof themes)[keyof typeof themes];

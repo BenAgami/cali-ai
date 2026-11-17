@@ -5,6 +5,7 @@ import type { PoseCapturePayload } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
 import captureService from "../services/captureService";
+import analysisResultQueryService from "../services/analysisResultQueryService";
 import analysisStreamService from "../services/analysisStreamService";
 import { openSseStream } from "../lib/sse";
 
@@ -45,6 +46,26 @@ export const retryAnalysis = async (req: Request, res: Response) => {
   res.status(StatusCodes.ACCEPTED).json({
     success: true,
     message: "Analysis re-queued",
+    data,
+  });
+};
+
+/**
+ * Get the analysis result for a completed session (no raw score)
+ * @route GET /api/sessions/:id/analysis
+ */
+export const getSessionAnalysis = async (req: Request, res: Response) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const data = await analysisResultQueryService.getSessionAnalysis(
+    userUuid,
+    Number(req.params.id),
+  );
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "Analysis retrieved",
     data,
   });
 };

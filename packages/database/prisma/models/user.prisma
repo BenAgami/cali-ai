@@ -19,13 +19,13 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  bodyMetrics     BodyMetric[]
-  goals           UserGoal[]
-  workoutSessions WorkoutSession[]
-  userMilestones  UserMilestone[]
-  workouts        Workout[]
-  workoutLogs     WorkoutLog[]
-  refreshTokens   RefreshToken[]
+  bodyMetrics        BodyMetric[]
+  goals              UserGoal[]
+  workoutSessions    WorkoutSession[]
+  userMilestones     UserMilestone[]
+  workouts           Workout[]
+  workoutLogs        WorkoutLog[]
+  refreshTokens      RefreshToken[]
   workoutGenerations WorkoutGeneration[]
 
   @@map("users")

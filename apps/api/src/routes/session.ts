@@ -9,6 +9,7 @@ import gunzipCaptureBody from "../middlewares/gunzipCaptureBody";
 import { authenticateToken } from "../middlewares/auth";
 
 import {
+  getSessionAnalysis,
   retryAnalysis,
   streamAnalysisStatus,
   submitCapture,
@@ -49,6 +50,17 @@ router.post(
   authenticateToken,
   validateSchema(z.object({ params: sessionIdParamsSchema })),
   retryAnalysis,
+);
+
+/**
+ * GET /:id/analysis
+ * Completed analysis result (band, dimensions, feedback) or untrackable advice
+ */
+router.get(
+  "/:id/analysis",
+  authenticateToken,
+  validateSchema(z.object({ params: sessionIdParamsSchema })),
+  getSessionAnalysis,
 );
 
 /**

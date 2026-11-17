@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { AnthropicProvider } from "../../../../src/lib/llm/anthropicProvider";
 import {
+  type FormFeedbackRequest,
   LlmError,
   type WorkoutPlanRequest,
 } from "../../../../src/lib/llm/types";
@@ -141,5 +142,115 @@ describe("AnthropicProvider.generateWorkoutPlan", () => {
       code,
     );
     expect(error.cause).toBe(cause);
+  });
+});
+
+describe("AnthropicProvider.generateFormFeedback", () => {
+  const feedback = {
+    summary: "Solid set.",
+    positives: [{ text: "Great depth", repNumbers: [1] }],
+    corrections: [],
+  };
+  const makeFormRequest = (
+    allowedTags: string[] = [],
+  ): FormFeedbackRequest => ({
+    model: "claude-sonnet-5-5",
+    effort: "low",
+    maxTokens: 1200,
+    timeoutMs: 4000,
+    signal: new AbortController().signal,
+    system: "sys",
+    userPrompt: "usr",
+    allowedTags,
+  });
+  const formMessage = (overrides: Record<string, unknown> = {}) =>
+    okMessage({ parsed_output: feedback, ...overrides });
+
+  const tagSchema = (parse: ReturnType<typeof vi.fn>) => {
+    const [params] = parse.mock.calls[0] as [
+      { output_config: { format: { schema: unknown } } },
+    ];
+    return JSON.stringify(params.output_config.format.schema);
+  };
+
+  it("returns feedback, model and usage", async () => {
+    const { parse, provider } = setup();
+    parse.mockResolvedValue(formMessage());
+
+    await expect(
+      provider.generateFormFeedback(makeFormRequest()),
+    ).resolves.toEqual({
+      feedback,
+      model: "claude-haiku-5-5",
+      usage: { inputTokens: 10, outputTokens: 20 },
+    });
+  });
+
+  it("passes signal, timeout, maxRetries 0 and effort", async () => {
+    const { parse, provider } = setup();
+    parse.mockResolvedValue(formMessage());
+    const req = makeFormRequest();
+
+    await provider.generateFormFeedback(req);
+
+    const [params, options] = parse.mock.calls[0] as [
+      Record<string, unknown>,
+      Record<string, unknown>,
+    ];
+    expect(params).toMatchObject({
+      max_tokens: 1200,
+      output_config: { effort: "low" },
+    });
+    expect(options).toEqual({
+      signal: req.signal,
+      timeout: 4000,
+      maxRetries: 0,
+    });
+  });
+
+  it("restricts errorTag to an enum of the allowed tags", async () => {
+    const { parse, provider } = setup();
+    parse.mockResolvedValue(formMessage());
+
+    await provider.generateFormFeedback(makeFormRequest(["PU_HIP_SAG"]));
+
+    expect(tagSchema(parse)).toContain('enum: [\\"PU_HIP_SAG\\"]');
+  });
+
+  it("uses a plain string errorTag when there are no allowed tags", async () => {
+    const { parse, provider } = setup();
+    parse.mockResolvedValue(formMessage());
+
+    await provider.generateFormFeedback(makeFormRequest([]));
+
+    expect(tagSchema(parse)).not.toContain("enum:");
+  });
+
+  it.for([
+    ["a refusal", { stop_reason: "refusal" }, "REFUSAL"],
+    ["max_tokens", { stop_reason: "max_tokens" }, "INVALID_OUTPUT"],
+    ["null parsed_output", { parsed_output: null }, "INVALID_OUTPUT"],
+  ] as const)("maps %s to %s", async ([, overrides, code]) => {
+    const { parse, provider } = setup();
+    parse.mockResolvedValue(formMessage(overrides));
+
+    await expectCode(provider.generateFormFeedback(makeFormRequest()), code);
+  });
+
+  it("maps an abort to TIMEOUT and a rate limit to RATE_LIMITED", async () => {
+    const { parse, provider } = setup();
+    parse.mockRejectedValueOnce(new Anthropic.APIUserAbortError());
+    await expectCode(
+      provider.generateFormFeedback(makeFormRequest()),
+      "TIMEOUT",
+    );
+
+    parse.mockRejectedValueOnce(
+      new Anthropic.RateLimitError(429, {}, "slow", new Headers()),
+    );
+    await expectCode(
+      provider.generateFormFeedback(makeFormRequest()),
+      "RATE_LIMITED",
+    );
   });
 });

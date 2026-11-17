@@ -169,16 +169,16 @@ describe("UserService.updateProfile", () => {
 describe("UserService.recordAiConsent", () => {
   it("stamps the consent time and version for the user", async () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-11-04T10:00:00.000Z"));
+    vi.setSystemTime(new Date("2026-11-08T10:00:00.000Z"));
     prisma.user.update.mockResolvedValue({});
 
-    await userService.recordAiConsent("uuid-1", { version: "2026-11-04" });
+    await userService.recordAiConsent("uuid-1", { version: "2026-11-08" });
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { uuid: "uuid-1" },
       data: {
-        aiConsentAt: new Date("2026-11-04T10:00:00.000Z"),
-        aiConsentVersion: "2026-11-04",
+        aiConsentAt: new Date("2026-11-08T10:00:00.000Z"),
+        aiConsentVersion: "2026-11-08",
       },
       select: { aiConsentAt: true, aiConsentVersion: true },
     });

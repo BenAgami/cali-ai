@@ -1,9 +1,9 @@
-import { getPrismaClient } from "@repo/db";
-import type {
-  CreateWorkoutValues,
-  UpdateWorkoutValues,
-  WorkoutLogValues,
-  WorkoutExerciseInput,
+import { getPrismaClient, SessionStatus } from "@repo/db";
+import {
+  API_ERROR_CODES,
+  type CreateWorkoutValues,
+  type UpdateWorkoutValues,
+  type WorkoutExerciseInput,
 } from "@repo/common";
 
 import { NotFoundError, BadRequestError, ConflictError } from "../errors";
@@ -13,8 +13,12 @@ import {
 } from "../utils/prismaErrorCodes";
 
 import { lookAheadTake, paginate } from "../utils/pagination";
-import { parseOptionalDate } from "../utils/parseDate";
 import { getUserIdByUuid } from "../utils/getUserIdByUuid";
+
+const SECOND_MS = 1000;
+/** A Start within this long of an unfinished run resumes it. */
+const RUN_RESUME_WINDOW_MS = 3 * 60 * 60 * SECOND_MS;
+const WORKOUT_LOG_COMPLETED_MESSAGE = "Workout log is already completed";
 
 type ListWorkoutsInput = {
   userUuid: string;
@@ -199,11 +203,14 @@ export class WorkoutService {
     await this.prisma.workout.delete({ where: { id: workoutId } });
   }
 
-  async startWorkoutLog(
-    userUuid: string,
-    workoutId: number,
-    data: WorkoutLogValues,
-  ) {
+  /**
+   * Starting a plan opens a run that stays in progress until completed. A run
+   * left open within the resume window (the user backed out) is resumed rather
+   * than duplicated; an older open run with no recorded sets holds nothing, so
+   * it is deleted instead of piling up. A PENDING session has no accepted
+   * capture, so it does not count as a recorded set.
+   */
+  async startWorkoutLog(userUuid: string, workoutId: number) {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
     const workout = await this.prisma.workout.findFirst({
       where: { id: workoutId, userId },
@@ -211,16 +218,76 @@ export class WorkoutService {
     });
     if (!workout) throw new NotFoundError("Workout not found");
 
-    const completedAt = parseOptionalDate(data.completedAt, "completedAt");
-
-    return this.prisma.workoutLog.create({
-      data: {
-        userId,
-        workoutId,
-        durationSecs: data.durationSecs,
-        ...(completedAt ? { completedAt } : {}),
+    const resumeCutoff = new Date(Date.now() - RUN_RESUME_WINDOW_MS);
+    const openRun = { userId, workoutId, completedAt: null };
+    await this.prisma.workoutLog.deleteMany({
+      where: {
+        ...openRun,
+        startedAt: { lt: resumeCutoff },
+        sessions: {
+          none: { processingStatus: { not: SessionStatus.PENDING } },
+        },
       },
     });
+    const resumable = await this.prisma.workoutLog.findFirst({
+      where: { ...openRun, startedAt: { gte: resumeCutoff } },
+      orderBy: { startedAt: "desc" },
+    });
+
+    return (
+      resumable ??
+      this.prisma.workoutLog.create({ data: { userId, workoutId } })
+    );
+  }
+
+  /** The run must be the user's, for that workout, and not yet completed. */
+  async assertOpenWorkoutLog(
+    userId: number,
+    workoutId: number,
+    logId: number,
+  ): Promise<{ startedAt: Date }> {
+    const log = await this.prisma.workoutLog.findFirst({
+      where: { id: logId, workoutId, userId },
+      select: { startedAt: true, completedAt: true },
+    });
+    if (!log) throw new NotFoundError("Workout log not found");
+    if (log.completedAt !== null) {
+      throw new ConflictError(
+        WORKOUT_LOG_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+      );
+    }
+    return { startedAt: log.startedAt };
+  }
+
+  /** The duration is the server's startedAt to completedAt, not a client clock. */
+  async completeWorkoutLog(userUuid: string, workoutId: number, logId: number) {
+    const userId = await getUserIdByUuid(this.prisma, userUuid);
+    const { startedAt } = await this.assertOpenWorkoutLog(
+      userId,
+      workoutId,
+      logId,
+    );
+
+    const completedAt = new Date();
+    const durationSecs = Math.max(
+      0,
+      Math.round((completedAt.getTime() - startedAt.getTime()) / SECOND_MS),
+    );
+
+    // Guarded on completedAt so a concurrent request cannot complete it twice.
+    const { count } = await this.prisma.workoutLog.updateMany({
+      where: { id: logId, completedAt: null },
+      data: { completedAt, durationSecs },
+    });
+    if (count === 0) {
+      throw new ConflictError(
+        WORKOUT_LOG_COMPLETED_MESSAGE,
+        API_ERROR_CODES.WORKOUT_LOG_COMPLETED,
+      );
+    }
+
+    return this.prisma.workoutLog.findUniqueOrThrow({ where: { id: logId } });
   }
 }
 

@@ -15,6 +15,7 @@
     "build": "tsc --noEmit && tsup",
     "lint": "eslint .",
     "eval:workouts": "tsx scripts/workout-eval/run.ts",
+    "calibrate:form": "tsx scripts/form-calibration/run.ts",
     "clean": "rm -rf dist"
   },
   "dependencies": {

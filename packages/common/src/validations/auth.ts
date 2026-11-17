@@ -26,12 +26,14 @@ export const loginSchema = z.object({
   email: emailSchema,
   password: strongPasswordSchema,
 });
+export type LoginValues = z.infer<typeof loginSchema>;
 
 export const registerSchema = z.object({
   name: fullNameSchema,
   email: emailSchema,
   password: strongPasswordSchema,
 });
+export type RegisterValues = z.infer<typeof registerSchema>;
 
 const refreshTokenField = z
   .string()
@@ -41,12 +43,9 @@ const refreshTokenField = z
 export const refreshTokenSchema = z.object({
   refreshToken: refreshTokenField,
 });
+export type RefreshTokenValues = z.infer<typeof refreshTokenSchema>;
 
 export const logoutSchema = z.object({
   refreshToken: refreshTokenField,
 });
-
-export type LoginValues = z.infer<typeof loginSchema>;
-export type RegisterValues = z.infer<typeof registerSchema>;
-export type RefreshTokenValues = z.infer<typeof refreshTokenSchema>;
 export type LogoutValues = z.infer<typeof logoutSchema>;

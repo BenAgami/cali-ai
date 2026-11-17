@@ -3,6 +3,8 @@ import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
 import {
+  type FormFeedbackRequest,
+  type FormFeedbackResult,
   LlmError,
   type LlmProvider,
   type WorkoutPlanRequest,
@@ -24,6 +26,41 @@ const buildPlanOutputSchema = (codes: [string, ...string[]]) =>
       }),
     ),
   });
+
+const buildFormFeedbackOutputSchema = (allowedTags: string[]) =>
+  z.object({
+    summary: z.string(),
+    positives: z.array(
+      z.object({ text: z.string(), repNumbers: z.array(z.number().int()) }),
+    ),
+    corrections: z.array(
+      z.object({
+        errorTag:
+          allowedTags.length > 0
+            ? z.enum(allowedTags as [string, ...string[]])
+            : z.string(),
+        repNumbers: z.array(z.number().int()),
+        cue: z.string(),
+        detail: z.string(),
+      }),
+    ),
+  });
+
+const requireParsedOutput = <T>(message: {
+  stop_reason: string | null;
+  parsed_output: T | null;
+}): T => {
+  if (message.stop_reason === "refusal") {
+    throw new LlmError("REFUSAL", "Model refused the request");
+  }
+  if (message.stop_reason === "max_tokens") {
+    throw new LlmError("INVALID_OUTPUT", "Model output was truncated");
+  }
+  if (!message.parsed_output) {
+    throw new LlmError("INVALID_OUTPUT", "Model returned no parsed output");
+  }
+  return message.parsed_output;
+};
 
 const mapAnthropicError = (error: unknown): LlmError => {
   if (error instanceof Anthropic.RateLimitError) {
@@ -75,18 +112,46 @@ export class AnthropicProvider implements LlmProvider {
       throw mapAnthropicError(error);
     }
 
-    if (message.stop_reason === "refusal") {
-      throw new LlmError("REFUSAL", "Model refused the request");
-    }
-    if (message.stop_reason === "max_tokens") {
-      throw new LlmError("INVALID_OUTPUT", "Model output was truncated");
-    }
-    if (!message.parsed_output) {
-      throw new LlmError("INVALID_OUTPUT", "Model returned no parsed output");
-    }
+    const plan = requireParsedOutput(message);
 
     return {
-      plan: message.parsed_output,
+      plan,
+      model: message.model,
+      usage: {
+        inputTokens: message.usage.input_tokens,
+        outputTokens: message.usage.output_tokens,
+      },
+    };
+  }
+
+  async generateFormFeedback(
+    req: FormFeedbackRequest,
+  ): Promise<FormFeedbackResult> {
+    let message;
+    try {
+      message = await this.client.messages.parse(
+        {
+          model: req.model,
+          max_tokens: req.maxTokens,
+          system: req.system,
+          messages: [{ role: "user", content: req.userPrompt }],
+          output_config: {
+            format: zodOutputFormat(
+              buildFormFeedbackOutputSchema(req.allowedTags),
+            ),
+            effort: req.effort,
+          },
+        },
+        { signal: req.signal, timeout: req.timeoutMs, maxRetries: 0 },
+      );
+    } catch (error) {
+      throw mapAnthropicError(error);
+    }
+
+    const feedback = requireParsedOutput(message);
+
+    return {
+      feedback,
       model: message.model,
       usage: {
         inputTokens: message.usage.input_tokens,

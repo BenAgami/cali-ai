@@ -1,8 +1,10 @@
 import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
+import { API_ERROR_CODES } from "@repo/common";
 import { type getPrismaClient, SessionStatus } from "@repo/db";
 
+import { env } from "../../../src/config/env";
 import { formAnalysisQueue } from "../../../src/lib/queue";
 
 import {
@@ -17,6 +19,7 @@ import {
   submitCapture,
 } from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
@@ -28,21 +31,33 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
   let token: string;
   let exerciseCode: string;
 
-  const registerToken = async (): Promise<string> => {
-    const res = await registerUser(app, new RegisterUserBuilder().build());
-    return res.body.data.token as string;
+  const registerUserWithToken = async (): Promise<{
+    token: string;
+    userId: number;
+  }> => {
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
+    return { token: res.body.data.token as string, userId: user.id };
   };
 
-  const failedSession = async () => {
+  const registerToken = async (): Promise<string> =>
+    (await registerUserWithToken()).token;
+
+  const failedSession = async (userToken = token) => {
     const created = await createWorkoutSession(
       app,
-      token,
+      userToken,
       new WorkoutSessionBuilder().setExerciseCode(exerciseCode).build(),
     );
     const sessionId = created.body.data.id as number;
     const accepted = await submitCapture(
       app,
-      token,
+      userToken,
       sessionId,
       new PoseCaptureBuilder().setFrames(30).build(),
     );
@@ -58,10 +73,19 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
     return { sessionId, firstJobId: accepted.body.data.jobId as string };
   };
 
+  const markFailed = (sessionId: number) =>
+    prisma.workoutSession.update({
+      where: { id: sessionId },
+      data: {
+        processingStatus: SessionStatus.FAILED,
+        failureReason: "TIMEOUT",
+      },
+    });
+
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
     token = await registerToken();
-    exerciseCode = (await createExercise(prisma)).code;
+    exerciseCode = (await createExercise(prisma, { code: "push_up" })).code;
   });
 
   beforeEach(async () => {
@@ -133,5 +157,120 @@ describe("POST /api/sessions/:id/analysis/retry", () => {
     const response = await retryAnalysis(app, undefined, sessionId);
 
     expect(response.status).toBe(StatusCodes.UNAUTHORIZED);
+  });
+
+  describe("daily retry cap", () => {
+    it("refuses a retry over the cap and leaves the session FAILED", async () => {
+      const user = await registerUserWithToken();
+      const first = await failedSession(user.token);
+      const second = await failedSession(user.token);
+
+      for (let i = 0; i < env.formAnalysis.dailyRetryCap; i++) {
+        const target = i % 2 === 0 ? first : second;
+        const accepted = await retryAnalysis(app, user.token, target.sessionId);
+        expect(accepted.status).toBe(StatusCodes.ACCEPTED);
+        await markFailed(target.sessionId);
+      }
+
+      const refused = await retryAnalysis(app, user.token, first.sessionId);
+
+      expect(refused.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
+      expect(refused.body.code).toBe(API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED);
+      const session = await prisma.workoutSession.findUniqueOrThrow({
+        where: { id: first.sessionId },
+      });
+      expect(session.processingStatus).toBe(SessionStatus.FAILED);
+      expect(
+        await prisma.analysisRetry.count({
+          where: { session: { userId: user.userId } },
+        }),
+      ).toBe(env.formAnalysis.dailyRetryCap);
+    });
+
+    it("accepts a retry again once the recorded retries are older than 24 h", async () => {
+      const user = await registerUserWithToken();
+      const target = await failedSession(user.token);
+      for (let i = 0; i < env.formAnalysis.dailyRetryCap; i++) {
+        await prisma.analysisRetry.create({
+          data: { sessionId: target.sessionId },
+        });
+      }
+      expect(
+        (await retryAnalysis(app, user.token, target.sessionId)).status,
+      ).toBe(StatusCodes.TOO_MANY_REQUESTS);
+
+      await prisma.analysisRetry.updateMany({
+        where: { session: { userId: user.userId } },
+        data: { createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) },
+      });
+
+      expect(
+        (await retryAnalysis(app, user.token, target.sessionId)).status,
+      ).toBe(StatusCodes.ACCEPTED);
+    });
+
+    it("does not count a refused retry", async () => {
+      const user = await registerUserWithToken();
+      const target = await failedSession(user.token);
+      await retryAnalysis(app, user.token, target.sessionId);
+
+      const refused = await retryAnalysis(app, user.token, target.sessionId);
+
+      expect(refused.status).toBe(StatusCodes.CONFLICT);
+      expect(
+        await prisma.analysisRetry.count({
+          where: { session: { userId: user.userId } },
+        }),
+      ).toBe(1);
+    });
+
+    it("does not consume the daily capture cap", async () => {
+      const user = await registerUserWithToken();
+      const target = await failedSession(user.token);
+      const capturesBefore = await prisma.poseCapture.count({
+        where: { session: { userId: user.userId } },
+      });
+
+      await retryAnalysis(app, user.token, target.sessionId);
+
+      expect(
+        await prisma.poseCapture.count({
+          where: { session: { userId: user.userId } },
+        }),
+      ).toBe(capturesBefore);
+    });
+
+    it("never accepts more retries than the cap under concurrency", async () => {
+      const concurrentRequests = 3;
+      const user = await registerUserWithToken();
+      const sessions = [];
+      for (let i = 0; i < concurrentRequests; i++) {
+        sessions.push(await failedSession(user.token));
+      }
+      for (let i = 0; i < env.formAnalysis.dailyRetryCap - 1; i++) {
+        await prisma.analysisRetry.create({
+          data: { sessionId: sessions[0].sessionId },
+        });
+      }
+
+      const responses = await Promise.all(
+        sessions.map(({ sessionId }) =>
+          retryAnalysis(app, user.token, sessionId),
+        ),
+      );
+
+      const statuses = responses.map((response) => response.status).sort();
+      expect(statuses).toEqual([
+        StatusCodes.ACCEPTED,
+        ...Array<StatusCodes>(concurrentRequests - 1).fill(
+          StatusCodes.TOO_MANY_REQUESTS,
+        ),
+      ]);
+      expect(
+        await prisma.analysisRetry.count({
+          where: { session: { userId: user.userId } },
+        }),
+      ).toBe(env.formAnalysis.dailyRetryCap);
+    });
   });
 });

@@ -6,8 +6,14 @@ export const ANALYSIS_STAGES = [
   "WRITING_FEEDBACK",
   "COMPLETED",
 ] as const;
-
 export type AnalysisStage = (typeof ANALYSIS_STAGES)[number];
+
+export const SESSION_STATUSES = [
+  "PENDING",
+  "PROCESSING",
+  "COMPLETED",
+  "FAILED",
+] as const;
 
 const ANALYSIS_EVENT_STATUSES = [
   "QUEUED",
@@ -24,7 +30,6 @@ export const analysisStatusEventSchema = z.object({
   progress_percent: z.number().int().min(0).max(100),
   failure_reason: z.string().nullable(),
 });
-
 export type AnalysisStatusEvent = z.infer<typeof analysisStatusEventSchema>;
 
 export const ANALYSIS_FAILURE_REASONS = [
@@ -35,5 +40,4 @@ export const ANALYSIS_FAILURE_REASONS = [
   "LLM_TIMEOUT",
   "ANALYSIS_ERROR",
 ] as const;
-
 export type AnalysisFailureReason = (typeof ANALYSIS_FAILURE_REASONS)[number];

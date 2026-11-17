@@ -2,6 +2,7 @@ import { Stack } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { StatusCodes } from "http-status-codes";
 
 import ThemeProvider from "@src/context/ThemeContext";
 import { AuthProvider } from "@src/context/AuthContext";
@@ -12,7 +13,11 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,
       retry: (failureCount, error) => {
-        if (error instanceof ApiError && error.status === 401) return false;
+        if (
+          error instanceof ApiError &&
+          error.status === Number(StatusCodes.UNAUTHORIZED)
+        )
+          return false;
         return failureCount < 2;
       },
     },

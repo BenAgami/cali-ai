@@ -82,6 +82,14 @@ const Settings: React.FC = () => {
                   >
                     <Text style={{ color: colors.text }}>Pipeline check</Text>
                   </Pressable>
+                  <Pressable
+                    style={styles.devRow}
+                    onPress={() => {
+                      router.push("/dev-blazepose-check");
+                    }}
+                  >
+                    <Text style={{ color: colors.text }}>BlazePose check</Text>
+                  </Pressable>
                 </View>
               </View>
             ) : null}

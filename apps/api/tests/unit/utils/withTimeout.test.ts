@@ -10,26 +10,26 @@ describe("withTimeout", () => {
   });
 
   it("resolves with the inner value and clears its timer", async () => {
-    await expect(withTimeout(Promise.resolve("ok"), 1000, "X")).resolves.toBe(
-      "ok",
-    );
+    await expect(
+      withTimeout(Promise.resolve("ok"), 1000, "ENQUEUE_TIMEOUT"),
+    ).resolves.toBe("ok");
     expect(vi.getTimerCount()).toBe(0);
   });
 
   it("rejects with the inner error and clears its timer", async () => {
     const boom = new Error("boom");
-    await expect(withTimeout(Promise.reject(boom), 1000, "X")).rejects.toBe(
-      boom,
-    );
+    await expect(
+      withTimeout(Promise.reject(boom), 1000, "ENQUEUE_TIMEOUT"),
+    ).rejects.toBe(boom);
     expect(vi.getTimerCount()).toBe(0);
   });
 
   it("rejects with a coded TimeoutError when the deadline passes first", async () => {
     const pending = new Promise<string>(() => undefined);
-    const result = withTimeout(pending, 500, "LLM_TIMEOUT");
+    const result = withTimeout(pending, 500, "ENQUEUE_TIMEOUT");
     const assertion = expect(result).rejects.toMatchObject({
       name: "TimeoutError",
-      code: "LLM_TIMEOUT",
+      code: "ENQUEUE_TIMEOUT",
       timeoutMs: 500,
     });
     await vi.advanceTimersByTimeAsync(500);
@@ -40,7 +40,7 @@ describe("withTimeout", () => {
   it("does not reject before the deadline", async () => {
     const pending = new Promise<string>(() => undefined);
     const onSettle = vi.fn();
-    withTimeout(pending, 500, "X").then(onSettle, onSettle);
+    withTimeout(pending, 500, "ENQUEUE_TIMEOUT").then(onSettle, onSettle);
     await vi.advanceTimersByTimeAsync(499);
     expect(onSettle).not.toHaveBeenCalled();
   });

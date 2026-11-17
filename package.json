@@ -27,13 +27,15 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,json,md,yml,yaml}\"",
     "knip": "knip",
     "deps:lint": "syncpack lint",
-    "deps:fix": "syncpack fix"
+    "deps:fix": "syncpack fix",
+    "postinstall": "patch-package"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "eslint": "^9",
     "globals": "^15",
     "knip": "^6.38.0",
+    "patch-package": "^8.0.1",
     "prettier": "^3.1.1",
     "syncpack": "^15.3.3",
     "tsup": "^8.5.1",

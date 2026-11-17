@@ -3,8 +3,9 @@ import type { Application } from "express";
 import { StatusCodes } from "http-status-codes";
 
 import { type getPrismaClient, SessionStatus } from "@repo/db";
-import { CAPTURE_LIMITS } from "@repo/common";
+import { API_ERROR_CODES, CAPTURE_LIMITS } from "@repo/common";
 
+import { env } from "../../../src/config/env";
 import { formAnalysisQueue } from "../../../src/lib/queue";
 import { decodeCapture } from "../../../src/utils/captureCodec";
 
@@ -20,6 +21,7 @@ import {
   submitRawCapture,
 } from "../helpers/requestSender/sessionsRequests";
 import { createExercise } from "../helpers/db/exerciseHelper";
+import { grantAiPrerequisites } from "../helpers/db/aiPrerequisitesHelper";
 
 import { PoseCaptureBuilder } from "../builders/poseCaptureBuilder";
 import { RegisterUserBuilder } from "../builders/registerUserBuilder";
@@ -41,14 +43,20 @@ describe("POST /api/sessions/:id/capture", () => {
   };
 
   const registerToken = async (): Promise<string> => {
-    const res = await registerUser(app, new RegisterUserBuilder().build());
+    const dto = new RegisterUserBuilder().build();
+    const res = await registerUser(app, dto);
+    const user = await prisma.user.findUniqueOrThrow({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    await grantAiPrerequisites(prisma, user.id);
     return res.body.data.token as string;
   };
 
   beforeAll(async () => {
     ({ app, prisma } = await setupIntegrationTest());
     token = await registerToken();
-    exerciseCode = (await createExercise(prisma)).code;
+    exerciseCode = (await createExercise(prisma, { code: "push_up" })).code;
   });
 
   beforeEach(async () => {
@@ -250,14 +258,15 @@ describe("POST /api/sessions/:id/capture", () => {
     expect(response.status).toBe(StatusCodes.REQUEST_TOO_LONG);
   });
 
-  it("returns 409 on a second capture and keeps one stored capture", async () => {
+  it("answers a resent capture with the first run and keeps one stored capture", async () => {
     const sessionId = await newSession();
     const payload = new PoseCaptureBuilder().setFrames(30).build();
-    await submitCapture(app, token, sessionId, payload);
+    const first = await submitCapture(app, token, sessionId, payload);
 
     const response = await submitCapture(app, token, sessionId, payload);
 
-    expect(response.status).toBe(StatusCodes.CONFLICT);
+    expect(response.status).toBe(StatusCodes.ACCEPTED);
+    expect(response.body.data).toEqual(first.body.data);
     expect(await prisma.poseCapture.count({ where: { sessionId } })).toBe(1);
   });
 
@@ -277,5 +286,144 @@ describe("POST /api/sessions/:id/capture", () => {
 
     expect(response.status).toBe(StatusCodes.CONFLICT);
     expect(response.body.message).toContain("retry");
+    expect(response.body.code).toBe("ANALYSIS_FAILED");
+  });
+
+  describe("consent and caps", () => {
+    const newGatedUser = async () => {
+      const dto = new RegisterUserBuilder().build();
+      const res = await registerUser(app, dto);
+      const user = await prisma.user.findUniqueOrThrow({
+        where: { email: dto.email },
+        select: { id: true },
+      });
+      await grantAiPrerequisites(prisma, user.id);
+      return { userId: user.id, token: res.body.data.token as string };
+    };
+
+    const createSetSession = async (
+      userId: number,
+      exerciseId: number,
+    ): Promise<number> =>
+      (
+        await prisma.workoutSession.create({
+          data: { userId, exerciseId, setNumber: 1 },
+          select: { id: true },
+        })
+      ).id;
+
+    it("returns 428 AI_CONSENT_REQUIRED for a stale consent version and stores nothing", async () => {
+      const user = await newGatedUser();
+      await prisma.user.update({
+        where: { id: user.userId },
+        data: { aiConsentVersion: "2026-11-04" },
+      });
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      const sessionId = await createSetSession(user.userId, exercise.id);
+
+      const response = await submitCapture(
+        app,
+        user.token,
+        sessionId,
+        new PoseCaptureBuilder().setFrames(30).build(),
+      );
+
+      expect(response.status).toBe(StatusCodes.PRECONDITION_REQUIRED);
+      expect(response.body.code).toBe("AI_CONSENT_REQUIRED");
+      expect(await prisma.poseCapture.count({ where: { sessionId } })).toBe(0);
+    });
+
+    it("returns 429 DAILY_ANALYSIS_LIMIT_REACHED once the daily cap of captures exists", async () => {
+      const user = await newGatedUser();
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      for (let i = 0; i < env.formAnalysis.dailyCap; i++) {
+        const id = await createSetSession(user.userId, exercise.id);
+        await prisma.poseCapture.create({
+          data: {
+            sessionId: id,
+            keypointsFormat: "gzip-json-v1",
+            poseModelName: "movenet-lightning",
+            poseModelVersion: "4",
+            fps: 15,
+            frameCount: 1,
+            durationSec: 1,
+          },
+        });
+      }
+      const sessionId = await createSetSession(user.userId, exercise.id);
+
+      const response = await submitCapture(
+        app,
+        user.token,
+        sessionId,
+        new PoseCaptureBuilder().setFrames(30).build(),
+      );
+
+      expect(response.status).toBe(StatusCodes.TOO_MANY_REQUESTS);
+      expect(response.body.code).toBe("DAILY_ANALYSIS_LIMIT_REACHED");
+    });
+
+    it("never accepts more captures than the daily cap under concurrency", async () => {
+      const concurrentRequests = 5;
+      const user = await newGatedUser();
+      const exercise = await prisma.exercise.findUniqueOrThrow({
+        where: { code: exerciseCode },
+      });
+      for (let i = 0; i < env.formAnalysis.dailyCap - 1; i++) {
+        const id = await createSetSession(user.userId, exercise.id);
+        await prisma.poseCapture.create({
+          data: {
+            sessionId: id,
+            keypointsFormat: "gzip-json-v1",
+            poseModelName: "movenet-lightning",
+            poseModelVersion: "4",
+            fps: 15,
+            frameCount: 1,
+            durationSec: 1,
+          },
+        });
+      }
+      const sessionIds = await Promise.all(
+        Array.from({ length: concurrentRequests }, () =>
+          createSetSession(user.userId, exercise.id),
+        ),
+      );
+
+      const responses = await Promise.all(
+        sessionIds.map((sessionId) =>
+          submitCapture(
+            app,
+            user.token,
+            sessionId,
+            new PoseCaptureBuilder().setFrames(30).build(),
+          ),
+        ),
+      );
+
+      const statuses = responses.map((response) => response.status).sort();
+      expect(statuses).toEqual([
+        StatusCodes.ACCEPTED,
+        ...Array<StatusCodes>(concurrentRequests - 1).fill(
+          StatusCodes.TOO_MANY_REQUESTS,
+        ),
+      ]);
+      const rejected = responses.filter(
+        (response) => response.status !== Number(StatusCodes.ACCEPTED),
+      );
+      for (const response of rejected) {
+        expect(response.body.code).toBe(
+          API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
+        );
+      }
+      expect(
+        await prisma.poseCapture.count({
+          where: { session: { userId: user.userId } },
+        }),
+      ).toBe(env.formAnalysis.dailyCap);
+    });
   });
 });

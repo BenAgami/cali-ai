@@ -1,0 +1,11 @@
+model AnalysisRetry {
+  id Int @id @default(autoincrement())
+
+  session   WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId Int            @map("session_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId, createdAt], map: "idx_analysis_retries_session_created")
+  @@map("analysis_retries")
+}
