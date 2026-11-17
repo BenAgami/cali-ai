@@ -1,33 +1,42 @@
 model WorkoutPlan {
-  id           Int                @id @default(autoincrement())
-  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       Int                @map("user_id")
-  name         String             @db.VarChar(100)
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @updatedAt @map("updated_at")
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @map("user_id")
+
+  generation   WorkoutGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
+  generationId Int?               @unique @map("generation_id")
+
+  name    String  @db.VarChar(100)
+  aiModel String? @map("ai_model") @db.VarChar(80)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
   exercises    WorkoutExercise[]
   runs         WorkoutRun[]
   recordedSets RecordedSet[]
-  aiModel      String?            @map("ai_model") @db.VarChar(80)
-  generation   WorkoutGeneration? @relation(fields: [generationId], references: [id], onDelete: SetNull)
-  generationId Int?               @unique @map("generation_id")
 
   @@index([userId, updatedAt(sort: Desc)], map: "idx_workout_plans_user_updated_at")
   @@map("workout_plans")
 }
 
 model WorkoutExercise {
-  id            Int         @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
   workoutPlan   WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
   workoutPlanId Int         @map("workout_plan_id")
-  exercise      Exercise    @relation(fields: [exerciseId], references: [id])
-  exerciseId    Int         @map("exercise_id")
-  position      Int
-  sets          Int         @default(3)
-  reps          Int?
-  durationSecs  Int?        @map("duration_secs")
-  restSecs      Int         @default(60) @map("rest_secs")
-  createdAt     DateTime    @default(now()) @map("created_at")
+
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId Int      @map("exercise_id")
+
+  position     Int
+  sets         Int  @default(3)
+  reps         Int?
+  durationSecs Int? @map("duration_secs")
+  restSecs     Int  @default(60) @map("rest_secs")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([workoutPlanId, position], map: "uniq_workout_exercises_workout_plan_position")
   @@index([workoutPlanId], map: "idx_workout_exercises_workout_plan_id")
@@ -35,15 +44,19 @@ model WorkoutExercise {
 }
 
 model WorkoutRun {
-  id            Int          @id @default(autoincrement())
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        Int          @map("user_id")
+  id Int @id @default(autoincrement())
+
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int  @map("user_id")
+
   workoutPlan   WorkoutPlan? @relation(fields: [workoutPlanId], references: [id], onDelete: SetNull)
   workoutPlanId Int?         @map("workout_plan_id")
-  startedAt     DateTime     @default(now()) @map("started_at")
-  completedAt   DateTime?    @map("completed_at")
-  durationSecs  Int?         @map("duration_secs")
-  createdAt     DateTime     @default(now()) @map("created_at")
+
+  startedAt    DateTime  @default(now()) @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  durationSecs Int?      @map("duration_secs")
+
+  createdAt DateTime @default(now()) @map("created_at")
 
   recordedSets RecordedSet[]
 
