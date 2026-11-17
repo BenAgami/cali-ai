@@ -1,4 +1,4 @@
-import { distance, median, mean, ramp } from "../geometry";
+import { distance, median, mean, linearScore } from "../geometry";
 import type { PoseSeries, Side } from "../types";
 import {
   COMMON_FORBIDDEN_TOPICS,
@@ -111,12 +111,12 @@ export const squatRubric: ExerciseRubric = {
   scoreRep: (f) =>
     definedScores({
       ROM: combine([
-        [ramp(f.hipBelowKnee, 0.0, -0.15), 1],
-        [ramp(f.maxKneeDeg, 170, 150), 1],
+        [linearScore(f.hipBelowKnee, 0.0, -0.15), 1],
+        [linearScore(f.maxKneeDeg, 170, 150), 1],
       ]),
       CORE: combine([
-        [ramp(f.trunkLeanDeg - f.shinLeanDeg, 15, 40), 0.7],
-        [ramp(f.heelRiseDeg, 3, 15), 0.3],
+        [linearScore(f.trunkLeanDeg - f.shinLeanDeg, 15, 40), 0.7],
+        [linearScore(f.heelRiseDeg, 3, 15), 0.3],
       ]),
     }),
   repTags: [

@@ -4,7 +4,7 @@ import {
   type FormDimension,
 } from "@repo/common";
 
-import { mean, std } from "./geometry";
+import { mean, standardDeviation } from "./geometry";
 import type { ExerciseRubric } from "./rubrics/types";
 import type {
   DetectedFinding,
@@ -145,7 +145,7 @@ export const buildPositives = (
   const depths = reps
     .map((rep) => rep.features[depthFeature])
     .filter((value) => Number.isFinite(value));
-  if (depths.length >= 2 && std(depths) < depthStdMax) {
+  if (depths.length >= 2 && standardDeviation(depths) < depthStdMax) {
     featurePositives.push({
       kind: "CONSISTENT_DEPTH",
       text: "Your depth was consistent from rep to rep.",
@@ -160,7 +160,7 @@ export const buildPositives = (
     !isRushed &&
     durations.length >= 2 &&
     durationMean > 0 &&
-    std(durations) / durationMean < MAX_TEMPO_CV
+    standardDeviation(durations) / durationMean < MAX_TEMPO_CV
   ) {
     featurePositives.push({
       kind: "STEADY_TEMPO",

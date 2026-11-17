@@ -110,9 +110,7 @@ export type ScoredFormMetrics = {
   dimensions: Record<FormDimension, DimensionScore>;
   overallScore: number;
   band: FormBand;
-  /** <= 2, server-selected (FORM-07) */
   corrections: DetectedFinding[];
-  /** >= 1 */
   positives: PositiveCandidate[];
   forbiddenTopics: string[];
   metricsVersion: string;

@@ -14,7 +14,7 @@ export const angleAt = (a: Point, b: Point, c: Point): number => {
   return Math.acos(Math.min(1, Math.max(-1, dot / mag))) * RAD_TO_DEG;
 };
 
-/** Signed distance of the hip from the shoulder-ankle line over L; below (larger y) is positive regardless of facing. */
+/** Signed distance of the hip from the shoulder-ankle line, divided by the shoulder-ankle length; positive when the hip is below the line (sagging), negative when above it (piking), whichever way the person faces. */
 export const hipOffsetRatio = (
   shoulder: Point,
   hip: Point,
@@ -31,19 +31,22 @@ export const hipOffsetRatio = (
 export const distance = (a: Point, b: Point): number =>
   Math.hypot(a[0] - b[0], a[1] - b[1]);
 
-/** Degrees (0-180) between the lower->upper vector and straight up (y down). */
+/** Degrees (0-180) between the lower->upper vector and straight up, the direction (0, -1) because image y grows downward. */
 export const angleFromVertical = (lower: Point, upper: Point): number => {
   const dx = upper[0] - lower[0];
   const dy = upper[1] - lower[1];
   if (dx === 0 && dy === 0) return Number.NaN;
-  // straight up is (0, -1)
   return (
     Math.acos(Math.min(1, Math.max(-1, -dy / Math.hypot(dx, dy)))) * RAD_TO_DEG
   );
 };
 
-/** 100 at good, 0 at poor, linear and clamped; works for good < poor and good > poor. NaN in, NaN out. */
-export const ramp = (value: number, good: number, poor: number): number => {
+/** Percent of the way from poor (0) to good (100), linear and clamped; good may be above or below poor. NaN in, NaN out. */
+export const linearScore = (
+  value: number,
+  good: number,
+  poor: number,
+): number => {
   if (Number.isNaN(value)) return Number.NaN;
   const t = (value - poor) / (good - poor);
   return Math.min(1, Math.max(0, t)) * 100;
@@ -54,7 +57,7 @@ export const mean = (values: readonly number[]): number =>
     ? Number.NaN
     : values.reduce((sum, v) => sum + v, 0) / values.length;
 
-export const std = (values: readonly number[]): number => {
+export const standardDeviation = (values: readonly number[]): number => {
   if (values.length === 0) return Number.NaN;
   const m = mean(values);
   return Math.sqrt(mean(values.map((v) => (v - m) ** 2)));

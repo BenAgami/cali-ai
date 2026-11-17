@@ -1,4 +1,4 @@
-import { hipOffsetRatio, mean, ramp } from "../geometry";
+import { hipOffsetRatio, mean, linearScore } from "../geometry";
 import {
   COMMON_FORBIDDEN_TOPICS,
   DEFAULT_SEGMENTATION,
@@ -20,7 +20,9 @@ import type { ExerciseRubric } from "./types";
 
 // 05-RUBRICS sections 3, 4, 5, 6 and 8 (push_up)
 const bodyLine = (offset: number): number =>
-  offset >= 0 ? ramp(offset, 0.03, 0.15) : ramp(-offset, 0.04, 0.16);
+  offset >= 0
+    ? linearScore(offset, 0.03, 0.15)
+    : linearScore(-offset, 0.04, 0.16);
 
 export const pushUpRubric: ExerciseRubric = {
   exerciseCode: "push_up",
@@ -65,12 +67,12 @@ export const pushUpRubric: ExerciseRubric = {
   scoreRep: (f) =>
     definedScores({
       ROM: combine([
-        [ramp(f.minElbowDeg, 90, 130), 1],
-        [ramp(f.maxElbowDeg, 165, 140), 1],
+        [linearScore(f.minElbowDeg, 90, 130), 1],
+        [linearScore(f.maxElbowDeg, 165, 140), 1],
       ]),
       CORE: combine([
         [bodyLine(f.meanHipOffset), 0.85],
-        [ramp(f.durationSec, 1.5, 0.6), 0.15],
+        [linearScore(f.durationSec, 1.5, 0.6), 0.15],
       ]),
     }),
   repTags: [

@@ -1,6 +1,6 @@
 import { BLAZEPOSE } from "@repo/common";
 
-import { distance, mean, median, ramp } from "../geometry";
+import { distance, mean, median, linearScore } from "../geometry";
 import type { Point, PoseSeries } from "../types";
 import {
   COMMON_FORBIDDEN_TOPICS,
@@ -146,16 +146,16 @@ export const pullUpRubric: ExerciseRubric = {
   scoreRep: (f) =>
     definedScores({
       ROM: combine([
-        [ramp(f.mouthBelowBar, -0.05, 0.25), 1],
-        [ramp(f.maxElbowDeg, 165, 140), 1],
+        [linearScore(f.mouthBelowBar, -0.05, 0.25), 1],
+        [linearScore(f.maxElbowDeg, 165, 140), 1],
       ]),
       CORE: combine([
-        [ramp(f.hipSwayRatio, 0.1, 0.4), 0.7],
-        [ramp(f.durationSec, 1.8, 0.8), 0.3],
+        [linearScore(f.hipSwayRatio, 0.1, 0.4), 0.7],
+        [linearScore(f.durationSec, 1.8, 0.8), 0.3],
       ]),
       SYMMETRY: combine([
-        [ramp(f.meanElbowDiffDeg, 5, 25), 1],
-        [ramp(f.maxShoulderTiltDeg, 4, 15), 1],
+        [linearScore(f.meanElbowDiffDeg, 5, 25), 1],
+        [linearScore(f.maxShoulderTiltDeg, 4, 15), 1],
       ]),
     }),
   repTags: [

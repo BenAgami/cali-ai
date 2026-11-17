@@ -1,4 +1,4 @@
-import { distance, median, ramp } from "../geometry";
+import { distance, median, linearScore } from "../geometry";
 import {
   COMMON_FORBIDDEN_TOPICS,
   DEFAULT_SEGMENTATION,
@@ -68,12 +68,12 @@ export const dipRubric: ExerciseRubric = {
   scoreRep: (f) =>
     definedScores({
       ROM: combine([
-        [ramp(f.minElbowDeg, 95, 130), 1],
-        [ramp(f.maxElbowDeg, 165, 140), 1],
+        [linearScore(f.minElbowDeg, 95, 130), 1],
+        [linearScore(f.maxElbowDeg, 165, 140), 1],
       ]),
       CORE: combine([
-        [ramp(f.trunkLeanDeg, 30, 60), 0.6],
-        [ramp(f.hipSwayRatio, 0.1, 0.35), 0.4],
+        [linearScore(f.trunkLeanDeg, 30, 60), 0.6],
+        [linearScore(f.hipSwayRatio, 0.1, 0.35), 0.4],
       ]),
     }),
   repTags: [
