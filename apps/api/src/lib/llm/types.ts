@@ -49,6 +49,37 @@ export type WorkoutPlanResult = {
   usage: { inputTokens: number; outputTokens: number };
 };
 
+export type FormFeedbackDraft = {
+  summary: string;
+  positives: { text: string; repNumbers: number[] }[];
+  corrections: {
+    errorTag: string;
+    repNumbers: number[];
+    cue: string;
+    detail: string;
+  }[];
+};
+
+export type FormFeedbackRequest = {
+  model: string;
+  effort: LlmEffort;
+  maxTokens: number;
+  timeoutMs: number;
+  signal: AbortSignal;
+  system: string;
+  userPrompt: string;
+  allowedTags: string[];
+};
+
+export type FormFeedbackResult = {
+  feedback: FormFeedbackDraft;
+  model: string;
+  usage: { inputTokens: number; outputTokens: number };
+};
+
 export interface LlmProvider {
   generateWorkoutPlan(request: WorkoutPlanRequest): Promise<WorkoutPlanResult>;
+  generateFormFeedback(
+    request: FormFeedbackRequest,
+  ): Promise<FormFeedbackResult>;
 }

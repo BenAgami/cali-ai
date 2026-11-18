@@ -4,8 +4,10 @@ import z from "zod";
 import {
   createWorkoutSchema,
   generateWorkoutSchema,
+  recordedSetsQuerySchema,
   updateWorkoutSchema,
-  workoutLogSchema,
+  workoutIdParamSchema,
+  workoutLogIdParamSchema,
 } from "@repo/common";
 
 import validateSchema from "../middlewares/validateSchema";
@@ -19,6 +21,8 @@ import {
   updateWorkout,
   deleteWorkout,
   startWorkout,
+  completeWorkout,
+  listRecordedSets,
 } from "../controllers/workout";
 
 const router: Router = Router();
@@ -26,10 +30,6 @@ const router: Router = Router();
 const listWorkoutsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   offset: z.coerce.number().int().min(0).optional(),
-});
-
-const workoutIdParamSchema = z.object({
-  id: z.coerce.number().int().positive(),
 });
 
 /**
@@ -102,15 +102,40 @@ router.delete(
 
 /**
  * POST /:id/logs
- * Start workout (create log)
+ * Start a workout run (create an in-progress log)
  */
 router.post(
   "/:id/logs",
   authenticateToken,
-  validateSchema(
-    z.object({ params: workoutIdParamSchema, body: workoutLogSchema }),
-  ),
+  validateSchema(z.object({ params: workoutIdParamSchema })),
   startWorkout,
+);
+
+/**
+ * PATCH /:id/logs/:logId
+ * Complete a workout run
+ */
+router.patch(
+  "/:id/logs/:logId",
+  authenticateToken,
+  validateSchema(z.object({ params: workoutLogIdParamSchema })),
+  completeWorkout,
+);
+
+/**
+ * GET /:id/recorded-sets
+ * List the recorded sets of a workout with live analysis status
+ */
+router.get(
+  "/:id/recorded-sets",
+  authenticateToken,
+  validateSchema(
+    z.object({
+      params: workoutIdParamSchema,
+      query: recordedSetsQuerySchema,
+    }),
+  ),
+  listRecordedSets,
 );
 
 export default router;

@@ -61,6 +61,46 @@ describe("DELETE /api/workouts/:id", () => {
     expect(exerciseCount).toBe(0);
   });
 
+  it("should delete a workout that has runs and keep the runs and their sets", async () => {
+    const registerUserDto = new RegisterUserBuilder().build();
+    const registerRes = await registerUser(app, registerUserDto);
+    const token = registerRes.body.data.token;
+    const dbUser = await prisma.user.findUniqueOrThrow({
+      where: { email: registerUserDto.email!.toLowerCase() },
+      select: { id: true },
+    });
+    const exercise = await createExercise(prisma);
+    const workout = await createWorkoutFixture(prisma, {
+      userId: dbUser.id,
+      name: "Started",
+      exercises: [{ exerciseId: exercise.id, position: 0 }],
+    });
+    const run = await prisma.workoutLog.create({
+      data: { userId: dbUser.id, workoutId: workout.id },
+    });
+    const session = await prisma.workoutSession.create({
+      data: {
+        userId: dbUser.id,
+        exerciseId: exercise.id,
+        workoutId: workout.id,
+        workoutLogId: run.id,
+      },
+    });
+
+    const response = await deleteWorkout(app, token, workout.id);
+
+    expect(response.status).toBe(StatusCodes.NO_CONTENT);
+    const keptRun = await prisma.workoutLog.findUniqueOrThrow({
+      where: { id: run.id },
+    });
+    expect(keptRun.workoutId).toBeNull();
+    const kept = await prisma.workoutSession.findUniqueOrThrow({
+      where: { id: session.id },
+    });
+    expect(kept.workoutId).toBeNull();
+    expect(kept.workoutLogId).toBe(run.id);
+  });
+
   it("should return 404 for another user's workout", async () => {
     const userADto = new RegisterUserBuilder().build();
     await registerUser(app, userADto);

@@ -12,12 +12,36 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
 import AiDisclaimer from "@src/components/AiDisclaimer";
+import RecordedSetCard from "@src/components/form/RecordedSetCard";
+import ShowEarlierSetsButton from "@src/components/form/ShowEarlierSetsButton";
+import {
+  EARLIER_SETS_TITLE,
+  RECORDED_SETS_TITLE,
+} from "@src/constants/formMessages";
+import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
+import { groupRecordedSetsByRun } from "@src/utils/groupRecordedSetsByRun";
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useDeleteWorkout } from "@src/hooks/mutations/useDeleteWorkout";
+import { useStartWorkoutRun } from "@src/hooks/mutations/useStartWorkoutRun";
+import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
+import {
+  START_LABEL,
+  START_RUN_FAILED_MESSAGE,
+  START_RUN_FAILED_TITLE,
+  STARTING_LABEL,
+} from "@src/constants/workoutMessages";
 import type { WorkoutExerciseHydrated } from "@repo/common";
 
 type DetailParams = { id?: string };
+
+// Date and time, so two runs on the same day can be told apart.
+const RUN_TITLE_FORMAT: Intl.DateTimeFormatOptions = {
+  month: "short",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
 
 const formatExerciseRow = (ex: WorkoutExerciseHydrated): string => {
   const parts: string[] = [];
@@ -38,13 +62,30 @@ const formatExerciseRow = (ex: WorkoutExerciseHydrated): string => {
 const WorkoutDetailScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<DetailParams>();
-  const id = params.id ? Number(params.id) : undefined;
+  const id = parsePositiveIntParam(params.id) ?? undefined;
   const { data, isLoading, error } = useWorkoutDetail(id);
   const deleteMutation = useDeleteWorkout();
+  const startRunMutation = useStartWorkoutRun();
+  const recorded = useWorkoutRecordedSets(id);
+
+  const handleOpenResult = (sessionId: number) => {
+    router.push({
+      pathname: "/analysis-result",
+      params: { sessionId: String(sessionId) },
+    });
+  };
 
   const handleStart = () => {
     if (!id) return;
-    router.push({ pathname: "/workout-execute", params: { id: String(id) } });
+    startRunMutation.mutate(id, {
+      onSuccess: (run) =>
+        router.push({
+          pathname: "/workout-execute",
+          params: { id: String(id), runId: String(run.id) },
+        }),
+      onError: () =>
+        Alert.alert(START_RUN_FAILED_TITLE, START_RUN_FAILED_MESSAGE),
+    });
   };
 
   const handleEdit = () => {
@@ -124,6 +165,43 @@ const WorkoutDetailScreen: React.FC = () => {
               ))}
             </View>
 
+            {recorded.items.length > 0 && (
+              <View style={styles.list}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                  {RECORDED_SETS_TITLE}
+                </Text>
+                {groupRecordedSetsByRun(recorded.items).map((run) => (
+                  <View key={run.runId ?? "earlier"}>
+                    <Text style={[styles.runTitle, { color: colors.text }]}>
+                      {run.runId === null
+                        ? EARLIER_SETS_TITLE
+                        : new Date(run.firstPerformedAt).toLocaleString(
+                            undefined,
+                            RUN_TITLE_FORMAT,
+                          )}
+                    </Text>
+                    {run.items.map((item) => (
+                      <RecordedSetCard
+                        key={item.sessionId}
+                        item={item}
+                        onOpen={handleOpenResult}
+                        onRetry={(sessionId) =>
+                          void recorded.retrySet(sessionId)
+                        }
+                        isRetrying={recorded.retryingIds.has(item.sessionId)}
+                      />
+                    ))}
+                  </View>
+                ))}
+                {recorded.hasMore && (
+                  <ShowEarlierSetsButton
+                    isLoading={recorded.isLoadingMore}
+                    onPress={recorded.loadMore}
+                  />
+                )}
+              </View>
+            )}
+
             {data.aiModel !== null && (
               <View style={styles.aiDisclaimer}>
                 <AiDisclaimer />
@@ -131,9 +209,13 @@ const WorkoutDetailScreen: React.FC = () => {
             )}
             <Pressable
               onPress={handleStart}
+              disabled={startRunMutation.isPending}
               style={({ pressed }) => [
                 styles.primaryCta,
-                { backgroundColor: pressed ? "#006EE6" : "#007AFF" },
+                {
+                  backgroundColor: pressed ? "#006EE6" : "#007AFF",
+                  opacity: startRunMutation.isPending ? 0.7 : 1,
+                },
               ]}
               accessibilityRole="button"
               accessibilityLabel={
@@ -142,7 +224,9 @@ const WorkoutDetailScreen: React.FC = () => {
                   : "Start workout"
               }
             >
-              <Text style={styles.primaryCtaText}>Start</Text>
+              <Text style={styles.primaryCtaText}>
+                {startRunMutation.isPending ? STARTING_LABEL : START_LABEL}
+              </Text>
             </Pressable>
 
             <View style={styles.secondaryRow}>
@@ -195,6 +279,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 28, fontWeight: "700" },
   subtle: { fontSize: 14, opacity: 0.6, marginTop: 4 },
   list: { marginTop: 24 },
+  sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 8 },
+  runTitle: { fontSize: 14, fontWeight: "600", marginTop: 8, marginBottom: 6 },
   row: {
     padding: 14,
     borderRadius: 10,

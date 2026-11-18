@@ -1,0 +1,193 @@
+diff --git a/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js b/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js
+index c7cad7e..9452a98 100644
+--- a/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js
++++ b/node_modules/react-native-mediapipe-posedetection/lib/commonjs/index.js
+@@ -60,7 +60,6 @@ function getPoseDetectionModule() {
+ 
+ // Global detector map (same as old arch)
+ const detectorMap = new Map();
+-console.log('MediapipePosedetection module:', _NativeMediapipePosedetection.default);
+ let onResultsSubscription = null;
+ let onErrorSubscription = null;
+ const setupEventListeners = () => {
+@@ -75,7 +74,6 @@ const setupEventListeners = () => {
+   if (_NativeMediapipePosedetection.default?.onResults) {
+     // @ts-ignore
+     onResultsSubscription = _NativeMediapipePosedetection.default.onResults(args => {
+-      console.log('onResults event received:', args.handle);
+       const typedArgs = args;
+       const callbacks = detectorMap.get(typedArgs.handle);
+       if (callbacks) {
+@@ -157,9 +155,7 @@ function usePoseDetection(callbacks, runningMode, model, options) {
+   }, [updateDetectorMap]);
+   _react.default.useEffect(() => {
+     let newHandle;
+-    console.log(`delegate=${options?.delegate}, runningMode=${runningMode}, model=${model}`);
+     getPoseDetectionModule().createDetector(options?.numPoses ?? 1, options?.minPoseDetectionConfidence ?? 0.5, options?.minPosePresenceConfidence ?? 0.5, options?.minTrackingConfidence ?? 0.5, options?.shouldOutputSegmentationMasks ?? false, model, options?.delegate ?? _types.Delegate.GPU, runningMode).then(handle => {
+-      console.log('createDetector', runningMode, model, handle);
+       setDetectorHandle(handle);
+       newHandle = handle;
+     }).catch(e => {
+@@ -199,11 +195,9 @@ function usePoseDetection(callbacks, runningMode, model, options) {
+     cameraViewLayoutChangeHandler,
+     cameraDeviceChangeHandler: d => {
+       setCameraDevice(d);
+-      console.log(`camera device change. sensorOrientation:${d?.sensorOrientation}`);
+     },
+     cameraOrientationChangedHandler: o => {
+       outputOrientation.value = o;
+-      console.log(`output orientation change:${o}`);
+     },
+     resizeModeChangeHandler: setResizeMode,
+     cameraViewDimensions,
+diff --git a/node_modules/react-native-mediapipe-posedetection/lib/commonjs/shared/convert.js b/node_modules/react-native-mediapipe-posedetection/lib/commonjs/shared/convert.js
+index 9d6845c..ef07d62 100644
+--- a/node_modules/react-native-mediapipe-posedetection/lib/commonjs/shared/convert.js
++++ b/node_modules/react-native-mediapipe-posedetection/lib/commonjs/shared/convert.js
+@@ -238,13 +238,6 @@ class BaseViewCoordinator {
+     this.resizeMode = resizeMode;
+     this.orientation = relativeTo(outputOrientation, sensorOrientation);
+     this.rotation = (0, _types.orientationToRotation)(this.orientation);
+-    console.log('BaseViewCoordinator.constructor', JSON.stringify({
+-      mirrored: this.mirrored,
+-      orientation: this.orientation,
+-      rotation: this.rotation,
+-      sensorOrientation,
+-      outputOrientation
+-    }));
+   }
+   getFrameDims(info) {
+     return (0, _types.dimsByOrientation)(this.orientation, info.inputImageWidth, info.inputImageHeight);
+diff --git a/node_modules/react-native-mediapipe-posedetection/lib/module/index.js b/node_modules/react-native-mediapipe-posedetection/lib/module/index.js
+index 37db904..864c4ff 100644
+--- a/node_modules/react-native-mediapipe-posedetection/lib/module/index.js
++++ b/node_modules/react-native-mediapipe-posedetection/lib/module/index.js
+@@ -30,7 +30,6 @@ function getPoseDetectionModule() {
+ 
+ // Global detector map (same as old arch)
+ const detectorMap = new Map();
+-console.log('MediapipePosedetection module:', MediapipePosedetection);
+ let onResultsSubscription = null;
+ let onErrorSubscription = null;
+ const setupEventListeners = () => {
+@@ -45,7 +44,6 @@ const setupEventListeners = () => {
+   if (MediapipePosedetection?.onResults) {
+     // @ts-ignore
+     onResultsSubscription = MediapipePosedetection.onResults(args => {
+-      console.log('onResults event received:', args.handle);
+       const typedArgs = args;
+       const callbacks = detectorMap.get(typedArgs.handle);
+       if (callbacks) {
+@@ -127,9 +125,7 @@ export function usePoseDetection(callbacks, runningMode, model, options) {
+   }, [updateDetectorMap]);
+   React.useEffect(() => {
+     let newHandle;
+-    console.log(`delegate=${options?.delegate}, runningMode=${runningMode}, model=${model}`);
+     getPoseDetectionModule().createDetector(options?.numPoses ?? 1, options?.minPoseDetectionConfidence ?? 0.5, options?.minPosePresenceConfidence ?? 0.5, options?.minTrackingConfidence ?? 0.5, options?.shouldOutputSegmentationMasks ?? false, model, options?.delegate ?? Delegate.GPU, runningMode).then(handle => {
+-      console.log('createDetector', runningMode, model, handle);
+       setDetectorHandle(handle);
+       newHandle = handle;
+     }).catch(e => {
+@@ -169,11 +165,9 @@ export function usePoseDetection(callbacks, runningMode, model, options) {
+     cameraViewLayoutChangeHandler,
+     cameraDeviceChangeHandler: d => {
+       setCameraDevice(d);
+-      console.log(`camera device change. sensorOrientation:${d?.sensorOrientation}`);
+     },
+     cameraOrientationChangedHandler: o => {
+       outputOrientation.value = o;
+-      console.log(`output orientation change:${o}`);
+     },
+     resizeModeChangeHandler: setResizeMode,
+     cameraViewDimensions,
+diff --git a/node_modules/react-native-mediapipe-posedetection/lib/module/shared/convert.js b/node_modules/react-native-mediapipe-posedetection/lib/module/shared/convert.js
+index 3ad87c0..0f2202b 100644
+--- a/node_modules/react-native-mediapipe-posedetection/lib/module/shared/convert.js
++++ b/node_modules/react-native-mediapipe-posedetection/lib/module/shared/convert.js
+@@ -223,13 +223,6 @@ export class BaseViewCoordinator {
+     this.resizeMode = resizeMode;
+     this.orientation = relativeTo(outputOrientation, sensorOrientation);
+     this.rotation = orientationToRotation(this.orientation);
+-    console.log('BaseViewCoordinator.constructor', JSON.stringify({
+-      mirrored: this.mirrored,
+-      orientation: this.orientation,
+-      rotation: this.rotation,
+-      sensorOrientation,
+-      outputOrientation
+-    }));
+   }
+   getFrameDims(info) {
+     return dimsByOrientation(this.orientation, info.inputImageWidth, info.inputImageHeight);
+diff --git a/node_modules/react-native-mediapipe-posedetection/src/index.tsx b/node_modules/react-native-mediapipe-posedetection/src/index.tsx
+index cc4cc79..3238478 100644
+--- a/node_modules/react-native-mediapipe-posedetection/src/index.tsx
++++ b/node_modules/react-native-mediapipe-posedetection/src/index.tsx
+@@ -115,7 +115,6 @@ function getPoseDetectionModule(): PoseDetectionModule {
+ // Global detector map (same as old arch)
+ const detectorMap = new Map<number, PoseDetectionCallbackState>();
+ 
+-console.log('MediapipePosedetection module:', MediapipePosedetection);
+ 
+ let onResultsSubscription: EventSubscription | null = null;
+ let onErrorSubscription: EventSubscription | null = null;
+@@ -132,7 +131,6 @@ const setupEventListeners = () => {
+   if (MediapipePosedetection?.onResults) {
+     // @ts-ignore
+     onResultsSubscription = MediapipePosedetection.onResults((args: any) => {
+-      console.log('onResults event received:', args.handle);
+       const typedArgs = args as { handle: number } & PoseDetectionResultBundle;
+       const callbacks = detectorMap.get(typedArgs.handle);
+       if (callbacks) {
+@@ -260,9 +258,6 @@ export function usePoseDetection(
+ 
+   React.useEffect(() => {
+     let newHandle: number | undefined;
+-    console.log(
+-      `delegate=${options?.delegate}, runningMode=${runningMode}, model=${model}`
+-    );
+ 
+     getPoseDetectionModule()
+       .createDetector(
+@@ -276,7 +271,6 @@ export function usePoseDetection(
+         runningMode
+       )
+       .then((handle) => {
+-        console.log('createDetector', runningMode, model, handle);
+         setDetectorHandle(handle);
+         newHandle = handle;
+       })
+@@ -337,13 +331,9 @@ export function usePoseDetection(
+       cameraViewLayoutChangeHandler,
+       cameraDeviceChangeHandler: (d) => {
+         setCameraDevice(d);
+-        console.log(
+-          `camera device change. sensorOrientation:${d?.sensorOrientation}`
+-        );
+       },
+       cameraOrientationChangedHandler: (o) => {
+         outputOrientation.value = o;
+-        console.log(`output orientation change:${o}`);
+       },
+       resizeModeChangeHandler: setResizeMode,
+       cameraViewDimensions,
+diff --git a/node_modules/react-native-mediapipe-posedetection/src/shared/convert.ts b/node_modules/react-native-mediapipe-posedetection/src/shared/convert.ts
+index 617fd55..4988570 100644
+--- a/node_modules/react-native-mediapipe-posedetection/src/shared/convert.ts
++++ b/node_modules/react-native-mediapipe-posedetection/src/shared/convert.ts
+@@ -282,16 +282,6 @@ export class BaseViewCoordinator implements ViewCoordinator {
+   ) {
+     this.orientation = relativeTo(outputOrientation, sensorOrientation);
+     this.rotation = orientationToRotation(this.orientation);
+-    console.log(
+-      'BaseViewCoordinator.constructor',
+-      JSON.stringify({
+-        mirrored: this.mirrored,
+-        orientation: this.orientation,
+-        rotation: this.rotation,
+-        sensorOrientation,
+-        outputOrientation,
+-      })
+-    );
+   }
+   getFrameDims(info: FrameProcessInfo): Dims {
+     return dimsByOrientation(

@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { registry } from "../registry";
-import { CaptureAccepted, successResponse, errorResponse } from "../schemas";
+import {
+  CaptureAccepted,
+  FormAnalysisResponse,
+  successResponse,
+  errorResponse,
+} from "../schemas";
 
 const bearerAuth = { BearerAuth: [] };
 
@@ -32,14 +37,23 @@ registry.registerPath({
     },
   },
   responses: {
-    202: successResponse(CaptureAccepted, "Capture accepted and queued"),
+    202: successResponse(
+      CaptureAccepted,
+      "Capture accepted and queued (status QUEUED). Resending to a session whose analysis already started returns that run with its current status; the resent body is not stored.",
+    ),
     400: errorResponse(
       "Validation error, or the body is not gzip (any other content type is rejected)",
     ),
     401: errorResponse("Unauthorized"),
     404: errorResponse("Session not found"),
-    409: errorResponse("Session is not PENDING"),
+    409: errorResponse(
+      "Analysis failed; use the retry route (ANALYSIS_FAILED), or analysis already started by a concurrent request for this session",
+    ),
     413: errorResponse("Compressed body exceeds 1 MiB"),
+    428: errorResponse("AI prerequisites missing"),
+    429: errorResponse(
+      "Daily form-analysis limit reached (DAILY_ANALYSIS_LIMIT_REACHED)",
+    ),
     503: errorResponse("Queue unavailable"),
     500: errorResponse("Internal server error"),
   },
@@ -50,6 +64,8 @@ registry.registerPath({
   path: "/sessions/{id}/analysis/retry",
   tags: ["Session Analysis"],
   summary: "Retry a failed analysis from its stored capture",
+  description:
+    "Retries are capped per user over a rolling 24 h (FORM_ANALYSIS_DAILY_RETRY_CAP); only accepted retries count, and they do not count toward the daily capture cap.",
   security: [bearerAuth],
   request: { params: sessionIdParams },
   responses: {
@@ -57,7 +73,29 @@ registry.registerPath({
     401: errorResponse("Unauthorized"),
     404: errorResponse("Session not found"),
     409: errorResponse("Session is not FAILED or has no stored capture"),
+    428: errorResponse("AI prerequisites missing"),
+    429: errorResponse(
+      "Daily analysis retry limit reached (DAILY_RETRY_LIMIT_REACHED)",
+    ),
     503: errorResponse("Queue unavailable"),
+    500: errorResponse("Internal server error"),
+  },
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/sessions/{id}/analysis",
+  tags: ["Session Analysis"],
+  summary: "Get the form analysis result for a completed set",
+  description:
+    "SCORED results carry a band, three dimension chips, positives first and at most 2 corrections; UNTRACKABLE results carry reasons and advice. The raw score is never returned.",
+  security: [bearerAuth],
+  request: { params: sessionIdParams },
+  responses: {
+    200: successResponse(FormAnalysisResponse, "Analysis retrieved"),
+    401: errorResponse("Unauthorized"),
+    404: errorResponse("Session not found"),
+    409: errorResponse("Analysis not ready (ANALYSIS_NOT_READY)"),
     500: errorResponse("Internal server error"),
   },
 });

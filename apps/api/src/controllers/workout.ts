@@ -4,11 +4,12 @@ import { StatusCodes } from "http-status-codes";
 import type {
   CreateWorkoutValues,
   GenerateWorkoutValues,
+  RecordedSetsQuery,
   UpdateWorkoutValues,
-  WorkoutLogValues,
 } from "@repo/common";
 
 import requireUserUuid from "../utils/requireUserUuid";
+import analysisResultQueryService from "../services/analysisResultQueryService";
 import workoutService from "../services/workoutService";
 import workoutGenerationService from "../services/workoutGenerationService";
 
@@ -19,6 +20,10 @@ type ListWorkoutsQuery = {
 
 type WorkoutIdParam = {
   id: string;
+};
+
+type WorkoutLogIdParam = WorkoutIdParam & {
+  logId: string;
 };
 
 /**
@@ -66,6 +71,32 @@ export const getWorkoutById = async (
     success: true,
     message: "Workout retrieved successfully",
     data: workout,
+  });
+};
+
+/**
+ * List the recorded (form-analysed) sets of a workout
+ * @route GET /api/workouts/:id/recorded-sets
+ */
+export const listRecordedSets = async (
+  req: Request<WorkoutIdParam>,
+  res: Response,
+) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  // validateSchema replaced req.query with the parsed value, defaults included.
+  const query = req.query as unknown as RecordedSetsQuery;
+  const data = await analysisResultQueryService.listRecordedSets(
+    userUuid,
+    Number(req.params.id),
+    query,
+  );
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "Recorded sets retrieved",
+    data,
   });
 };
 
@@ -132,26 +163,46 @@ export const deleteWorkout = async (
 };
 
 /**
- * Start workout (create log)
+ * Start a workout run (create an in-progress log)
  * @route POST /api/workouts/:id/logs
  */
 export const startWorkout = async (
-  req: Request<WorkoutIdParam, unknown, WorkoutLogValues>,
+  req: Request<WorkoutIdParam>,
   res: Response,
 ) => {
   const userUuid = requireUserUuid(req, res);
   if (!userUuid) return;
 
   const workoutId = Number(req.params.id);
-  const log = await workoutService.startWorkoutLog(
-    userUuid,
-    workoutId,
-    req.body,
-  );
+  const log = await workoutService.startWorkoutLog(userUuid, workoutId);
 
   res.status(StatusCodes.CREATED).json({
     success: true,
     message: "Workout started successfully",
+    data: log,
+  });
+};
+
+/**
+ * Complete a workout run
+ * @route PATCH /api/workouts/:id/logs/:logId
+ */
+export const completeWorkout = async (
+  req: Request<WorkoutLogIdParam>,
+  res: Response,
+) => {
+  const userUuid = requireUserUuid(req, res);
+  if (!userUuid) return;
+
+  const log = await workoutService.completeWorkoutLog(
+    userUuid,
+    Number(req.params.id),
+    Number(req.params.logId),
+  );
+
+  res.status(StatusCodes.OK).json({
+    success: true,
+    message: "Workout completed successfully",
     data: log,
   });
 };

@@ -3,31 +3,23 @@ import type {
   GenerateWorkoutValues,
   WorkoutGenerationPreview,
   UpdateWorkoutValues,
-  WorkoutLogValues,
   WorkoutWithExercises,
   WorkoutListResponse,
   WorkoutLogResponse,
+  RecordedSetPage,
 } from "@repo/common";
 
 import { apiClient } from "../client";
+import { withQuery } from "../withQuery";
 import { WORKOUT_ROUTES } from "@src/constants/routes";
 
 const GENERATE_TIMEOUT_MS = 75_000;
 
 export const workoutApi = {
-  list: (params?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<WorkoutListResponse> => {
-    const query = new URLSearchParams();
-    if (params?.limit !== undefined) query.set("limit", String(params.limit));
-    if (params?.offset !== undefined)
-      query.set("offset", String(params.offset));
-    const qs = query.toString();
-    return apiClient.get<WorkoutListResponse>(
-      qs ? `${WORKOUT_ROUTES.list}?${qs}` : WORKOUT_ROUTES.list,
-    );
-  },
+  list: (
+    params: { limit?: number; offset?: number } = {},
+  ): Promise<WorkoutListResponse> =>
+    apiClient.get<WorkoutListResponse>(withQuery(WORKOUT_ROUTES.list, params)),
 
   get: (id: number): Promise<WorkoutWithExercises> =>
     apiClient.get<WorkoutWithExercises>(WORKOUT_ROUTES.detail(id)),
@@ -49,6 +41,21 @@ export const workoutApi = {
   remove: (id: number): Promise<void> =>
     apiClient.delete<void>(WORKOUT_ROUTES.detail(id)),
 
-  startLog: (id: number, data: WorkoutLogValues): Promise<WorkoutLogResponse> =>
-    apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), data),
+  startLog: (id: number): Promise<WorkoutLogResponse> =>
+    apiClient.post<WorkoutLogResponse>(WORKOUT_ROUTES.logs(id), {}),
+
+  completeLog: (id: number, logId: number): Promise<WorkoutLogResponse> =>
+    apiClient.patch<WorkoutLogResponse>(WORKOUT_ROUTES.log(id, logId), {}),
+
+  recordedSets: (
+    workoutId: number,
+    workoutLogId?: number,
+    offset?: number,
+  ): Promise<RecordedSetPage> =>
+    apiClient.get<RecordedSetPage>(
+      withQuery(WORKOUT_ROUTES.recordedSets(workoutId), {
+        workoutLogId,
+        offset,
+      }),
+    ),
 };

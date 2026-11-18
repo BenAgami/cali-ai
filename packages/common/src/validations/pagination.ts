@@ -6,7 +6,6 @@ export const pageMetaSchema = z.object({
   hasMore: z.boolean(),
   nextOffset: z.number().int().nullable(),
 });
-
 export type PageMeta = z.infer<typeof pageMetaSchema>;
 
 export const paginatedSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>

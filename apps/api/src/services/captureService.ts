@@ -1,20 +1,27 @@
 import { randomUUID } from "node:crypto";
 import type { z } from "zod";
 
-import type {
-  captureAcceptedResponseSchema,
-  PoseCapturePayload,
+import {
+  API_ERROR_CODES,
+  type captureAcceptedResponseSchema,
+  type PoseCapturePayload,
 } from "@repo/common";
-import { SessionStatus } from "@repo/db";
+import { getPrismaClient, SessionStatus } from "@repo/db";
 
 import { ConflictError, ServiceUnavailableError } from "../errors";
 import { logger } from "../lib/logger";
 import { ANALYSIS_JOB_NAME, formAnalysisQueue } from "../lib/queue";
 import { encodeCapture, KEYPOINTS_FORMAT } from "../utils/captureCodec";
+import { toStatusEvent } from "../utils/analysisProgress";
 import { toError } from "../utils/toError";
 import { withTimeout } from "../utils/withTimeout";
 
-import analysisStateService from "./analysisStateService";
+import aiPrerequisitesService from "./aiPrerequisitesService";
+import analysisStateService, {
+  ANALYSIS_ALREADY_STARTED_MESSAGE,
+  ONLY_FAILED_RETRYABLE_MESSAGE,
+  type SessionSnapshot,
+} from "./analysisStateService";
 
 type CaptureAcceptedData = z.infer<typeof captureAcceptedResponseSchema>;
 
@@ -27,6 +34,10 @@ const newJobId = (): string => `analysis-${randomUUID()}`;
  * here: the worker decodes the keypoints, computes metrics and calls the LLM.
  */
 export class CaptureService {
+  private get prisma() {
+    return getPrismaClient();
+  }
+
   async submitCapture(
     userUuid: string,
     sessionId: number,
@@ -38,11 +49,16 @@ export class CaptureService {
     );
 
     if (session.processingStatus === SessionStatus.FAILED) {
-      throw new ConflictError("Analysis failed; retry the analysis");
+      throw new ConflictError(
+        "Analysis failed; retry the analysis",
+        API_ERROR_CODES.ANALYSIS_FAILED,
+      );
     }
     if (session.processingStatus !== SessionStatus.PENDING) {
-      throw new ConflictError("Analysis already started for this session");
+      return this.acceptedRun(session);
     }
+
+    await aiPrerequisitesService.assertAiPrerequisites(session.userId);
 
     const keypoints = await encodeCapture(payload);
     const jobId = newJobId();
@@ -61,6 +77,7 @@ export class CaptureService {
         appVersion: payload.appVersion ?? null,
       },
       jobId,
+      session.userId,
     );
 
     await this.enqueue(sessionId, captureId, jobId);
@@ -76,17 +93,44 @@ export class CaptureService {
       sessionId,
     );
     if (session.processingStatus !== SessionStatus.FAILED) {
-      throw new ConflictError("Only failed analyses can be retried");
+      throw new ConflictError(ONLY_FAILED_RETRYABLE_MESSAGE);
     }
+
+    await aiPrerequisitesService.assertAiPrerequisites(session.userId);
 
     const jobId = newJobId();
     const { captureId } = await analysisStateService.restartRun(
       sessionId,
       jobId,
+      session.userId,
     );
 
     await this.enqueue(sessionId, captureId, jobId);
     return { sessionId, captureId, jobId, status: "QUEUED" };
+  }
+
+  /**
+   * A client whose capture response was lost resends the same capture; answer
+   * with the run that capture started instead of refusing it, so the client
+   * can follow that run. The resent body is not stored or counted again.
+   */
+  private async acceptedRun(
+    session: SessionSnapshot,
+  ): Promise<CaptureAcceptedData> {
+    const stored = await this.prisma.poseCapture.findUnique({
+      where: { sessionId: session.id },
+      select: { id: true },
+    });
+    const event = toStatusEvent(session);
+    if (!stored || session.bullmqJobId === null || event === null) {
+      throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
+    }
+    return {
+      sessionId: session.id,
+      captureId: stored.id,
+      jobId: session.bullmqJobId,
+      status: event.status,
+    };
   }
 
   /**
@@ -107,7 +151,6 @@ export class CaptureService {
           { jobId },
         ),
         ENQUEUE_TIMEOUT_MS,
-        "ENQUEUE_TIMEOUT",
       );
     } catch (error) {
       logger.error(

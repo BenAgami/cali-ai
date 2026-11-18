@@ -32,7 +32,12 @@ const runCreateWorkoutSession = async (user: Request["user"] | undefined) => {
 };
 
 const runListWorkoutSessions = async (
-  query: { limit?: number; offset?: number; exerciseCode?: string } = {},
+  query: {
+    limit?: number;
+    offset?: number;
+    exerciseCode?: string;
+    processingStatus?: string;
+  } = {},
 ) => {
   const res = createMockResponse();
 
@@ -91,6 +96,7 @@ describe("listWorkoutSessions", () => {
       limit: 20,
       offset: 0,
       exerciseCode: undefined,
+      processingStatus: undefined,
     });
   });
 
@@ -106,6 +112,15 @@ describe("listWorkoutSessions", () => {
       limit: 5,
       offset: 10,
       exerciseCode: "PUSH_UP",
+      processingStatus: undefined,
     });
+  });
+
+  it("passes processingStatus through to the service", async () => {
+    await runListWorkoutSessions({ processingStatus: "PROCESSING" });
+
+    expect(workoutSessionService.listSessions).toHaveBeenCalledWith(
+      expect.objectContaining({ processingStatus: "PROCESSING" }),
+    );
   });
 });

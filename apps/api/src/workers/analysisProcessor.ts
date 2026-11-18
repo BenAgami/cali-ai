@@ -1,36 +1,26 @@
 import { UnrecoverableError, type Job } from "bullmq";
 import {
   ANALYSIS_FAILURE_REASONS,
+  isFormAnalysisExercise,
   type AnalysisFailureReason,
   type PoseCapturePayload,
 } from "@repo/common";
 
-import { env } from "../config/env";
+import { PreconditionRequiredError } from "../errors";
+import { LlmError } from "../lib/llm";
 import { logger } from "../lib/logger";
 import type { AnalysisJobData } from "../lib/queue";
+import { computeFormMetrics } from "../metrics/computeFormMetrics";
+import { UnsupportedCaptureError } from "../metrics/preprocess";
 import analysisStateService from "../services/analysisStateService";
+import aiPrerequisitesService, {
+  type AiUserContext,
+} from "../services/aiPrerequisitesService";
 import feedbackService, {
-  type FeedbackInput,
+  type FormFeedbackOutcome,
 } from "../services/feedbackService";
+import formAnalysisResultService from "../services/formAnalysisResultService";
 import { decodeCapture, InvalidCaptureError } from "../utils/captureCodec";
-import { TimeoutError, withTimeout } from "../utils/withTimeout";
-
-// Metrics stub: Phase 5 replaces this with real rep/form metrics.
-const summarizeCapture = (payload: PoseCapturePayload): FeedbackInput => {
-  let total = 0;
-  let count = 0;
-  for (const frame of payload.frames) {
-    for (const keypoint of frame.keypoints) {
-      total += keypoint[2];
-      count += 1;
-    }
-  }
-  return {
-    frameCount: payload.frames.length,
-    keypointsPerFrame: payload.frames[0]?.keypoints.length ?? 0,
-    meanConfidence: count === 0 ? 0 : total / count,
-  };
-};
 
 const isFailureReason = (value: string): value is AnalysisFailureReason =>
   (ANALYSIS_FAILURE_REASONS as readonly string[]).includes(value);
@@ -39,10 +29,24 @@ const toFailureReason = (error: Error): AnalysisFailureReason => {
   if (error instanceof UnrecoverableError && isFailureReason(error.message)) {
     return error.message;
   }
-  if (error instanceof TimeoutError && error.code === "LLM_TIMEOUT") {
+  if (error instanceof LlmError && error.code === "TIMEOUT") {
     return "LLM_TIMEOUT";
   }
   return "ANALYSIS_ERROR";
+};
+
+/**
+ * Unusable model output is permanent (the in-attempt repair already ran);
+ * timeouts, rate limits and outages are rethrown so BullMQ retries them.
+ */
+const toProcessingError = (error: unknown): unknown => {
+  if (
+    error instanceof LlmError &&
+    (error.code === "INVALID_OUTPUT" || error.code === "REFUSAL")
+  ) {
+    return new UnrecoverableError("ANALYSIS_ERROR");
+  }
+  return error;
 };
 
 export const processAnalysisJob = async (
@@ -59,6 +63,13 @@ export const processAnalysisJob = async (
   if (!capture?.keypoints) {
     throw new UnrecoverableError("CAPTURE_MISSING");
   }
+
+  const jobContext =
+    await analysisStateService.getAnalysisJobContext(sessionId);
+  if (!jobContext || !isFormAnalysisExercise(jobContext.exerciseCode)) {
+    throw new UnrecoverableError("ANALYSIS_ERROR");
+  }
+  const { exerciseCode } = jobContext;
 
   await analysisStateService.advanceStage(
     sessionId,
@@ -78,6 +89,16 @@ export const processAnalysisJob = async (
     throw error;
   }
 
+  let metrics: ReturnType<typeof computeFormMetrics>;
+  try {
+    metrics = computeFormMetrics(payload, exerciseCode);
+  } catch (error) {
+    if (error instanceof UnsupportedCaptureError) {
+      throw new UnrecoverableError("CAPTURE_INVALID");
+    }
+    throw error;
+  }
+
   await analysisStateService.advanceStage(
     sessionId,
     jobId,
@@ -85,27 +106,91 @@ export const processAnalysisJob = async (
     1,
     log,
   );
-  await analysisStateService.advanceStage(
+
+  if (metrics.outcome === "UNTRACKABLE") {
+    log.info(
+      { outcome: metrics.outcome, reasons: metrics.reasons },
+      "Form metrics computed",
+    );
+
+    const isCompleted = await analysisStateService.completeRunWithResult(
+      sessionId,
+      jobId,
+      (tx) => formAnalysisResultService.saveUntrackable(tx, sessionId, metrics),
+      log,
+    );
+    if (!isCompleted) {
+      log.warn("Run state changed during processing; result discarded");
+    }
+    return;
+  }
+
+  log.info(
+    {
+      outcome: metrics.outcome,
+      repCount: metrics.repCount,
+      band: metrics.band,
+    },
+    "Form metrics computed",
+  );
+
+  // advanceStage is guarded on this job owning a PROCESSING session, so false
+  // means a newer run replaced it; skip the LLM call it would pay for.
+  const isRunActive = await analysisStateService.advanceStage(
     sessionId,
     jobId,
     "WRITING_FEEDBACK",
     0,
     log,
   );
+  if (!isRunActive) {
+    log.warn("Run state changed before the LLM call; skipping it");
+    return;
+  }
 
-  await withTimeout(
-    feedbackService.generateFeedback(summarizeCapture(payload)),
-    env.analysis.llmTimeoutMs,
-    "LLM_TIMEOUT",
-  );
+  let aiContext: AiUserContext;
+  try {
+    aiContext = await aiPrerequisitesService.assertAiPrerequisites(
+      jobContext.userId,
+    );
+  } catch (error) {
+    // Prerequisites lapsed after capture (e.g. consent withdrawn): never send
+    // the data to the LLM, and don't let BullMQ retry an HTTP error.
+    if (error instanceof PreconditionRequiredError) {
+      log.warn(
+        { code: error.code },
+        "AI prerequisites no longer met; analysis abandoned",
+      );
+      throw new UnrecoverableError("ANALYSIS_ERROR");
+    }
+    throw error;
+  }
 
-  const isCompleted = await analysisStateService.completeRun(
+  let outcome: FormFeedbackOutcome;
+  try {
+    outcome = await feedbackService.generateFormFeedback({
+      metrics,
+      context: {
+        exerciseDisplayName: jobContext.exerciseDisplayName,
+        experienceLevel: aiContext.experienceLevel,
+        heightCm: aiContext.heightCm,
+        weightKg: aiContext.weightKg,
+      },
+      log,
+    });
+  } catch (error) {
+    throw toProcessingError(error);
+  }
+
+  const isCompleted = await analysisStateService.completeRunWithResult(
     sessionId,
     jobId,
+    (tx) =>
+      formAnalysisResultService.saveScored(tx, sessionId, metrics, outcome),
     log,
   );
   if (!isCompleted) {
-    log.warn("Run state changed during processing; completion discarded");
+    log.warn("Run state changed during processing; result discarded");
   }
 };
 

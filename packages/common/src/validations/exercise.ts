@@ -11,7 +11,6 @@ export const exerciseSummarySchema = z.object({
   displayName: z.string(),
   exerciseType: z.enum(EXERCISE_TYPES),
 });
-
 export type ExerciseSummary = z.infer<typeof exerciseSummarySchema>;
 
 export const exerciseDetailSchema = exerciseSummarySchema.extend({
@@ -20,11 +19,9 @@ export const exerciseDetailSchema = exerciseSummarySchema.extend({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-
 export type ExerciseDetail = z.infer<typeof exerciseDetailSchema>;
 
 export const exerciseListResponseSchema = paginatedSchema(
   exerciseSummarySchema,
 );
-
 export type ExerciseListResponse = z.infer<typeof exerciseListResponseSchema>;

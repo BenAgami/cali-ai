@@ -172,6 +172,29 @@ describe("LLM and generation env", () => {
     expect(parsed.LLM_MAX_TOKENS).toBe(2000);
     expect(parsed.AI_GENERATION_DAILY_CAP).toBe(10);
     expect(parsed.AI_GENERATION_DEADLINE_MS).toBe(60000);
+    expect(parsed.FORM_ANALYSIS_DAILY_CAP).toBe(15);
+    expect(parsed.FORM_ANALYSIS_DAILY_RETRY_CAP).toBe(5);
+  });
+
+  describe("daily caps", () => {
+    const caps = [
+      { key: "AI_GENERATION_DAILY_CAP", max: 20 },
+      { key: "FORM_ANALYSIS_DAILY_CAP", max: 30 },
+      { key: "FORM_ANALYSIS_DAILY_RETRY_CAP", max: 10 },
+    ] as const;
+
+    it.for(caps)("accepts $key at its max of $max", ({ key, max }) => {
+      expect(parse({ [key]: String(max) })[key]).toBe(max);
+    });
+
+    it.for(
+      caps.flatMap(({ key, max }) => [
+        { key, value: "0" },
+        { key, value: String(max + 1) },
+      ]),
+    )("rejects $key of $value", ({ key, value }) => {
+      expectIssueOn(key, { [key]: value });
+    });
   });
 
   it("requires ANTHROPIC_API_KEY in production", () => {

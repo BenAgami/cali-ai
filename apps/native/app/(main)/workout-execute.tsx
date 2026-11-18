@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -9,15 +9,26 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 
 import { useTheme } from "@src/context/ThemeContext";
 import { useWorkoutDetail } from "@src/hooks/queries/useWorkoutDetail";
 import { useWorkoutExecution } from "@src/hooks/useWorkoutExecution";
-import { useStartWorkout } from "@src/hooks/mutations/useStartWorkout";
+import { useCompleteWorkoutRun } from "@src/hooks/mutations/useCompleteWorkoutRun";
 import RestTimer from "@src/components/RestTimer";
+import RecordedSetCard from "@src/components/form/RecordedSetCard";
+import ShowEarlierSetsButton from "@src/components/form/ShowEarlierSetsButton";
+import { useWorkoutRecordedSets } from "@src/hooks/useWorkoutRecordedSets";
+import { consumeRecordedSetDone } from "@src/state/recordedSetStore";
+import { isFormAnalysisExercise } from "@repo/common";
+import { parsePositiveIntParam } from "@src/utils/parsePositiveIntParam";
+import {
+  RUN_NOT_STARTED_MESSAGE,
+  SAVE_RUN_FAILED_MESSAGE,
+  SAVE_RUN_FAILED_TITLE,
+} from "@src/constants/workoutMessages";
 
-type ExecuteParams = { id?: string };
+type ExecuteParams = { id?: string; runId?: string };
 
 const formatElapsed = (s: number): string => {
   const h = Math.floor(s / 3600);
@@ -47,37 +58,57 @@ const formatRepsOrDuration = (
 const WorkoutExecuteScreen: React.FC = () => {
   const { colors } = useTheme();
   const params = useLocalSearchParams<ExecuteParams>();
-  const id = params.id ? Number(params.id) : undefined;
+  const id = parsePositiveIntParam(params.id) ?? undefined;
   const { data: workout, isLoading, error } = useWorkoutDetail(id);
   const execution = useWorkoutExecution(workout);
-  const startMutation = useStartWorkout();
+  const runId = parsePositiveIntParam(params.runId);
+  const completeMutation = useCompleteWorkoutRun();
+  const recorded = useWorkoutRecordedSets(id, runId ?? undefined);
+  const { phase, currentSet, completeSet } = execution;
+
+  // Returning from a submitted recording completes the set and starts rest.
+  useFocusEffect(
+    useCallback(() => {
+      if (id === undefined || phase !== "working") return;
+      if (consumeRecordedSetDone({ workoutId: id, setNumber: currentSet })) {
+        completeSet();
+      }
+    }, [id, phase, currentSet, completeSet]),
+  );
+
+  const handleOpenResult = (sessionId: number) => {
+    router.push({
+      pathname: "/analysis-result",
+      params: { sessionId: String(sessionId) },
+    });
+  };
 
   const handleDone = () => {
     if (!id || !workout) return;
-    startMutation.mutate(
-      {
-        workoutId: id,
-        data: {
-          durationSecs: execution.totalElapsedSecs,
-          completedAt: new Date().toISOString(),
+    if (runId === null) {
+      // Opened without a run (e.g. restored navigation): nothing to save.
+      Alert.alert(SAVE_RUN_FAILED_TITLE, RUN_NOT_STARTED_MESSAGE, [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(main)/(tabs)/workouts"),
         },
-      },
+      ]);
+      return;
+    }
+    completeMutation.mutate(
+      { workoutId: id, runId },
       {
         onSuccess: () => {
           // Pop back to the workouts tab — the list will refetch via useFocusEffect.
           router.replace("/(main)/(tabs)/workouts");
         },
         onError: () => {
-          Alert.alert(
-            "Could not save",
-            "We couldn't record this workout, but your time is shown above.",
-            [
-              {
-                text: "OK",
-                onPress: () => router.replace("/(main)/(tabs)/workouts"),
-              },
-            ],
-          );
+          Alert.alert(SAVE_RUN_FAILED_TITLE, SAVE_RUN_FAILED_MESSAGE, [
+            {
+              text: "OK",
+              onPress: () => router.replace("/(main)/(tabs)/workouts"),
+            },
+          ]);
         },
       },
     );
@@ -149,19 +180,19 @@ const WorkoutExecuteScreen: React.FC = () => {
           </View>
           <Pressable
             onPress={handleDone}
-            disabled={startMutation.isPending}
+            disabled={completeMutation.isPending}
             style={({ pressed }) => [
               styles.doneButton,
               {
                 backgroundColor: pressed ? "#006EE6" : "#007AFF",
-                opacity: startMutation.isPending ? 0.7 : 1,
+                opacity: completeMutation.isPending ? 0.7 : 1,
               },
             ]}
             accessibilityRole="button"
             accessibilityLabel="Done"
           >
             <Text style={styles.doneButtonText}>
-              {startMutation.isPending ? "Saving…" : "Done"}
+              {completeMutation.isPending ? "Saving…" : "Done"}
             </Text>
           </Pressable>
         </ScrollView>
@@ -221,6 +252,53 @@ const WorkoutExecuteScreen: React.FC = () => {
             <Text style={styles.completeButtonText}>Complete set</Text>
           </Pressable>
         )}
+
+        {execution.phase === "working" &&
+          isFormAnalysisExercise(ex.exercise.code) && (
+            <Pressable
+              onPress={() =>
+                router.push({
+                  pathname: "/record-set",
+                  params: {
+                    workoutId: String(id),
+                    setNumber: String(execution.currentSet),
+                    exerciseCode: ex.exercise.code,
+                    exerciseDisplayName: ex.exercise.displayName,
+                    ...(runId !== null && { runId: String(runId) }),
+                    source: "execute",
+                  },
+                })
+              }
+              style={({ pressed }) => [
+                styles.recordButton,
+                { borderColor: colors.text + "44", opacity: pressed ? 0.7 : 1 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel="Record this set for form feedback"
+            >
+              <Text style={[styles.recordButtonText, { color: colors.text }]}>
+                Record this set
+              </Text>
+            </Pressable>
+          )}
+
+        <ScrollView style={styles.recordedRows}>
+          {recorded.items.map((item) => (
+            <RecordedSetCard
+              key={item.sessionId}
+              item={item}
+              onOpen={handleOpenResult}
+              onRetry={(sessionId) => void recorded.retrySet(sessionId)}
+              isRetrying={recorded.retryingIds.has(item.sessionId)}
+            />
+          ))}
+          {recorded.hasMore && (
+            <ShowEarlierSetsButton
+              isLoading={recorded.isLoadingMore}
+              onPress={recorded.loadMore}
+            />
+          )}
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -278,6 +356,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 24,
   },
+  recordButton: {
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    marginTop: 12,
+  },
+  recordButtonText: { fontSize: 16, fontWeight: "600" },
+  recordedRows: { flex: 1, marginTop: 16 },
   completeButtonText: { color: "#FFFFFF", fontSize: 17, fontWeight: "700" },
 
   summaryContainer: { padding: 32, paddingTop: 64, alignItems: "center" },

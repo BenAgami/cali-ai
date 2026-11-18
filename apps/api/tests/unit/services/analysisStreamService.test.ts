@@ -67,6 +67,7 @@ describe("analysisStreamService", () => {
       analysisStageProgress: null,
       failureReason: null,
       bullmqJobId: null,
+      userId: 3,
     });
 
     it("propagates NotFoundError from the ownership lookup", async () => {

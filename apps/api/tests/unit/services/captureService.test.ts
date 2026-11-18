@@ -1,16 +1,45 @@
-import { SessionStatus } from "@repo/db";
+import { getPrismaClient, SessionStatus } from "@repo/db";
 import type { PoseCapturePayload } from "@repo/common";
 
-import { ConflictError, ServiceUnavailableError } from "../../../src/errors";
+import {
+  ConflictError,
+  PreconditionRequiredError,
+  ServiceUnavailableError,
+} from "../../../src/errors";
 
-vi.mock("../../../src/services/analysisStateService", () => ({
-  default: {
-    findOwnedSession: vi.fn(),
-    startRunWithCapture: vi.fn(),
-    restartRun: vi.fn(),
-    failRun: vi.fn(),
-  },
+import {
+  asPrismaClient,
+  createPrismaMock,
+  type PrismaMock,
+} from "../helpers/prismaMock";
+
+vi.mock("@repo/db", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@repo/db")>()),
+  getPrismaClient: vi.fn(),
 }));
+
+vi.mock("../../../src/services/aiPrerequisitesService", () => ({
+  default: { assertAiPrerequisites: vi.fn() },
+}));
+
+vi.mock("../../../src/lib/progressBus", () => ({
+  publishAnalysisEvent: vi.fn(),
+}));
+
+vi.mock(
+  "../../../src/services/analysisStateService",
+  async (importOriginal) => ({
+    ...(await importOriginal<
+      typeof import("../../../src/services/analysisStateService")
+    >()),
+    default: {
+      findOwnedSession: vi.fn(),
+      startRunWithCapture: vi.fn(),
+      restartRun: vi.fn(),
+      failRun: vi.fn(),
+    },
+  }),
+);
 
 vi.mock("../../../src/lib/queue", () => ({
   formAnalysisQueue: { add: vi.fn() },
@@ -24,10 +53,13 @@ vi.mock("../../../src/lib/logger", () => ({
 const { CaptureService } = await import("../../../src/services/captureService");
 const { default: analysisStateService } =
   await import("../../../src/services/analysisStateService");
+const { default: aiPrerequisitesService } =
+  await import("../../../src/services/aiPrerequisitesService");
 const { formAnalysisQueue } = await import("../../../src/lib/queue");
 const { logger } = await import("../../../src/lib/logger");
 
 const USER = "user-uuid";
+const USER_ID = 3;
 const SESSION_ID = 7;
 const JOB_ID_PATTERN = /^analysis-[0-9a-f-]{36}$/;
 
@@ -56,6 +88,7 @@ const snapshot = (processingStatus: SessionStatus) => ({
   analysisStageProgress: null,
   failureReason: null,
   bullmqJobId: null,
+  userId: USER_ID,
 });
 
 const stubPending = () => {
@@ -78,9 +111,16 @@ const stubFailed = () => {
 
 describe("CaptureService", () => {
   let service: InstanceType<typeof CaptureService>;
+  let prisma: PrismaMock;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    prisma = createPrismaMock();
+    vi.mocked(getPrismaClient).mockReturnValue(asPrismaClient(prisma));
+    prisma.poseCapture.count.mockResolvedValue(0);
+    vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockResolvedValue(
+      {} as never,
+    );
     service = new CaptureService();
     vi.mocked(analysisStateService.failRun).mockResolvedValue(true);
   });
@@ -92,10 +132,12 @@ describe("CaptureService", () => {
 
       const result = await service.submitCapture(USER, SESSION_ID, payload);
 
-      const [, insert, jobId] = vi.mocked(
+      const [, insert, jobId, ownerId] = vi.mocked(
         analysisStateService.startRunWithCapture,
       ).mock.calls[0];
       expect(jobId).toMatch(JOB_ID_PATTERN);
+      expect(ownerId).toBe(USER_ID);
+      expect(prisma.user.findUnique).not.toHaveBeenCalled();
       expect(result).toEqual({
         sessionId: SESSION_ID,
         captureId: 11,
@@ -121,22 +163,48 @@ describe("CaptureService", () => {
       );
     });
 
-    it.each([SessionStatus.PROCESSING, SessionStatus.COMPLETED])(
-      "rejects a %s session with 409",
-      async (status) => {
-        vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
-          snapshot(status),
-        );
+    it.each([
+      { status: SessionStatus.PROCESSING, expected: "QUEUED" },
+      { status: SessionStatus.COMPLETED, expected: "COMPLETED" },
+    ])(
+      "answers a resend to a $status session with status $expected",
+      async ({ status, expected }) => {
+        vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue({
+          ...snapshot(status),
+          bullmqJobId: "analysis-existing",
+        });
+        prisma.poseCapture.findUnique.mockResolvedValue({ id: 11 });
 
-        await expect(
-          service.submitCapture(USER, SESSION_ID, payload),
-        ).rejects.toThrow(
-          new ConflictError("Analysis already started for this session"),
-        );
+        const result = await service.submitCapture(USER, SESSION_ID, payload);
+
+        expect(result).toEqual({
+          sessionId: SESSION_ID,
+          captureId: 11,
+          jobId: "analysis-existing",
+          status: expected,
+        });
+        expect(prisma.poseCapture.findUnique).toHaveBeenCalledWith({
+          where: { sessionId: SESSION_ID },
+          select: { id: true },
+        });
         expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
         expect(formAnalysisQueue.add).not.toHaveBeenCalled();
       },
     );
+
+    it("rejects a started session with no stored capture with 409", async () => {
+      vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue({
+        ...snapshot(SessionStatus.PROCESSING),
+        bullmqJobId: "analysis-existing",
+      });
+      prisma.poseCapture.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.submitCapture(USER, SESSION_ID, payload),
+      ).rejects.toThrow(
+        new ConflictError("Analysis already started for this session"),
+      );
+    });
 
     it("rejects a FAILED session with 409 and a retry hint", async () => {
       vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
@@ -145,14 +213,58 @@ describe("CaptureService", () => {
 
       await expect(
         service.submitCapture(USER, SESSION_ID, payload),
-      ).rejects.toThrow(
-        new ConflictError("Analysis failed; retry the analysis"),
-      );
+      ).rejects.toMatchObject({
+        message: "Analysis failed; retry the analysis",
+        code: "ANALYSIS_FAILED",
+      });
       expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
     });
   });
 
+  describe("submitCapture gating", () => {
+    it("rejects with 428 and stores nothing when prerequisites are missing", async () => {
+      stubPending();
+      vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockRejectedValue(
+        new PreconditionRequiredError("consent", "AI_CONSENT_REQUIRED"),
+      );
+
+      await expect(
+        service.submitCapture(USER, SESSION_ID, payload),
+      ).rejects.toBeInstanceOf(PreconditionRequiredError);
+      expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
+        USER_ID,
+      );
+      expect(analysisStateService.startRunWithCapture).not.toHaveBeenCalled();
+      expect(formAnalysisQueue.add).not.toHaveBeenCalled();
+    });
+  });
+
   describe("retryAnalysis", () => {
+    it("requires AI prerequisites and does not count toward the daily capture cap", async () => {
+      stubFailed();
+      vi.mocked(formAnalysisQueue.add).mockResolvedValue({} as never);
+      prisma.poseCapture.count.mockResolvedValue(999);
+
+      await service.retryAnalysis(USER, SESSION_ID);
+
+      expect(aiPrerequisitesService.assertAiPrerequisites).toHaveBeenCalledWith(
+        USER_ID,
+      );
+      expect(prisma.poseCapture.count).not.toHaveBeenCalled();
+    });
+
+    it("rejects a retry with 428 when prerequisites are missing", async () => {
+      stubFailed();
+      vi.mocked(aiPrerequisitesService.assertAiPrerequisites).mockRejectedValue(
+        new PreconditionRequiredError("consent", "AI_CONSENT_REQUIRED"),
+      );
+
+      await expect(
+        service.retryAnalysis(USER, SESSION_ID),
+      ).rejects.toBeInstanceOf(PreconditionRequiredError);
+      expect(analysisStateService.restartRun).not.toHaveBeenCalled();
+    });
+
     it("restarts a FAILED run from the stored capture", async () => {
       vi.mocked(analysisStateService.findOwnedSession).mockResolvedValue(
         snapshot(SessionStatus.FAILED),
@@ -164,7 +276,9 @@ describe("CaptureService", () => {
 
       const result = await service.retryAnalysis(USER, SESSION_ID);
 
-      const jobId = vi.mocked(analysisStateService.restartRun).mock.calls[0][1];
+      const [, jobId, userId] = vi.mocked(analysisStateService.restartRun).mock
+        .calls[0];
+      expect(userId).toBe(USER_ID);
       expect(jobId).toMatch(JOB_ID_PATTERN);
       expect(result).toEqual({
         sessionId: SESSION_ID,

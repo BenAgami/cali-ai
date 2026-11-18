@@ -11,7 +11,6 @@ import {
   upsertGoalSchema,
   createWorkoutSchema,
   updateWorkoutSchema,
-  workoutLogSchema,
   createWorkoutSessionSchema,
   EXPERIENCE_LEVELS,
   GOAL_TYPES,
@@ -22,7 +21,10 @@ import {
   poseCapturePayloadSchema,
   captureAcceptedResponseSchema,
   analysisStatusEventSchema,
+  formAnalysisResponseSchema,
+  recordedSetSchema,
   workoutSessionResponseSchema,
+  workoutSessionListItemSchema,
   bodyMetricInputSchema,
   aiConsentSchema,
   saveBodyMetricResponseSchema,
@@ -89,10 +91,6 @@ export const UpdateWorkoutBody = registry.register(
 export const GenerateWorkoutBody = registry.register(
   "GenerateWorkoutBody",
   generateWorkoutSchema,
-);
-export const WorkoutLogBody = registry.register(
-  "WorkoutLogBody",
-  workoutLogSchema,
 );
 export const CreateWorkoutSessionBody = registry.register(
   "CreateWorkoutSessionBody",
@@ -317,12 +315,6 @@ export const WorkoutLogResponse = registry.register(
 
 // ── Workout session responses ─────────────────────────────────────────────────
 
-const AnalysisResultSummary = z.object({
-  formScore: z.number().int(),
-  analyzedAt: isoDateTime(),
-  summaryFeedback: z.string().nullable(),
-});
-
 export const WorkoutSessionResponse = registry.register(
   "WorkoutSession",
   workoutSessionResponseSchema,
@@ -330,9 +322,7 @@ export const WorkoutSessionResponse = registry.register(
 
 export const WorkoutSessionListItem = registry.register(
   "WorkoutSessionListItem",
-  WorkoutSessionResponse.extend({
-    analysisResult: AnalysisResultSummary.nullable(),
-  }),
+  workoutSessionListItemSchema,
 );
 
 export const CaptureAccepted = registry.register(
@@ -341,3 +331,10 @@ export const CaptureAccepted = registry.register(
 );
 
 registry.register("AnalysisStatusEvent", analysisStatusEventSchema);
+
+export const FormAnalysisResponse = registry.register(
+  "FormAnalysisResponse",
+  formAnalysisResponseSchema,
+);
+
+export const RecordedSet = registry.register("RecordedSet", recordedSetSchema);

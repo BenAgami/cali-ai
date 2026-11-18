@@ -5,7 +5,6 @@ import { exerciseSummarySchema } from "./exercise";
 export const generateWorkoutSchema = z.object({
   goalText: z.string().trim().min(3).max(500),
 });
-
 export type GenerateWorkoutValues = z.infer<typeof generateWorkoutSchema>;
 
 export const generatedWorkoutExerciseSchema = z.object({

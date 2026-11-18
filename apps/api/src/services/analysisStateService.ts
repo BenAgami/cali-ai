@@ -1,12 +1,14 @@
-import { getPrismaClient, SessionStatus } from "@repo/db";
-import type {
-  AnalysisFailureReason,
-  AnalysisStage,
-  AnalysisStatusEvent,
+import { getPrismaClient, SessionStatus, type Prisma } from "@repo/db";
+import {
+  ANALYSIS_LIMIT_MESSAGES,
+  API_ERROR_CODES,
+  type AnalysisFailureReason,
+  type AnalysisStage,
+  type AnalysisStatusEvent,
 } from "@repo/common";
 
 import { env } from "../config/env";
-import { ConflictError, NotFoundError } from "../errors";
+import { ConflictError, NotFoundError, TooManyRequestsError } from "../errors";
 import { publishAnalysisEvent } from "../lib/progressBus";
 import { logger, type Logger } from "../lib/logger";
 
@@ -35,6 +37,9 @@ export type CaptureInsert = {
   appVersion: string | null;
 };
 
+export const ANALYSIS_ALREADY_STARTED_MESSAGE =
+  "Analysis already started for this session";
+
 export type SessionSnapshot = AnalysisSnapshot & {
   bullmqJobId: string | null;
 };
@@ -52,6 +57,13 @@ const SNAPSHOT_SELECT = {
   failureReason: true,
   bullmqJobId: true,
 } as const;
+
+export const ONLY_FAILED_RETRYABLE_MESSAGE =
+  "Only failed analyses can be retried";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const dayAgo = (): Date => new Date(Date.now() - DAY_MS);
 
 export class AnalysisStateService {
   private get prisma() {
@@ -78,10 +90,22 @@ export class AnalysisStateService {
     };
   }
 
+  /**
+   * Serializes one user's quota checks: READ COMMITTED gives each later
+   * statement a fresh snapshot, so the count after the lock sees the other
+   * transaction's committed insert.
+   */
+  private async lockUserQuota(
+    tx: Prisma.TransactionClient,
+    userId: number,
+  ): Promise<void> {
+    await tx.$queryRaw`SELECT id FROM users WHERE id = ${userId} FOR UPDATE`;
+  }
+
   async findOwnedSession(
     userUuid: string,
     sessionId: number,
-  ): Promise<SessionSnapshot> {
+  ): Promise<SessionSnapshot & { userId: number }> {
     const userId = await getUserIdByUuid(this.prisma, userUuid);
 
     const session = await this.prisma.workoutSession.findFirst({
@@ -93,22 +117,35 @@ export class AnalysisStateService {
       throw new NotFoundError("Workout session not found");
     }
 
-    return session;
+    return { ...session, userId };
   }
 
   async startRunWithCapture(
     sessionId: number,
     capture: CaptureInsert,
     jobId: string,
+    userId: number,
   ): Promise<{ captureId: number }> {
     const captureId = await this.prisma.$transaction(async (tx) => {
+      await this.lockUserQuota(tx, userId);
+
+      const acceptedCount = await tx.poseCapture.count({
+        where: { session: { userId }, createdAt: { gte: dayAgo() } },
+      });
+      if (acceptedCount >= env.formAnalysis.dailyCap) {
+        throw new TooManyRequestsError(
+          ANALYSIS_LIMIT_MESSAGES.dailyAnalysis,
+          API_ERROR_CODES.DAILY_ANALYSIS_LIMIT_REACHED,
+        );
+      }
+
       const { count } = await tx.workoutSession.updateMany({
         where: { id: sessionId, processingStatus: SessionStatus.PENDING },
         data: this.runResetData(jobId),
       });
 
       if (count === 0) {
-        throw new ConflictError("Analysis already started for this session");
+        throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
       }
 
       try {
@@ -126,7 +163,7 @@ export class AnalysisStateService {
           isPrismaKnownRequestError(error) &&
           error.code === PrismaErrorCode.UNIQUE_CONSTRAINT_VIOLATION
         ) {
-          throw new ConflictError("Analysis already started for this session");
+          throw new ConflictError(ANALYSIS_ALREADY_STARTED_MESSAGE);
         }
         throw error;
       }
@@ -140,6 +177,7 @@ export class AnalysisStateService {
   async restartRun(
     sessionId: number,
     jobId: string,
+    userId: number,
   ): Promise<{ captureId: number }> {
     const stored = await this.prisma.poseCapture.findFirst({
       where: { sessionId, keypoints: { not: null } },
@@ -150,14 +188,30 @@ export class AnalysisStateService {
       throw new ConflictError("No stored capture to retry for this session");
     }
 
-    const { count } = await this.prisma.workoutSession.updateMany({
-      where: { id: sessionId, processingStatus: SessionStatus.FAILED },
-      data: this.runResetData(jobId),
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await this.lockUserQuota(tx, userId);
 
-    if (count === 0) {
-      throw new ConflictError("Only failed analyses can be retried");
-    }
+      const acceptedRetryCount = await tx.analysisRetry.count({
+        where: { session: { userId }, createdAt: { gte: dayAgo() } },
+      });
+      if (acceptedRetryCount >= env.formAnalysis.dailyRetryCap) {
+        throw new TooManyRequestsError(
+          ANALYSIS_LIMIT_MESSAGES.dailyRetry,
+          API_ERROR_CODES.DAILY_RETRY_LIMIT_REACHED,
+        );
+      }
+
+      const { count } = await tx.workoutSession.updateMany({
+        where: { id: sessionId, processingStatus: SessionStatus.FAILED },
+        data: this.runResetData(jobId),
+      });
+      if (count === 0) {
+        throw new ConflictError(ONLY_FAILED_RETRYABLE_MESSAGE);
+      }
+
+      // Last, so a refused retry rolls back without being recorded.
+      await tx.analysisRetry.create({ data: { sessionId } });
+    });
 
     await this.publishSnapshot(sessionId, logger);
 
@@ -198,26 +252,36 @@ export class AnalysisStateService {
     return true;
   }
 
-  async completeRun(
+  /**
+   * Completes the run and writes its result atomically; false (and no write)
+   * when this job no longer owns a PROCESSING session. The guarded update runs
+   * first so its row lock also serializes with failRun and the reaper.
+   */
+  async completeRunWithResult(
     sessionId: number,
     jobId: string,
+    write: (tx: Prisma.TransactionClient) => Promise<void>,
     log: Logger = logger,
   ): Promise<boolean> {
-    const { count } = await this.prisma.workoutSession.updateMany({
-      where: this.runGuard(sessionId, jobId),
-      data: {
-        processingStatus: SessionStatus.COMPLETED,
-        analysisStage: "COMPLETED",
-        analysisStageProgress: null,
-        processingFinishedAt: new Date(),
-        failureReason: null,
-      },
+    const isCompleted = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.workoutSession.updateMany({
+        where: this.runGuard(sessionId, jobId),
+        data: {
+          processingStatus: SessionStatus.COMPLETED,
+          analysisStage: "COMPLETED",
+          analysisStageProgress: null,
+          processingFinishedAt: new Date(),
+          failureReason: null,
+        },
+      });
+      if (count === 0) return false;
+
+      await write(tx);
+      return true;
     });
 
-    if (count === 0) return false;
-
-    await this.publishSnapshot(sessionId, log);
-    return true;
+    if (isCompleted) await this.publishSnapshot(sessionId, log);
+    return isCompleted;
   }
 
   async failRun(
@@ -302,6 +366,28 @@ export class AnalysisStateService {
       where: { id: captureId, sessionId },
       select: { id: true, keypoints: true, keypointsFormat: true },
     });
+  }
+
+  async getAnalysisJobContext(sessionId: number): Promise<{
+    userId: number;
+    exerciseCode: string;
+    exerciseDisplayName: string;
+  } | null> {
+    const session = await this.prisma.workoutSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        userId: true,
+        exercise: { select: { code: true, displayName: true } },
+      },
+    });
+
+    if (!session) return null;
+
+    return {
+      userId: session.userId,
+      exerciseCode: session.exercise.code,
+      exerciseDisplayName: session.exercise.displayName,
+    };
   }
 
   async getStatusEvent(sessionId: number): Promise<AnalysisStatusEvent | null> {
