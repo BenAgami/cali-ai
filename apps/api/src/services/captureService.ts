@@ -151,7 +151,6 @@ export class CaptureService {
           { jobId },
         ),
         ENQUEUE_TIMEOUT_MS,
-        "ENQUEUE_TIMEOUT",
       );
     } catch (error) {
       logger.error(
