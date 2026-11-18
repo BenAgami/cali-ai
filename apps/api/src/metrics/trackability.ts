@@ -26,7 +26,6 @@ const THRESHOLDS = {
 
 const { LEFT_SHOULDER, RIGHT_SHOULDER, LEFT_HIP, RIGHT_HIP } = BLAZEPOSE;
 
-/** Shoulder-hip chains to measure torso on: near side, or both when `side` is null. */
 const torsoChains = (side: Side | null): Array<[number, number]> => {
   if (side === null) {
     return [
@@ -45,6 +44,10 @@ const keyJointIndices = (series: PoseSeries, side: Side | null): number[] => {
   return [...(side === "left" ? joints.left : joints.right)];
 };
 
+/**
+ * Decides whether a set can be scored: checks length, visibility, framing,
+ * camera distance and angle, and returns every failed check as a reason.
+ */
 export const checkTrackability = (
   payload: PoseCapturePayload,
   series: PoseSeries,
