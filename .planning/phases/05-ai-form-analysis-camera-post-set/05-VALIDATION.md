@@ -40,7 +40,7 @@ created: 2026-11-08
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
 | 5-04-01 | 05-04 | 1 | FORM-01/04/05/09 | unit | `yarn workspace api test:unit tests/unit/common/formAnalysis.test.ts` | ✅ | ✅ green |
 | 5-04-02 | 05-04 | 1 | PROF-07 | unit | `yarn workspace api test:unit tests/unit/prompts/formFeedbackPrompt.test.ts` | ✅ | ✅ green |
-| 5-05-01/02 | 05-05 | 2 | FORM-05/09 | unit | `yarn workspace api test:unit tests/unit/metrics/fixtures.test.ts` | ✅ | ✅ green |
+| 5-05-01/02 | 05-05 | 2 | FORM-05/09 | unit | `yarn workspace api test:unit tests/unit/metrics/poseFixtures.test.ts` | ✅ | ✅ green |
 | 5-06-01/02 | 05-06 | 2 | FORM-05/06 | unit | `yarn workspace api test:unit tests/unit/metrics/segmentReps.test.ts` | ✅ | ✅ green |
 | 5-06-03 | 05-06 | 2 | FORM-09 | unit | `yarn workspace api test:unit tests/unit/metrics/trackability.test.ts` | ✅ | ✅ green |
 | 5-07-01..03 | 05-07 | 2 | FORM-01/04, PROF-07 | integration | `yarn workspace api test:integration tests/integration/workoutSessions` | ✅ | ✅ green |
