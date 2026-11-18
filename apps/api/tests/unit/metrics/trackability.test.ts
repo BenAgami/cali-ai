@@ -48,7 +48,7 @@ describe("checkTrackability", () => {
     const short = run({
       exercise: "push_up",
       reps: 1,
-      leadSec: 0.2,
+      padSec: 0.2,
       repSec: 1,
       restSec: 0.5,
     });
